@@ -4,7 +4,7 @@ Python transportation engineeering workbench for FreeCAD
 This workbench is being developed to provide functionality specific to transportation engineering (road and rail).
 
 ## Usage 
-
+Examples coming soon. Will include screencast and screenshots. 
 
 ## Installation
 Clone the project into the `~/.FreeCAD/Mod/Transportation` folder to use.
@@ -21,4 +21,4 @@ Discuss this Workbench on the FreeCAD forum thread dedicated to this topic: [Civ
 
 ## Developer 
 Joel Graff (@graffy76) with inspiration and help from the FreeCAD community
-=======
+
