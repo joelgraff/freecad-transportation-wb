@@ -18,11 +18,9 @@ You can satisfy this dependency one of two ways:
 
 ## Feedback 
 Discuss this Workbench on the FreeCAD forum thread dedicated to this topic: 
-
 [Civil engineering feature implementation (Transportation Engineering)](https://forum.freecadweb.org/viewtopic.php?f=8&t=22277). 
 
 FYI, this thread was born of a parent thread: 
-
 [Civil Engineering Design functions](https://forum.freecadweb.org/viewtopic.php?f=8&t=6973)
 
 ## Developer 
