@@ -17,7 +17,11 @@ You can satisfy this dependency one of two ways:
 2. Delete the symlink and copy the `freecad-nurbs/sketcher/feedbacksketch.py` file to the `~/.FreeCAD/Mod/Transportation` folder.
 
 ## Feedback 
-Discuss this Workbench on the FreeCAD forum thread dedicated to this topic: [Civil engineering feature implementation (Transportation Engineering)](https://forum.freecadweb.org/viewtopic.php?f=8&t=22277). FYI, this thread was born of a parent thread: [Civil Engineering Design functions](https://forum.freecadweb.org/viewtopic.php?f=8&t=6973)
+Discuss this Workbench on the FreeCAD forum thread dedicated to this topic: 
+[Civil engineering feature implementation (Transportation Engineering)](https://forum.freecadweb.org/viewtopic.php?f=8&t=22277). 
+
+FYI, this thread was born of a parent thread: 
+[Civil Engineering Design functions](https://forum.freecadweb.org/viewtopic.php?f=8&t=6973)
 
 ## Developer 
 Joel Graff (@graffy76) with inspiration and help from the FreeCAD community
