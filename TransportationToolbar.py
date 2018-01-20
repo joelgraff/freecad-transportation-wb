@@ -1,25 +1,24 @@
 import FreeCADGui as Gui
-import FreeCAD as App
 from PySide import QtGui
 
+last = False
 mw = Gui.getMainWindow()
-p = App.ParamGet("User parameter:BaseApp/Preferences/Mod/Transportation")
 
 
 def onWorkbenchActivated():
-    last = p.GetBool("last", 0)
+    global last
     active = Gui.activeWorkbench().__class__.__name__
     tb = mw.findChild(QtGui.QToolBar, "Transportation")
 
     if tb and last and active == "SketcherWorkbench":
         tb.show()
-        p.SetBool("last", 0)
+        last = False
     elif active == "TransportationWorkbench":
-        p.SetBool("last", 1)
+        last = True
     elif tb:
         tb.hide()
-        p.SetBool("last", 0)
+        last = False
     else:
-        p.SetBool("last", 0)
+        last = False
 
 mw.workbenchActivated.connect(onWorkbenchActivated)
