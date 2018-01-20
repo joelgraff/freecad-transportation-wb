@@ -1,4 +1,5 @@
 import FreeCADGui
+import GeometryUtilities
 
 class Curve1():
     """Curve1"""
@@ -10,7 +11,8 @@ class Curve1():
                 'ToolTip' : "Add a one-center curve"}
 
     def Activated(self):
-        "Do something here"
+        result = GeometryUtilities._getSelection()
+        print result
         return
 
     def IsActive(self):

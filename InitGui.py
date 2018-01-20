@@ -21,7 +21,8 @@
 #*									                                    *
 #************************************************************************
 
-import FreeCAD, FreeCADGui
+import FreeCAD
+import FreeCADGui
 import sys
 
 class TransportationWorkbench (Workbench):
