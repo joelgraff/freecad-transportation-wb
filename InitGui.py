@@ -24,6 +24,7 @@
 import FreeCAD
 import FreeCADGui
 import sys
+import TransportationToolbar
 
 class TransportationWorkbench (Workbench):
 
