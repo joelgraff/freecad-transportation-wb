@@ -14,6 +14,7 @@ def onWorkbenchActivated():
         tb.show()
         last = False
     elif active == "TransportationWorkbench":
+        tb.hide()
         last = True
     elif tb:
         tb.hide()
