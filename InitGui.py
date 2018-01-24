@@ -44,9 +44,10 @@ class TransportationWorkbench (Workbench):
 
         Gui.activateWorkbench("SketcherWorkbench")
 
-        self.appendToolbar("Transportation_General", self.general_fn_list)
+        self.appendToolbar("Transportation", self.general_fn_list)
+        self.appendToolbar("Transportation alignment", self.alignment_fn_list)
         self.appendMenu("Transportation", self.general_fn_list)
-        self.appendMenu(["Transportation", "Policies"], self.policies_list)
+        #self.appendMenu(["Transportation", "Policies"], self.policies_list)
 
     def Activated(self):
         "This function is executed when the workbench is activated"

@@ -26,6 +26,11 @@ class Tangent():
         Executes the tangent construction.
         """
         print GeometrySelection.is_insert_selection()
+
+        sketch_object = App.ActiveDocument.Horizontal_Geometry
+        shape = Gui.Selection.getSelectionEx()[0].SubObjects[0]
+
+        print GeometrySelection.is_construction(sketch_object, shape)
         #validate the selection, returning if invalid
         #selected_geometry = self._getSelection()
 
@@ -44,6 +49,6 @@ class Tangent():
         """
         Returns true if there is an active document
         """
-        return Gui.ActiveDocument <> None
+        return True
 
 Gui.addCommand('Tangent', Tangent())

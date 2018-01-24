@@ -6,7 +6,7 @@ insert), as well as testing for specific conditions (connected/constrained geome
 
 from PySide import QtGui
 import FreeCADGui as Gui
-import Part
+import FreeCAD as App
 
 class SelectionContainer():
     """
@@ -17,6 +17,47 @@ class SelectionContainer():
         self.vertices = []
         self.lines = []
         self.curves = []
+
+def _find_geometry(sketch_object, shape):
+
+    vtx_count = len(shape.Vertexes)
+
+    #iterate each geometry element, comparing against the passed shape
+    for geom in sketch_object.Geometry:
+
+        geom_verts = geom.toShape().Vertexes
+
+        #skip if vertex counts don't match
+        if len(geom_verts) != vtx_count:
+            continue
+
+        found = True
+
+        #iterate each vertex, comparing coordinates
+        for i in range(0, vtx_count-1):
+
+            found = found & \
+                (geom_verts[i].X == shape.Vertexes[i].X) & \
+                (geom_verts[i].Y == shape.Vertexes[i].Y)
+
+            if not found:
+                break
+
+        #return the geometry if it matches the passed shape
+        if found:
+            return geom
+
+    return None
+
+def is_construction(sketch_object, shape):
+
+    geom = _find_geometry(sketch_object, shape)
+
+    if geom is None:
+        return False
+
+    return geom.Construction
+
 
 def is_insert_selection():
     """
@@ -38,9 +79,9 @@ def is_connected(object_one, object_two):
     Returns true for objects which share at least one common Vertex.
     """
 
-    for vtx_one in object_one.Vertexes:
-        for vtx_two in object_two.Vertexes:
-            if (vtx_one.X == vtx_two.X) and (vtx_one.y == vtx_two.y):
+    for vert_one in object_one.Vertexes:
+        for vert_two in object_two.Vertexes:
+            if (vert_one.X == vert_two.X) and (vert_one.y == vert_two.y):
                 return True
 
     return False
@@ -49,6 +90,20 @@ def is_append_selection():
     """
     Returns true if the last object (or no object) is selected.
     """
+
+    selection = Gui.Selection.getSelectionEx()
+
+    if len(selection) > 1:
+        return False
+
+    last_object_verts = \
+        App.ActiveDocument.ActiveObject.Geometry[0].toShape().Vertexes
+
+    selected_object_verts = selection[0].SubObjects[0].Vertexes
+
+    if (selected_object_verts[0] == last_object_verts[0]) and \
+        (selected_object_verts[1] == last_object_verts[1]):
+        return True
 
     return False
 
