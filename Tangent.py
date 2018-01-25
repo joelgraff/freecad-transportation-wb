@@ -19,7 +19,8 @@ class Tangent():
         return {'Pixmap'  : 'My_Command_Icon',
                 'Accel' : "Shift+T",
                 'MenuText': "Tangent",
-                'ToolTip' : "Add a tangnet"}
+                'ToolTip' : "Add a tangent",
+                'CmdType' : "ForEdit"}
 
     def Activated(self):
         """
