@@ -4,7 +4,7 @@
 #* Copyright (c) 2017                                                          *
 #* <monograff76@gmail.com>                                                     *
 #*                                                                             *
-#* A series of utilis to augment the feedback sketcher class                   *
+#* A series of utilities to augment the feedback sketcher class                *
 #*                                                                             *
 #* GNU Lesser General Public License (LGPL)                                    *
 #*******************************************************************************
