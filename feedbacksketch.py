@@ -57,11 +57,12 @@ class ViewProvider:
         return None
 
     def setupContextMenu(self, obj, menu):
-        menu.clear()
-        action = menu.addAction("MyMethod #1")
-        action.triggered.connect(lambda:self.methodA(obj.Object))
-        action = menu.addAction("MyMethod #2")
-        action.triggered.connect(lambda:self.methodB(obj.Object))
+        pass
+        #menu.clear()
+        #action = menu.addAction("MyMethod #1")
+        #action.triggered.connect(lambda:self.methodA(obj.Object))
+       # action = menu.addAction("MyMethod #2")
+       # action.triggered.connect(lambda:self.methodB(obj.Object))
 
     def methodA(self,obj):
         print "my Method A Finisher"
@@ -75,10 +76,7 @@ class ViewProvider:
         print "EDIT A"
 
     def setEdit(self,vobj,mode=0):
-        print "set Edit ",mode
-        if mode==1:
-            self.editA()
-        raise Exception("extras loaded")
+        print "IN EDIT MODE"
 
     def unsetEdit(self,vobj,mode=0):
         print "unset edit ",mode
