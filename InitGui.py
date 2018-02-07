@@ -35,12 +35,15 @@ class TransportationWorkbench (Workbench):
     def __init__(self):
         self.policies_ist = ["Edit..."]
         self.general_fn_list = ["NewAlignment"]
-        self.alignment_fn_list = ["Tangent", "Curve1", "Curve2", "Curve3"
-                                  "CurveSpiral"]
+        self.alignment_fn_list = ["Tangent", "Curve1"]
+        #, "Curve2", "Curve3", "CurveSpiral"]
 
     def Initialize(self):
 
-        import NewAlignment, Tangent, Curve1, Curve2, Curve3, CurveSpiral
+        import NewAlignment
+        import Tangent
+        import Curve1
+        #import Curve2, Curve3, CurveSpiral
 
         Gui.activateWorkbench("SketcherWorkbench")
 
