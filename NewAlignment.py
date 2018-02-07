@@ -1,55 +1,75 @@
 import Sketcher
-import FreeCAD
+import FreeCAD as App
 import Part
-import FreeCADGui
-import feedbacksketch
+import FreeCADGui as Gui
 import FeedbackSketcherUtils
+
 class NewAlignment():
 
-    def GetResources (self):
+    def GetResources(self):
         return {'Pixmap'  : 'My_Command_Icon',
                 'Accel' : "Shift+N",
                 'MenuText': "New Alignment",
                 'ToolTip' : "Create a new alignment and make it active",
                 'CmdType' : "ForEdit"}
 
-    def Activated (self):
+    def Activated(self):
 
-        if FreeCADGui.ActiveDocument == None:
-            self._CreateDocument()
+        if Gui.ActiveDocument == None:
+            self._create_document()
 
-        self._CreateSketches()
+        self._set_units()
 
-        self._AddTrueNorth()
+        self._create_sketches()
+
+        self._add_true_north()
+
+        self._enter_edit_mode()
+
+        self._set_camera(1000.0)
 
         return
 
-    def IsActive (self):
+    def IsActive(self):
         return True
 
-    def _CreateDocument (self):
+    def _set_camera(self, height):
+        """
+        Set the camera to a specific height.  Assumes 2D Orthographic view
+        """
 
-        FreeCAD.newDocument("Unnamed Alignment")
-        FreeCAD.setActiveDocument("Unnamed_Alignment")
-        FreeCAD.ActiveDocument=FreeCAD.getDocument("Unnamed_Alignment")
-        FreeCADGui.ActiveDocument=FreeCADGui.getDocument("Unnamed_Alignment")
+        Gui.activeDocument().activeView().setCamera('#Inventor V2.1 ascii \n OrthographicCamera { \n viewportMapping ADJUST_CAMERA \n position 0 0 01 \n orientation 0 0 1 0 \n nearDistance 0 \n farDistance 1 \n aspectRatio 1 \n focalDistance 1 \n height '+str(height)+' }')
 
-    def _CreateSketches (self):
+    def _enter_edit_mode(self):
+        Gui.ActiveDocument.setEdit(Gui.ActiveDocument.Alignment)
 
-        fbs = FeedbackSketcherUtils.buildFeedbackSketch (
-        sketchName = "Unnamed_Alignment",
-        clientList = ['Horizontal_Geometry', 'Vertical_Geometry'])
 
-    def _AddTrueNorth (self):
+    def _set_units(self):
+        App.ParamGet("User parameter:BaseApp/Preferences/Units").SetInt("UserSchema", 5)
 
-        sketch = FreeCAD.ActiveDocument.Horizontal_Geometry
+    def _create_document(self):
 
-        trueNorth = Part.LineSegment (
-            FreeCAD.Vector (0.0, 0.0), FreeCAD.Vector (0.0, 1.0))
+        App.newDocument("Unnamed Alignment")
+        App.setActiveDocument("Unnamed_Alignment")
+        App.ActiveDocument = App.getDocument("Unnamed_Alignment")
+        Gui.ActiveDocument = Gui.getDocument("Unnamed_Alignment")
 
-        sketch.addGeometry (trueNorth)
-        sketch.addConstraint (Sketcher.Constraint ("Vertical", 0))
+    def _create_sketches(self):
 
-        FreeCAD.ActiveDocument.recompute()
+        fbs = FeedbackSketcherUtils.buildFeedbackSketch(
+            sketchName="Unnamed_Alignment",
+            clientList=['Alignment'])          
 
-FreeCADGui.addCommand ('NewAlignment',NewAlignment())
+    def _add_true_north(self):
+
+        sketch = App.ActiveDocument.Alignment
+
+        true_north = Part.LineSegment(
+            App.Vector(0.0, 0.0), App.Vector(0.0, 100.0))
+
+        sketch.addGeometry(true_north)
+        sketch.addConstraint(Sketcher.Constraint("Vertical", 0))
+
+        App.ActiveDocument.recompute()
+
+Gui.addCommand('NewAlignment',NewAlignment())
