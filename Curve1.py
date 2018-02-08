@@ -38,6 +38,9 @@ class Curve1():
 
         arc = result[0]
 
+        print "Result[0]: " + str(result[0])
+        print "Result[1]: " + str(result[1])
+
         #swap back tangents if they were swapped in the arc computation
         if result[1]:
             x = back_tangents[0]
@@ -111,8 +114,12 @@ class Curve1():
         constraints.append(Sketcher.Constraint("Tangent", curve_index, \
             1, back_tangents[0].index))
 
+        App.ActiveDocument.recompute()
+
         constraints.append(Sketcher.Constraint("Tangent", curve_index, \
             2, back_tangents[1].index))
+
+        App.ActiveDocument.recompute()
 
         for constraint in constraints:
             self.sketch.addConstraint(constraint)
