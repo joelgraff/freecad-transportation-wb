@@ -22,6 +22,8 @@ class NewAlignment():
 
         self._create_sketches()
 
+        #self._attach_handlers()
+
         self._add_true_north()
 
         self._enter_edit_mode()
@@ -32,7 +34,9 @@ class NewAlignment():
 
     def IsActive(self):
         return True
-
+    
+    def _attach_handlers(self):
+        Gui.ActiveDocument.ActiveView.addDraggable
     def _set_camera(self, height):
         """
         Set the camera to a specific height.  Assumes 2D Orthographic view
@@ -58,7 +62,9 @@ class NewAlignment():
 
         fbs = FeedbackSketcherUtils.buildFeedbackSketch(
             sketchName="Unnamed_Alignment",
-            clientList=['Alignment'])          
+            clientList=['Alignment'])
+
+        return fbs        
 
     def _add_true_north(self):
 
