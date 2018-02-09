@@ -106,10 +106,9 @@ def _sort_vectors(vectors):
     cross_product = vec0.cross(vectors[1])
 
     result = [vec0, vec1]
-    print "Cross product: " + str(cross_product.z)
 
     if cross_product.z > 0.0:
-        print "swapping..."
+
         result = [vec1, vec0]
 
     return result
@@ -169,33 +168,18 @@ def create_arc(back_tangents):
     #get directed vectors from the point of intersection
     vectors = _get_vectors(back_tangents, pt_of_int)
 
-    print vectors
-
     #sort the vectors such that the first one is the starting vector for
     #the arc's counter-clockwise rotation
     result = _sort_vectors(vectors)
 
-    print "-----"
-
     #note if the vectors have been swapped
     swapped_tangents = _compare_vectors (result[0], vectors[0])
-
-    print result
-
-    
 
     vectors = result
 
     #get the length of the shorter back_tangnet, and
     #reduce to 3/8th's original size
     length = _get_shorter(vectors).Length * 0.375
-
-    print "bt0_sort: " + str(vectors[0])
-    print "bt1: " + str(vectors[1])
-
-    print "PI: " + str(pt_of_int)
-
-    print "Length: " + str(length)
 
     #normalize and scale the vectors for the default back tangent length
     for i in range(0,2):
@@ -210,23 +194,16 @@ def create_arc(back_tangents):
     for vec in vectors:
         radius_points.append(pt_of_int.sub(vec))
 
-    print "Radius point 1: " + str(radius_points[0])
-    print "Radius point 2: " + str(radius_points[1])
-
     #generate two MathLine objects based on the actual geometry
     #but with the starting points set at the point of intersection
     math_lines = _get_math_lines(vectors, pt_of_int)
 
     ortho_lines = []
     ortho_vectors = []
-    print "ORTHO LINES"
 
     #get the orthogonal lines using the radius points
     for i in range(0, 2):
         ortho_lines.append(math_lines[i].get_orthogonal(radius_points[i]))
-        print math_lines[i]
-        print "\\\\\\\\\\\\\\\\\\\\"
-        print ortho_lines[i]
 
     #calculate the point of intersection between the two orhogonal lines
     #and save the result as the arc's center point
@@ -234,12 +211,6 @@ def create_arc(back_tangents):
 
     ortho_vectors = [radius_points[0].sub(center_point), \
         radius_points[1].sub(center_point)]
-
-    print "Ortho0: " + str(ortho_vectors[0])
-    print "Ortho1: " + str(ortho_vectors[1])
-    print "Radius length: " + str(ortho_vectors[0].Length)
-
-    print "Center Point: " + str(center_point)
 
     offset = 0.0
     start_ortho = ortho_vectors[0]
@@ -258,14 +229,10 @@ def create_arc(back_tangents):
 
     sweep_angle = ortho_vectors[1].getAngle(ortho_vectors[0]) + start_angle
 
-    print "Start angle: " + str(start_angle)
-    print "Sweep angle: " + str(sweep_angle)
-
     circle_part = Part.Circle(center_point, UNIT_Z, ortho_vectors[0].Length)
 
     result = []
 
-    print "Swap? " + str(swapped_tangents)
     #return a list with the resulting arc and a boolean indicating whether
     #or not the tangent order was swapped
     result.append (Part.ArcOfCircle(circle_part, start_angle, sweep_angle))
