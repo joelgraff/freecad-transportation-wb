@@ -101,16 +101,18 @@ def _sort_vectors(vectors):
     """
 
     vec0 = vectors[0]
-    
+    vec1 = vectors[1]
+
     cross_product = vec0.cross(vectors[1])
 
+    result = [vec0, vec1]
     print "Cross product: " + str(cross_product.z)
 
-    if cross_product.z > 0:
-        vectors[0] = vectors[1]
-        vectors[1] = vec0
+    if cross_product.z > 0.0:
+        print "swapping..."
+        result = [vec1, vec0]
 
-    return vectors
+    return result
     
 def _get_vectors(back_tangents, pt_of_int):
     """
@@ -134,6 +136,26 @@ def _get_vectors(back_tangents, pt_of_int):
 
     return result
 
+def _compare_vectors(lhs, rhs):
+    """
+    Compares the length of two vectors.  If the length
+    is less than 0.00001 (1 * 10^-5), they are equivalent.
+    Retruns:
+    0 - equivalent
+    -1 - lhs < rhs
+    1 - lhs > rhs
+    """
+
+    delta = lhs.Length - rhs.Length
+
+    if delta < 0.0:
+        return -1
+
+    if delta > 0.00001:
+        return 1
+
+    return 0
+
 def create_arc(back_tangents):
     """
     Generate arc parameters based on the passed tangents.
@@ -147,12 +169,20 @@ def create_arc(back_tangents):
     #get directed vectors from the point of intersection
     vectors = _get_vectors(back_tangents, pt_of_int)
 
+    print vectors
+
     #sort the vectors such that the first one is the starting vector for
     #the arc's counter-clockwise rotation
     result = _sort_vectors(vectors)
 
+    print "-----"
+
     #note if the vectors have been swapped
-    swapped_tangents = result[0] != vectors[0]
+    swapped_tangents = _compare_vectors (result[0], vectors[0])
+
+    print result
+
+    
 
     vectors = result
 
@@ -235,6 +265,7 @@ def create_arc(back_tangents):
 
     result = []
 
+    print "Swap? " + str(swapped_tangents)
     #return a list with the resulting arc and a boolean indicating whether
     #or not the tangent order was swapped
     result.append (Part.ArcOfCircle(circle_part, start_angle, sweep_angle))

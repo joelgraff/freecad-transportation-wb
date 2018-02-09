@@ -42,7 +42,8 @@ class Curve1():
         print "Result[1]: " + str(result[1])
 
         #swap back tangents if they were swapped in the arc computation
-        if result[1]:
+        if result[1] != 0:
+            print "Swapping..."
             x = back_tangents[0]
             back_tangents[0] = back_tangents[1]
             back_tangents[1] = x
@@ -54,7 +55,7 @@ class Curve1():
 
         #check to ensure curve endpoints are colinear
         #with back_tangents
-        back_tangents=self._check_colinearity(curve_index, back_tangents)
+        #back_tangents=self._check_colinearity(curve_index, back_tangents)
 
         #constrain curve to selected back tangents
         self._constrain_curve(curve_index, back_tangents)
@@ -123,6 +124,7 @@ class Curve1():
 
         for constraint in constraints:
             self.sketch.addConstraint(constraint)
+            App.ActiveDocument.recompute()
 
     def _validate_selection(self):
 
