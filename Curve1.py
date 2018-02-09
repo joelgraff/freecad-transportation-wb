@@ -165,6 +165,7 @@ class Curve1():
             return selection
 
         self._notify_error("")
+        
         return None
 
     def _notify_error(self, error_type):
