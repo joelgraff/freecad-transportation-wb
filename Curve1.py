@@ -70,10 +70,6 @@ class Curve1():
         Constrains a curve to the supplied back tangents
         """
 
-        print "Curve index: " + str(curve_index)
-        print "Back tangent 1: " + str(back_tangents[0].index)
-        print "Back tangent 2: " + str(back_tangents[1].index)
-
         constraints = []
 
         #constraints.append(Sketcher.Constraint("PointOnObject", curve_index, \

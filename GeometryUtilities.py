@@ -64,8 +64,6 @@ def _get_arc_angles(vectors):
     start_angle = (math.pi / 2.0)-start_vector.getAngle(UNIT_X)
     sweep_angle = math.pi - vectors[1].getAngle(vectors[0])
 
-    print "Cross product: " + str(cross_product)
-
     angles = [start_angle, sweep_angle]
 
     return angles
