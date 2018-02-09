@@ -27,29 +27,16 @@ class Tangent():
         """
         Executes the tangent construction.
         """
-        sketch_obj = App.ActiveDocument.Horizontal_Geometry
 
-        shape_names = []
-
-        if len(Gui.Selection.getSelectionEx()) > 0:
-            shape_names = Gui.Selection.getSelectionEx()[0].SubElementNames
-
-        #notify user and abort if more than one object is selected
-        if len(shape_names) > 1:
+        if Gui.Selection.getSelection() == []:
             self._notify_error("Selection")
+
+        self.sketch = Gui.Selection.getSelection()[0]
+
+        tangent = self._validate_selection()
+
+        if tangent == None:
             return
-
-        #returns a GeometryContainer with the geometry and it's index in the Sketcher Geometry list
-        last_tangent = GeometryUtilities.get_last_back_tangent(sketch_obj)
-
-        #if the user selected one object, ensure it is the last back tangent
-        #notify user and abort if compare fails
-        if len(shape_names) == 1:
-            geom = GeometryUtilities.find_geometry(sketch_obj, shape_names[0])
-
-            if not GeometryUtilities.compare(last_tangent, geom):
-                self._notify_error("Selection")
-                return
 
         #attach a new construction line to the end of the last one found
         vertex_constrained = GeometryUtilities.\
@@ -73,18 +60,53 @@ class Tangent():
         sketch_obj.addConstraint(Sketcher.\
         Constraint('Coincident', geom.index, vtx_index, new_index, 1))
 
+def _validate_selection(self):
+
+        #get the selected objects as GeometryContainer objects
+        selection = GeoUtils.get_selection(self.sketch)
+
+        #need to have exactly two selections
+        if len(selection) != 1:
+
+            self._notify_error("Selection")
+            return None
+
+        #selection must be a construction mode line segment
+        geo = selection[0]
+
+        if (not geo.geometry.Construction) or \
+        (type(geo.geometry).__name__ != "LineSegment"):
+
+            self._notify_error("Invalid Geometry")
+            return None
+
+        has_tangent_constraint = False
+
+        #selections must be adjacent
+        for constraint in self.sketch.Constraints:
+
+            content = GeoUtils.getConstraintContent(constraint)
+
+            has_tangent_constraint = content["Type"] == "5"
+
+            if (has_tangent_constraint):
+                return geo
+
+        self._notify_error("Invalid_Geometry")
+
+        return None
+
     def _notify_error(self, error_type):
 
         title = error_type + " Error"
-        message = "UNDEFINED"
+        message = "UNDEFINED ERROR"
 
         if error_type == "Selection":
-            message = "Select the last tangent (or nothing) to append a back \
-            tangent"
+            message = "Select a single back tangent."
 
-        elif error_type == "Vertex":
-            message = "No unconstrained vertices found on last back tangent"
-
+        elif error_type == "Invalid_Geometry":
+            message = "Selected elements have incorrect geometry"
+            
         QtGui.QMessageBox.critical(None, title, message)
 
         
