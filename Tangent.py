@@ -4,7 +4,7 @@ Creates tanget alignment geometry for the Transportation wb
 from PySide import QtGui
 import FreeCAD as App
 import FreeCADGui as Gui
-import GeometryUtilities
+import GeometryUtilities as GeoUtils
 import Part
 import Sketcher
 
@@ -38,29 +38,31 @@ class Tangent():
         if tangent == None:
             return
 
+        return
+
         #attach a new construction line to the end of the last one found
-        vertex_constrained = GeometryUtilities.\
-            get_unconstrained_vertices(sketch_obj, last_tangent)
+        #vertex_constrained = GeometryUtilities.\
+        #    get_unconstrained_vertices(sketch_obj, last_tangent)
 
-        vtx_index = -1
+        #vtx_index = -1
 
-        for i in range(0, len(vertex_constrained) - 1):
-            if not vertex_constrained[i]:
-                vtx_index = i
+        #for i in range(0, len(vertex_constrained) - 1):
+        #    if not vertex_constrained[i]:
+        #        vtx_index = i
 
-        if vtx_index == -1:
-            self._notify_error("Vertex")
+        #if vtx_index == -1:
+        #    self._notify_error("Vertex")
 
-        vtx = last_tangent.geometry.Vertexes[vtx_index]
+        #vtx = last_tangent.geometry.Vertexes[vtx_index]
 
-        start_point = App.Vector(vtx.X, vtx.Y)
-        end_point = App.Vector(vtx.X + 100.0, vtx.Y + 100.0)
-        new_index = sketch_obj.AddGeometry(Part.LineSegment(start_point, end_point))
+        #start_point = App.Vector(vtx.X, vtx.Y)
+        #end_point = App.Vector(vtx.X + 100.0, vtx.Y + 100.0)
+        #new_index = sketch_obj.AddGeometry(Part.LineSegment(start_point, #end_point))
 
-        sketch_obj.addConstraint(Sketcher.\
-        Constraint('Coincident', geom.index, vtx_index, new_index, 1))
+        #sketch_obj.addConstraint(Sketcher.\
+        #Constraint('Coincident', geom.index, vtx_index, new_index, 1))
 
-def _validate_selection(self):
+    def _validate_selection(self):
 
         #get the selected objects as GeometryContainer objects
         selection = GeoUtils.get_selection(self.sketch)
