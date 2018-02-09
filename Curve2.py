@@ -14,6 +14,6 @@ class Curve2():
         return
 
     def IsActive(self):
-        return FreeCADGui.ActiveDocument <> None
+        return FreeCADGui.ActiveDocument != None
 
 FreeCADGui.addCommand('Curve2',Curve2()) 

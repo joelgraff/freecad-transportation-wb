@@ -38,11 +38,9 @@ class Curve1():
 
         arc = result[0]
 
-        print "Result[0]: " + str(result[0])
-        print "Result[1]: " + str(result[1])
-
         #swap back tangents if they were swapped in the arc computation
-        if result[1]:
+        if result[1] != 0:
+   
             x = back_tangents[0]
             back_tangents[0] = back_tangents[1]
             back_tangents[1] = x
@@ -54,7 +52,7 @@ class Curve1():
 
         #check to ensure curve endpoints are colinear
         #with back_tangents
-        back_tangents=self._check_colinearity(curve_index, back_tangents)
+        #back_tangents=self._check_colinearity(curve_index, back_tangents)
 
         #constrain curve to selected back tangents
         self._constrain_curve(curve_index, back_tangents)
@@ -66,33 +64,6 @@ class Curve1():
         Returns class active status
         """
         return Gui.ActiveDocument != None
-
-    def _check_colinearity(self, index, tangents):
-        """
-        Check to ensure endpoints of curve are colinear with
-        supplied tangents.  If not, tangents are swapped and re-verified
-        """
-
-        curve_verts = self.sketch.Geometry[index].toShape().Vertexes
-        tangent = tangents[0]
-
-        print "tangent start: " + str(tangents[0].geometry.StartPoint)
-        print "tangent end: " + str(tangents[0].geometry.EndPoint)
-
-        math_line = MathLine.MathLine(tangent.geometry.StartPoint, \
-            tangent.geometry.EndPoint)
-
-        print math_line
-        print "Curve Endpoints: " + str(curve_verts[0].Point) + ";" + str(curve_verts[1].Point)
-
-        print "f(x0) = " + str(math_line.fn_x(curve_verts[0].X))
-        print "f(x1) = " + str(math_line.fn_x(curve_verts[1].X))
-
-        if math_line.fn_x(curve_verts[0].X) != curve_verts[0].Y:
-            tangents[0] = tangents[1]
-            tangents[1] = tangent
-
-        return tangents
 
     def _constrain_curve(self, curve_index, back_tangents):
         """
@@ -123,6 +94,7 @@ class Curve1():
 
         for constraint in constraints:
             self.sketch.addConstraint(constraint)
+            App.ActiveDocument.recompute()
 
     def _validate_selection(self):
 
