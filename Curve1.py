@@ -50,10 +50,6 @@ class Curve1():
 
         App.ActiveDocument.recompute()
 
-        #check to ensure curve endpoints are colinear
-        #with back_tangents
-        #back_tangents=self._check_colinearity(curve_index, back_tangents)
-
         #constrain curve to selected back tangents
         self._constrain_curve(curve_index, back_tangents)
 
