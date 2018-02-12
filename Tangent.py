@@ -8,6 +8,8 @@ import GeometryUtilities as GeoUtils
 import Part
 import Sketcher
 
+#pylint: disable=E1601
+
 class Tangent():
 
     def __init__(self):
@@ -42,51 +44,44 @@ class Tangent():
 
         #validate the attached constrains as tangents, that only one or two
         #are attached, and that their adjoinging geometry are Part.ArcOfCircle
-        constraints = self._get_attached_constraints(selection)
+        constraints = self._get_attached_constraints(selection[0])
 
         if constraints == None:
             return
 
-        if self._validate_attached_constraints(selection, constraints) == None:
+        if self._validate_attached_constraints(selection[0], \
+            constraints) == None:
             return
 
         #With a valid selection and attached constraints and geometry,
         #process selection, returning endpoints for the new tangent
-        end_points = self._get_endpoints(selection, constraints)
+        end_points = self._get_endpoints(selection[0], constraints)
+
+        print end_points
 
         #create a tangent line with end points which match the curve
         #endpoints or one of the tangent end points
-        new_index = self._create_tangnet_line(tangent_endpoints)
+        new_index = self._create_tangent_line(end_points)
 
         #tangentailly constrain the tangent to curve endpionts and
         #coincidentally constrain to back tangent end points
 
         #delete tangent constraints on the curve to the back tangent
+
+        App.ActiveDocument.recompute()
         return
 
-        #attach a new construction line to the end of the last one found
-        #vertex_constrained = GeometryUtilities.\
-        #    get_unconstrained_vertices(sketch_obj, last_tangent)
+    def _create_tangent_line(self, end_points):
+        """
+        Create a tangent line and append it to the sketch based on
+        the passed end points.
+        """
 
-        #vtx_index = -1
+        line_segment = Part.LineSegment(end_points[0], end_points[1])
 
-        #for i in range(0, len(vertex_constrained) - 1):
-        #    if not vertex_constrained[i]:
-        #        vtx_index = i
+        return self.sketch.addGeometry(line_segment)
 
-        #if vtx_index == -1:
-        #    self._notify_error("Vertex")
-
-        #vtx = last_tangent.geometry.Vertexes[vtx_index]
-
-        #start_point = App.Vector(vtx.X, vtx.Y)
-        #end_point = App.Vector(vtx.X + 100.0, vtx.Y + 100.0)
-        #new_index = sketch_obj.AddGeometry(Part.LineSegment(start_point, #end_point))
-
-        #sketch_obj.addConstraint(Sketcher.\
-        #Constraint('Coincident', geom.index, vtx_index, new_index, 1))
-
-    def _get_endpoints(self, index, selection, constraints):
+    def _get_endpoints(self, selection, constraints):
         """
         Finds the two endpoints along the back tangent for the new tangent.
         Valid cases include two curve endpoints and a single curve endpoint
@@ -94,11 +89,12 @@ class Tangent():
 
         Arguments:
         index - The index of the selected geometry
-        selection - The selected geometry / index as a list
+        selection - The selected geometry / index as a GeometryContainer
         constraints - List of attached constraints
         """
 
         targets = []
+        index = selection.index
 
         #Retrieve the attached geometry and the corresponding end points
         for constraint in constraints:
@@ -116,8 +112,8 @@ class Tangent():
 
         #iterate the accumulated targets, acquiring the needed end points
         for target in targets:
-            shape = self.sketch.Geometry[targets[0]].toShape()
-            end_points.append(shape.Vertexes[targets[1] - 1].Point)
+            shape = self.sketch.Geometry[target[0]].toShape()
+            end_points.append(shape.Vertexes[target[1] - 1].Point)
 
         #If only one tangentially-constrained curve was found,
         #Acquire the back_tangent's opposing vertex as the other end point
@@ -125,41 +121,40 @@ class Tangent():
 
             #get the tangenrt and curve geometry
             tangent = self.sketch.Geometry[index].toShape()
-            curve = self.sketch.Geometry[target[0]].toShape()
+            curve = self.sketch.Geometry[targets[0][0]].toShape()
             curve_center = curve.Curve.Center
 
             #create vectors to the ends of the tangent and ends of the curve
             #from the curve's center point
             curve_vec = [curve.Vertexes[0].Point.sub(curve_center), \
-                curve.Vertexes[1].Pointsub(curve_center)]
+                curve.Vertexes[1].Point.sub(curve_center)]
 
             tangent_vec = [tangent.Vertexes[0].Point.sub(curve_center), \
                 tangent.Vertexes[1].Point.sub(curve_center)]
-
-            end_point = None
 
             #compute cross-productes between the tangent and curve vectors
             #the tangent vector whose cross product does not change between
             #the curve vectors points to the tangent vertex we want
             for i in range(0,2):
 
-                is_reversed = False
+                is_reversed = True
                 direction = 0
 
                 for c_vec in curve_vec:
 
-                    result = self._get_sign(tangent_vec[i].cross(c_vec))
+                    result = self._get_sign(tangent_vec[i].cross(c_vec).z)
 
-                    if (direction == 0):
+                    if direction == 0:
                         direction = result
+                        continue
                     else:
-                        is_reversed = direction != result
+                        is_reversed = (direction != result)
                 
                     if not is_reversed:
-                        end_point.append(tangent.Vertexes[i].Point)
+                        end_points.append(tangent.Vertexes[i].Point)
                         break
                 
-                if (len(end_points)==2):
+                if len(end_points) == 2:
                     break
 
         return end_points
@@ -187,10 +182,10 @@ class Tangent():
         too many or too few are attached.
 
         Arguments:
-        selection - The selected geometry / index as a list.
+        selection - The selected geometry / index as a GeometryContainer
         """
 
-        index = selection[1]
+        index = selection.index
         attached = []
 
         #iterate the constraints, looking for attached geometry
@@ -198,7 +193,7 @@ class Tangent():
 
             #look for tangent constraints that are associated with the
             #selected geometry index and store that geometry
-            if constraint.Type == 5:
+            if constraint.Type == "Tangent":
 
                 if constraint.First == index or constraint.Second == index:
                     attached.append(constraint)        
@@ -217,11 +212,11 @@ class Tangent():
         geometry as curves (Part.ArcOfCircle).
 
         Arguments:
-        selection - The selected geometry / index as a list
+        selection - The selected geometry / index in a GeometryContainer
         constraints - list of constraints attached to selection
         """
 
-        index = selection[1]
+        index = selection.index
         geom = self.sketch.Geometry
 
         #validate attached geometry as arcs and return
@@ -235,11 +230,7 @@ class Tangent():
             elif constraint.Second == index:
                 target_idx = constraint.First
 
-            if target_idx == -1:
-                self._notify_error("Invalid_Attached_Geometry")
-                return None
-
-            if type(geom[target_idx]).__name__ != "Part.ArcOfCircle":
+            if type(geom[target_idx]).__name__ != "ArcOfCircle":
                 self._notify_error("Invalid_Attached_Geometry")
                 return None
 
@@ -294,19 +285,6 @@ class Tangent():
             message = "Attached elements are not curves."
             
         QtGui.QMessageBox.critical(None, title, message)
-
-        
-        #validate the selection, returning if invalid
-        #selected_geometry = self._getSelection()
-
-        #int count = len(selected_geometry)
-
-        #create the new geometry
-        #newGeometry = Part.LineSegment (
-         #   FreeCAD.Vector (0.0, 0.0), FreeCAD.Vector (1.0, 1.0))
-
-        #insert the geometry
-        #unless it's true north, then add a angle constraint
 
         return
 
