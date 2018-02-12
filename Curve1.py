@@ -68,12 +68,6 @@ class Curve1():
 
         constraints = []
 
-        #constraints.append(Sketcher.Constraint("PointOnObject", curve_index, \
-        #    1, back_tangents[0].index))
-
-        #constraints.append(Sketcher.Constraint("PointOnObject", curve_index, \
-        #    2, back_tangents[1].index))
-
         constraints.append(Sketcher.Constraint("Tangent", curve_index, \
             1, back_tangents[0].index))
 
