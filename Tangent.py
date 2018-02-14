@@ -62,7 +62,9 @@ class Tangent():
         #process selection, returning endpoints for the new tangent
         end_points = self._get_endpoints(selection[0], geom)
 
-        print end_points
+        #delete existing tangent constraints on the curve geometry
+        #and replace with coincident-to-object constraints
+        self._replace_curve_constraints(selection[0].index, constraints)
 
         #create a tangent line with end points which match the curve
         #endpoints or one of the tangent end points
@@ -79,12 +81,68 @@ class Tangent():
         App.ActiveDocument.recompute()
         return
 
+    def _replace_curve_constraints(self, index, constraints):
+        """
+        Replaces tangent constraints on attached curves with 
+        coincident-to-object constraints
+
+        Arguments:
+
+        index - index of the back tangent
+
+        constraints - A list of ElementContainers containing the constraint
+        object and it's index
+
+        Returns:
+
+        nothing
+        """
+
+        last_index = -1
+
+        for item in constraints:
+
+            constraint = item.element
+            target_geo_index = -1
+            target_point_index = -1
+
+            if constraint.First == index:
+                target_geo_index = constraint.Second
+                target_point_index = constraint.SecondPos
+
+            else:
+                target_geo_index = constraint.First
+                target_point_index = constraint.FirstPos
+
+            cur_index = item.index
+
+            print "deleting: " + str(item.index)
+            #test to see if the previous index was higher in the list
+            #if so, it's deletion changed the current index
+            if (last_index > -1) and (cur_index >= last_index):
+                cur_index -= 1
+            else:
+                last_index = cur_index
+
+            self.sketch.delConstraint(cur_index)
+
+            pt_on_obj = Sketcher.Constraint("PointOnObject",target_geo_index,\
+            target_point_index, index)
+
+            self.sketch.addConstraint(pt_on_obj)
+
+            App.ActiveDocument.recompute()
+
+        return
+
     def _attach_tangent(self, new_index, end_points):
         """
         Attaches the new tangent line to the approrpiate geometry.
         If two curves are present, attaches to the ends of the curves.
         Otherwise, if only one curve is present, attaches to the end
-        of the curve and the opposing end of the selection
+        of the curve and the opposing end of the selection.
+        Further, existing tangent constraints on the existing curves
+        must be deleted and replaced with coincident-to-object constraints
 
         Arguments:
         new_index - the index of the newly-created tangent
@@ -181,7 +239,9 @@ class Tangent():
         index = selection.index
 
         #Retrieve the attached geometry and the corresponding end points
-        for constraint in constraints:
+        for item in constraints:
+
+            constraint = item.element
 
             #store the indices of the geometry and the
             #constrained point
@@ -215,7 +275,6 @@ class Tangent():
         #iterate the accumulated targets, acquiring the needed end points
         for geom in attached:
 
-            shape = self.sketch.Geometry[geom[0]].toShape()
             end_point = [geom[0], geom[1] - 1]
             end_points.append(end_point)
 
@@ -294,14 +353,16 @@ class Tangent():
         attached = []
 
         #iterate the constraints, looking for attached geometry
-        for constraint in self.sketch.Constraints:
+        for i in range(0, len(self.sketch.Constraints)):
+
+            constraint = self.sketch.Constraints[i]
 
             #look for tangent constraints that are associated with the
             #selected geometry index and store that geometry
             if constraint.Type == "Tangent":
 
                 if constraint.First == index or constraint.Second == index:
-                    attached.append(constraint)        
+                    attached.append(GeoUtils.ElementContainer(constraint, i))
 
         #abort if no geometry is attached or if more than two tangent
         #constraints are applied
@@ -318,14 +379,18 @@ class Tangent():
 
         Arguments:
         selection - The selected geometry / index in a GeometryContainer
-        constraints - list of constraints attached to selection
+        constraints - ElementContainer of constraints and indices
         """
 
         index = selection.index
         geom = self.sketch.Geometry
 
+        print constraints[0].index
+
         #validate attached geometry as arcs and return
-        for constraint in constraints:
+        for item in constraints:
+
+            constraint = item.element
 
             target_idx = -1
 
@@ -358,8 +423,8 @@ class Tangent():
         #selection must be a construction mode line segment
         geo = selection[0]
 
-        if (not geo.geometry.Construction) or \
-        (type(geo.geometry).__name__ != "LineSegment"):
+        if (not geo.element.Construction) or \
+        (type(geo.element).__name__ != "LineSegment"):
 
             self._notify_error("Invalid_Geometry")
             return None
