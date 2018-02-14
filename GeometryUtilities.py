@@ -18,13 +18,13 @@ UNIT_Y = App.Vector(0.0, 1.0, 0.0)
 UNIT_Z = App.Vector(0.0, 0.0, 1.0)
 ORIGIN = App.Vector(0.0, 0.0, 0.0)
 
-class GeometryContainer():
+class ElementContainer():
     """
     A data type for storing the active selection by the types of objects selected.
     """
 
     def __init__(self, geometry, index):
-        self.geometry = geometry
+        self.element = geometry
         self.index = index
 
 def _get_pt_of_int(back_tangents):
@@ -251,7 +251,7 @@ def find_geometry(sketch_object, shape_name):
 
     #return a GeometryContainer object with a reference to the geometry
     #and it's index in the Geometry list
-    return GeometryContainer(sketch_object.Geometry[index-1], index-1)
+    return ElementContainer(sketch_object.Geometry[index-1], index-1)
 
 def get_selection(sketch_object):
     """
