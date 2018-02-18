@@ -11,7 +11,7 @@ class NewAlignment():
     
         icon_path = os.path.dirname(os.path.abspath(__file__))
 
-        icon_path += "/icons/new_alignment_2.svg"
+        icon_path += "/icons/new_alignment.svg"
 
         return {'Pixmap'  : icon_path,
                 'Accel' : "Shift+N",
