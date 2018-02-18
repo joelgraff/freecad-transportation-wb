@@ -8,6 +8,7 @@ import FreeCADGui as Gui
 import GeometryUtilities as GeoUtils
 import Part
 import Sketcher
+import os
 
 #pylint: disable=E1601
 
@@ -20,7 +21,12 @@ class Tangent():
         """
         Icon resources.
         """
-        return {'Pixmap'  : 'My_Command_Icon',
+
+        icon_path = os.path.dirname(os.path.abspath(__file__))
+
+        icon_path += "/icons/tangent.svg"
+
+        return {'Pixmap'  : icon_path,
                 'Accel' : "Shift+T",
                 'MenuText': "Tangent",
                 'ToolTip' : "Add a tangent",

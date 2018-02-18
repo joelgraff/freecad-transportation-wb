@@ -3,11 +3,17 @@ import FreeCAD as App
 import Part
 import FreeCADGui as Gui
 import FeedbackSketcherUtils
+import os
 
 class NewAlignment():
 
     def GetResources(self):
-        return {'Pixmap'  : 'My_Command_Icon',
+    
+        icon_path = os.path.dirname(os.path.abspath(__file__))
+
+        icon_path += "/icons/new_alignment_2.svg"
+
+        return {'Pixmap'  : icon_path,
                 'Accel' : "Shift+N",
                 'MenuText': "New Alignment",
                 'ToolTip' : "Create a new alignment and make it active",

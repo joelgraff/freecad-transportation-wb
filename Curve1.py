@@ -4,6 +4,7 @@ import FreeCAD as App
 import GeometryUtilities as GeoUtils
 import Sketcher
 import MathLine
+import os
 
 #pylint: disable=E1601
 
@@ -14,7 +15,12 @@ class Curve1():
     """
 
     def GetResources(self):
-        return {'Pixmap'  : 'My_Command_Icon',
+
+        icon_path = os.path.dirname(os.path.abspath(__file__))
+
+        icon_path += "/icons/one_center_curve.svg"
+
+        return {'Pixmap'  : icon_path,
                 'Accel' : "Shift+1",
                 'MenuText': "One-Center Curve",
                 'ToolTip' : "Add a one-center curve",
