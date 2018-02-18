@@ -209,16 +209,16 @@ def validate_selection(sketch):
         
     return None
 
-    def _notify_error(error_type):
+def _notify_error(error_type):
 
-        title = error_type + " Error"
-        message = "UNDEFINED ERROR"
+    title = error_type + " Error"
+    message = "UNDEFINED ERROR"
 
-        if error_type == "Selection":
-            message = "Select two adjacent back tangents to place curve\n \
-            (construction line segments)"
+    if error_type == "Selection":
+        message = "Select two adjacent back tangents to place curve\n \
+        (construction line segments)"
 
-        elif error_type == "Invalid_Geometry":
-            message = "Selected elements have incorrect geometry"
+    elif error_type == "Invalid_Geometry":
+        message = "Selected elements have incorrect geometry"
 
-        QtGui.QMessageBox.critical(None, title, message)
+    QtGui.QMessageBox.critical(None, title, message)
