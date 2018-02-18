@@ -102,8 +102,8 @@ class Curve1():
         #selections must be construction mode and line segments
         for geo in selection:
 
-            if (not geo.geometry.Construction) or \
-            (type(geo.geometry).__name__ != "LineSegment"):
+            if (not geo.element.Construction) or \
+            (type(geo.element).__name__ != "LineSegment"):
 
                 self._notify_error("Invalid Geometry")
                 return None

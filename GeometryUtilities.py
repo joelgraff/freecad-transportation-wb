@@ -34,17 +34,17 @@ def _get_pt_of_int(back_tangents):
 
     #assume point of intersection is the end point of the
     #first-selected back tangent
-    pt_of_int = back_tangents[0].geometry.EndPoint
+    pt_of_int = back_tangents[0].element.EndPoint
 
-    other = back_tangents[0].geometry.StartPoint
+    other = back_tangents[0].element.StartPoint
 
     #test to see if the other point is coincident with
     #the either point on the other back tangent
     #Equality test must accommodate small floating piont error
-    if (other - back_tangents[1].geometry.EndPoint).Length < 0.00001:
+    if (other - back_tangents[1].element.EndPoint).Length < 0.00001:
         pt_of_int = other
 
-    elif (other - back_tangents[1].geometry.StartPoint).Length < 0.00001:
+    elif (other - back_tangents[1].element.StartPoint).Length < 0.00001:
         pt_of_int = other
 
     return pt_of_int
@@ -122,11 +122,11 @@ def _get_vectors(back_tangents, pt_of_int):
     #iterate each tangent, converting it into a directed vector
     #toward the point of intersection
     for tangent in back_tangents:
-        point = tangent.geometry.StartPoint
+        point = tangent.element.StartPoint
 
         #test for equality must accommodate small floating point error
         if (point - pt_of_int).Length < 0.00001:
-            point = tangent.geometry.EndPoint
+            point = tangent.element.EndPoint
 
         vec = App.Vector(pt_of_int.sub(point))
         result.append(vec)
