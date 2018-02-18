@@ -1,7 +1,7 @@
-from PySide import QtGui
 import FreeCADGui as Gui
 import FreeCAD as App
 import GeometryUtilities as GeoUtils
+import CurveUtilities as CurveUtils
 import Sketcher
 import MathLine
 import os
@@ -29,18 +29,18 @@ class Curve1():
     def Activated(self):
 
         if Gui.Selection.getSelection() == []:
-            self._notify_error("Selection")
+            return
 
         self.sketch = Gui.Selection.getSelection()[0]
 
         #abort if two adjacent back tangents are not selected
-        back_tangents = self._validate_selection()
+        back_tangents = CurveUtils.validate_selection(self.sketch)
 
         if back_tangents is None:
             return
 
         #build he arc, oriented w.r.t. the selected back tangents
-        result = GeoUtils.create_arc(back_tangents)
+        result = CurveUtils.create_arc(back_tangents)
 
         arc = result[0]
 
@@ -87,63 +87,5 @@ class Curve1():
         for constraint in constraints:
             self.sketch.addConstraint(constraint)
             App.ActiveDocument.recompute()
-
-    def _validate_selection(self):
-
-        #get the selected objects as GeometryContainer objects
-        selection = GeoUtils.get_selection(self.sketch)
-
-        #need to have exactly two selections
-        if len(selection) != 2:
-
-            self._notify_error("Selection")
-            return None
-
-        #selections must be construction mode and line segments
-        for geo in selection:
-
-            if (not geo.geometry.Construction) or \
-            (type(geo.geometry).__name__ != "LineSegment"):
-
-                self._notify_error("Invalid Geometry")
-                return None
-
-        #selections must be adjacent
-        for constraint in self.sketch.Constraints:
-
-            content = GeoUtils.getConstraintContent(constraint)
-
-            if content["Type"] != "1":
-                continue
-
-            if constraint.First != selection[0].index:
-                if constraint.Second != selection[0].index:
-                    continue
-
-            if constraint.First != selection[1].index:
-                if constraint.Second != selection[1].index:
-                    continue
-
-            #if we made it this far, the constraint is coincident and
-            #binds both selection elements.  We're done.
-            return selection
-
-        self._notify_error("")
-        
-        return None
-
-    def _notify_error(self, error_type):
-
-        title = error_type + " Error"
-        message = "UNDEFINED ERROR"
-
-        if error_type == "Selection":
-            message = "Select two adjacent back tangents to place curve\n \
-            (construction line segments)"
-
-        elif error_type == "Invalid_Geometry":
-            message = "Selected elements have incorrect geometry"
-
-        QtGui.QMessageBox.critical(None, title, message)
 
 Gui.addCommand('Curve1',Curve1()) 
