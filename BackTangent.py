@@ -1,5 +1,5 @@
 """
-Creates tanget alignment geometry for the Transportation wb
+Creates tangent alignment geometry for the Transportation wb
 """
 from PySide import QtGui
 import FreeCAD as App
