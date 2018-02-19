@@ -1,7 +1,7 @@
-from PySide import QtGui
 import FreeCADGui as Gui
 import FreeCAD as App
 import GeometryUtilities as GeoUtils
+import CurveUtilities as CurveUtils
 import Sketcher
 import MathLine
 import os
@@ -29,18 +29,18 @@ class Curve1():
     def Activated(self):
 
         if Gui.Selection.getSelection() == []:
-            self._notify_error("Selection")
+            return
 
         self.sketch = Gui.Selection.getSelection()[0]
 
         #abort if two adjacent back tangents are not selected
-        back_tangents = self._validate_selection()
+        back_tangents = CurveUtils.validate_selection(self.sketch)
 
         if back_tangents is None:
             return
 
         #build he arc, oriented w.r.t. the selected back tangents
-        result = GeoUtils.create_arc(back_tangents)
+        result = CurveUtils.create_arc(back_tangents)
 
         arc = result[0]
 

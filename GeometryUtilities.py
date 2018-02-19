@@ -1,22 +1,13 @@
 """
-Provides basic selection services for the Transportation Workbench.
-These services include selection validation for specific operations (append/
-insert), as well as testing for specific conditions (connected/constrained geometry)
+Provides basic geometry utilities for Sketcher.
 """
 
 #pylint: disable=E1601
 
 import re
-import math
 import FreeCADGui as Gui
 import FreeCAD as App
-import Part
 import MathLine
-
-UNIT_X = App.Vector(1.0, 0.0, 0.0)
-UNIT_Y = App.Vector(0.0, 1.0, 0.0)
-UNIT_Z = App.Vector(0.0, 0.0, 1.0)
-ORIGIN = App.Vector(0.0, 0.0, 0.0)
 
 class ElementContainer():
     """
@@ -92,25 +83,6 @@ def _get_shorter(vectors):
 
     return vectors[1]
     
-def _sort_vectors(vectors):
-    """
-    Takes a list of two App.Vectors and orders them
-    such that the first is rotated counterclockwise from the second.
-    """
-
-    vec0 = vectors[0]
-    vec1 = vectors[1]
-
-    cross_product = vec0.cross(vectors[1])
-
-    result = [vec0, vec1]
-
-    if cross_product.z > 0.0:
-
-        result = [vec1, vec0]
-
-    return result
-    
 def _get_vectors(back_tangents, pt_of_int):
     """
     Convert geometry container objects to App.Vectors
@@ -152,91 +124,6 @@ def _compare_vectors(lhs, rhs):
         return 1
 
     return 0
-
-def create_arc(back_tangents):
-    """
-    Generate arc parameters based on the passed tangents.
-    Parameters create an arc which fits the internal angle of the
-    tangents.
-    """
-
-    #get the point of intersection
-    pt_of_int = _get_pt_of_int(back_tangents)
-
-    #get directed vectors from the point of intersection
-    vectors = _get_vectors(back_tangents, pt_of_int)
-
-    #sort the vectors such that the first one is the starting vector for
-    #the arc's counter-clockwise rotation
-    result = _sort_vectors(vectors)
-
-    #note if the vectors have been swapped
-    swapped_tangents = _compare_vectors (result[0], vectors[0])
-
-    vectors = result
-
-    #get the length of the shorter back_tangnet, and
-    #reduce to 3/8th's original size
-    length = _get_shorter(vectors).Length * 0.375
-
-    #normalize and scale the vectors for the default back tangent length
-    for i in range(0,2):
-        print str(vectors[i])
-        vectors[i].normalize()
-        vectors[i].multiply(length)
-
-    #calculate the radius points back from the point of intersection
-    #along the directed vectors
-    radius_points = []
-
-    for vec in vectors:
-        radius_points.append(pt_of_int.sub(vec))
-
-    #generate two MathLine objects based on the actual geometry
-    #but with the starting points set at the point of intersection
-    math_lines = _get_math_lines(vectors, pt_of_int)
-
-    ortho_lines = []
-    ortho_vectors = []
-
-    #get the orthogonal lines using the radius points
-    for i in range(0, 2):
-        ortho_lines.append(math_lines[i].get_orthogonal(radius_points[i]))
-
-    #calculate the point of intersection between the two orhogonal lines
-    #and save the result as the arc's center point
-    center_point = ortho_lines[0].intersect(ortho_lines[1])
-
-    ortho_vectors = [radius_points[0].sub(center_point), \
-        radius_points[1].sub(center_point)]
-
-    offset = 0.0
-    start_ortho = ortho_vectors[0]
-
-    if radius_points[0].y > pt_of_int.y:
-        offset = math.pi
-
-    start_angle = math.pi / 2.0
-
-    if start_ortho.x == 0.0:
-        if start_ortho.y < 0.0:
-            start_angle *= -1.0
-
-    if ortho_vectors[0].x != 0.0:
-        start_angle = offset+math.atan(ortho_vectors[0].y / ortho_vectors[0].x)
-
-    sweep_angle = ortho_vectors[1].getAngle(ortho_vectors[0]) + start_angle
-
-    circle_part = Part.Circle(center_point, UNIT_Z, ortho_vectors[0].Length)
-
-    result = []
-
-    #return a list with the resulting arc and a boolean indicating whether
-    #or not the tangent order was swapped
-    result.append (Part.ArcOfCircle(circle_part, start_angle, sweep_angle))
-    result.append (swapped_tangents)
-
-    return result
 
 def find_geometry(sketch_object, shape_name):
     """
@@ -289,8 +176,12 @@ def compare(geom_1, geom_2):
 
     return True
 
-def getConstraintContent(constriant):
+def getCostraintContent(constriant):
 
+    """
+    Deprecated function which retrives
+    contraint properties from content attribute
+    """
     contents = constriant.Content
     values = contents.split(" ")
     result = {}
