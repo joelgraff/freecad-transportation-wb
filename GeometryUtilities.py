@@ -137,6 +137,10 @@ def compare(geom_1, geom_2):
 
 def getCostraintContent(constriant):
 
+    """
+    Deprecated function which retrives
+    contraint properties from content attribute
+    """
     contents = constriant.Content
     values = contents.split(" ")
     result = {}
