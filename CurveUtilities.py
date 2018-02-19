@@ -188,9 +188,7 @@ def validate_selection(sketch):
     #selections must be adjacent
     for constraint in sketch.Constraints:
 
-        content = GeoUtils.getConstraintContent(constraint)
-
-        if content["Type"] != "1":
+        if constraint.Type == 1:
             continue
 
         if constraint.First != selection[0].index:

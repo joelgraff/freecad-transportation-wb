@@ -135,7 +135,7 @@ def compare(geom_1, geom_2):
 
     return True
 
-def getConstraintContent(constriant):
+def getCostraintContent(constriant):
 
     contents = constriant.Content
     values = contents.split(" ")
