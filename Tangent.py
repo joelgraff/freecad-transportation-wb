@@ -158,6 +158,7 @@ class Tangent():
 
         tangent = self.sketch.Geometry[new_index].toShape()
 
+        print "new_index: " + str(new_index)
         print "tangent: " + str(tangent)
 
         print "end points: " + str(end_points)
@@ -178,8 +179,10 @@ class Tangent():
 
                 print "tangent vtx" + str(i) + ": " + str (tangent.Vertexes[i].Point)
 
-                if vtx.Point == tangent.Vertexes[i].Point:
+                result = GeoUtils._compare_vectors(vtx.Point, tangent.Vertexes[i].Point)
 
+                if result == 0:
+                    
                     point_1 = [index[0], index[1]]
                     point_2 = [new_index, i]
                     point_pair = [point_1, point_2]
@@ -189,6 +192,8 @@ class Tangent():
 
         #iterate the pairs, build the constraints, and add them to the sketch
         for pair in indices:
+
+            print str(pair)
 
             geom = self.sketch.Geometry[pair[0][0]]
 
