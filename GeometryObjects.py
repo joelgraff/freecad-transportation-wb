@@ -71,14 +71,14 @@ class Line2d(object):
 
         vtx = line_segment.toShape().Vertexes
 
-        return Line2d(vtx[0], vtx[1])
+        return Line2d(vtx[0].Point, vtx[1].Point)
 
     def to_line_segment(self):
         """
         Returns the current line as a Part.LineSegment
         """
 
-        result = Part.LineSegment(self.start_point, self.end_point)
+        return Part.LineSegment(self.start_point, self.end_point)
 
     def fn_x (self, _x):
         """
