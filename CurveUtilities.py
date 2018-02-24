@@ -9,7 +9,7 @@ import math
 import GeometryUtilities as GeoUtils
 import FreeCAD as App
 import Part
-import MathLine
+import GeometryObjects
 
 UNIT_X = App.Vector(1.0, 0.0, 0.0)
 UNIT_Y = App.Vector(0.0, 1.0, 0.0)
@@ -57,7 +57,7 @@ def _get_arc_angles(vectors):
 
     return angles
 
-def _sort_vectors(vectors):
+def sort_vectors(vectors):
     """
     Takes a list of two App.Vectors and orders them
     such that the first is rotated counterclockwise from the second.
@@ -91,10 +91,10 @@ def create_arc(back_tangents):
 
     #sort the vectors such that the first one is the starting vector for
     #the arc's counter-clockwise rotation
-    result = _sort_vectors(vectors)
+    result = sort_vectors(vectors)
 
     #note if the vectors have been swapped
-    swapped_tangents = GeoUtils._compare_vectors (result[0], vectors[0])
+    swapped_tangents = GeoUtils.compare_vectors (result[0], vectors[0])
 
     vectors = result
 
@@ -154,10 +154,9 @@ def create_arc(back_tangents):
 
     result = []
 
-    #return a list with the resulting arc and a boolean indicating whether
-    #or not the tangent order was swapped
+    #return a list with the resulting arc and the vectors in proper order
     result.append (Part.ArcOfCircle(circle_part, start_angle, sweep_angle))
-    result.append (swapped_tangents)
+    result.append (vectors)
 
     return result
 
