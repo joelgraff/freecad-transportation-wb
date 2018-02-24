@@ -7,7 +7,13 @@ Provides basic geometry utilities for Sketcher.
 import re
 import FreeCADGui as Gui
 import FreeCAD as App
-import MathLine
+import GeometryObjects
+import math
+
+UNIT_X = App.Vector(1.0, 0.0, 0.0)
+UNIT_Y = App.Vector(0.0, 1.0, 0.0)
+UNIT_Z = App.Vector(0.0, 0.0, 1.0)
+ORIGIN = App.Vector(0.0, 0.0, 0.0)
 
 class ElementContainer():
     """
@@ -68,7 +74,7 @@ def _get_math_lines(vectors, point):
     result = []
 
     for vec in vectors:
-        start = point - vec
+        start = point.sub(vec)
         result.append(MathLine.MathLine(start, point))
 
     return result
@@ -105,25 +111,20 @@ def _get_vectors(back_tangents, pt_of_int):
 
     return result
 
-def _compare_vectors(lhs, rhs):
+def compare_vectors(lhs, rhs):
     """
-    Compares the length of two vectors.  If the length
-    is less than 0.00001 (1 * 10^-5), they are equivalent.
-    Retruns:
-    0 - equivalent
-    -1 - lhs < rhs
-    1 - lhs > rhs
+    Compares the length of two vectors.  If the difference between
+    individual points is less than 0.00001 (1 * 10^-5), they are equivalent.
+
+    Returns:
+    True / False if identical / different
     """
 
-    delta = lhs.Length - rhs.Length
+    for i in range (0,3):
+        if abs(lhs[i] - rhs[i]) > 0.00001:
+            return False
 
-    if delta < 0.0:
-        return -1
-
-    if delta > 0.00001:
-        return 1
-
-    return 0
+    return True
 
 def find_geometry(sketch_object, shape_name):
     """
@@ -139,6 +140,35 @@ def find_geometry(sketch_object, shape_name):
     #return a GeometryContainer object with a reference to the geometry
     #and it's index in the Geometry list
     return ElementContainer(sketch_object.Geometry[index-1], index-1)
+
+def get_intersection (line, point, vector):
+    """
+    Calculates the point of intersection between the passed line
+    segment and the point / direction vector combination
+
+    Arguments:
+    line - A Part.LineSegment object
+    point - An App.Vector representing a point
+    vector - An App.Vector representing a direction
+
+    Returns:
+    App.Vector point of intersection
+    """
+
+    slope_1 = (line.EndPoint.y - line.StartPoint.y) / \
+    (line.EndPoint.x - line.StartPoint.x)
+
+    slope_2 = vector.y / vector.x
+
+    intercept_1 = line.EndPoint.y - (slope_1 * line.EndPoint.x)
+    intercept_2 = vector.y - (slope_2 * vector.x)
+
+    intersection = App.Vector(0.0, 0.0, 0.0)
+
+    intersection.x = (intercept_2 - intercept_1) / (slope_1 - slope_2)
+    intersection.y = (slope_1 * intersection.x) + intercept_1
+
+    return intersection
 
 def get_selection(sketch_object):
     """
@@ -176,11 +206,12 @@ def compare(geom_1, geom_2):
 
     return True
 
-def getCostraintContent(constriant):
+def getConstraintContent(constriant):
 
     """
     Deprecated function which retrives
-    contraint properties from content attribute
+    contraint properties from content attribute.
+    Use only for properties not exposed as attributes
     """
     contents = constriant.Content
     values = contents.split(" ")
