@@ -9,20 +9,12 @@ import FreeCADGui as Gui
 import FreeCAD as App
 import GeometryObjects
 import math
+import SketchElement as skel
 
 UNIT_X = App.Vector(1.0, 0.0, 0.0)
 UNIT_Y = App.Vector(0.0, 1.0, 0.0)
 UNIT_Z = App.Vector(0.0, 0.0, 1.0)
 ORIGIN = App.Vector(0.0, 0.0, 0.0)
-
-class ElementContainer():
-    """
-    A data type for storing the active selection by the types of objects selected.
-    """
-
-    def __init__(self, geometry, index):
-        self.element = geometry
-        self.index = index
 
 def _get_pt_of_int(back_tangents):
     """
@@ -64,20 +56,6 @@ def _get_arc_angles(vectors):
     angles = [start_angle, sweep_angle]
 
     return angles
-
-def _get_math_lines(vectors, point):
-    """
-    Given a list of line segment geometry, generate
-    and return a corresponding list of math line objects
-    whose end points converge on the passed point
-    """
-    result = []
-
-    for vec in vectors:
-        start = point.sub(vec)
-        result.append(MathLine.MathLine(start, point))
-
-    return result
 
 def _get_shorter(vectors):
     """
@@ -139,7 +117,7 @@ def find_geometry(sketch_object, shape_name):
 
     #return a GeometryContainer object with a reference to the geometry
     #and it's index in the Geometry list
-    return ElementContainer(sketch_object.Geometry[index-1], index-1)
+    return skel.SketchElement(sketch_object.Geometry[index-1], index-1)
 
 def get_intersection (line, point, vector):
     """
