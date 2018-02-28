@@ -1,5 +1,5 @@
 """
-Creates tanget alignment geometry for the Transportation wb
+Creates tangent alignment geometry for the Transportation wb
 """
 
 from PySide import QtGui
@@ -45,7 +45,7 @@ class Tangent():
         #validate, ensuring no inappropriate constraints
         selection = self._validate_selection()
         
-        #result from an invalid selction
+        #result from an invalid selection
         if selection == None:
             return
 
@@ -220,7 +220,7 @@ class Tangent():
         Iterates the constraints and returns a list of the
         geometry which is attached to the selection.
 
-        Arguements:
+        Arguments:
 
         selection - the selected back tangent (GeometryContainer)
         constraints - List of Sketcher::Constraints attached to back tangent

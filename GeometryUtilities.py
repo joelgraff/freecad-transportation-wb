@@ -37,7 +37,7 @@ def _get_pt_of_int(back_tangents):
 
     #test to see if the other point is coincident with
     #the either point on the other back tangent
-    #Equality test must accommodate small floating piont error
+    #Equality test must accommodate small floating point error
     if (other - back_tangents[1].element.EndPoint).Length < 0.00001:
         pt_of_int = other
 
@@ -234,7 +234,7 @@ def get_unconstrained_vertices(sketch_object, geometry_container):
     vertices = [True, True]
     falses = [False, False]
 
-    #iterate the constraints, looking for contraints which are attached
+    #iterate the constraints, looking for constraints which are attached
     #to the passed geometry.  Set the corresponding vertex index to False
     for constraint in sketch_object.Constraints:
 
