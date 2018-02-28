@@ -12,6 +12,7 @@ import CurveUtilities as CurveUtils
 import os
 import Part
 import Sketcher
+import SketchElement as Skel
 
 #pylint: disable=E1601
 
@@ -275,27 +276,15 @@ class InsertCurve():
         opp_tan_idx = 0
 
         #get ElementContainer list of all constraints attached to the arc
-        constraints = GeoUtils.get_geometry_constraints(self.sketch, arc.index)
+        #constraints = GeoUtils.get_geometry_constraints(self.sketch, arc.index)
 
         #iterate the constraints to determine our opposing tangent
-        for constraint in constraints:
+        #for constraint in constraints:
 
             #coincident constraints bind two curve endpoints
             #get opposing curve, and find the tangent constraint that
             #binds it to the tangent
-            if constraint.Type == "Coincident":
 
-                opp_curve = GeoUtils.get_constraint_geometry(self.sketch, \
-                constraint, arc.index)[0]
-
-                opp_constr = GeoUtils.get_geometry_constraints(self.sketch, \
-                opp_curve.index)
-
-                
-                for _c in opp_constr:
-
-                    geo = GeoUtils.get_constraint_geometry(self.sketch, _c, \
-                    opp_curve.index)
 
         #iterate the constraints looking for the tangent constraints
         #which are applied to the curve
