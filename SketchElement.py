@@ -24,7 +24,7 @@ class SketchElement():
     Resolves any references in the passed element to geometry and vertex vectors
     
     Arguments:
-    consgtraint - A Sketcher constraint
+    constraint - A Sketcher constraint
     
     Returns:
     List of geometry / vertex pairs accessible as:
