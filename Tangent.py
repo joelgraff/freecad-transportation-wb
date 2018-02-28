@@ -9,6 +9,7 @@ import GeometryUtilities as GeoUtils
 import Part
 import Sketcher
 import os
+import SketchElement as skel
 
 #pylint: disable=E1601
 
@@ -140,7 +141,7 @@ class Tangent():
 
     def _attach_tangent(self, new_index, end_points):
         """
-        Attaches the new tangent line to the approrpiate geometry.
+        Attaches the new tangent line to the appropriate geometry.
         If two curves are present, attaches to the ends of the curves.
         Otherwise, if only one curve is present, attaches to the end
         of the curve and the opposing end of the selection.
@@ -227,7 +228,7 @@ class Tangent():
 
         Returns:
 
-        list of geometry / endoint pairs
+        list of geometry / endpoint pairs
         """
 
         attached = []
@@ -253,7 +254,7 @@ class Tangent():
         """
         Finds the two endpoints along the back tangent for the new tangent.
         Valid cases include two curve endpoints and a single curve endpoint
-        with the opposing back tangent vertex as the other endopint.
+        with the opposing back tangent vertex as the other endpoint.
 
         Arguments:
         selection - The selected geometry / index as a GeometryContainer
@@ -277,7 +278,7 @@ class Tangent():
         #Acquire the back_tangent's opposing vertex as the other end point
         if len(end_points) == 1:
 
-            #get the tangenrt and curve geometry
+            #get the tangent and curve geometry
             tangent = self.sketch.Geometry[index].toShape()
             curve = self.sketch.Geometry[attached[0][0]].toShape()
             curve_center = curve.Curve.Center
@@ -290,7 +291,7 @@ class Tangent():
             tangent_vec = [tangent.Vertexes[0].Point.sub(curve_center), \
                 tangent.Vertexes[1].Point.sub(curve_center)]
 
-            #compute cross-productes between the tangent and curve vectors
+            #compute cross-produces between the tangent and curve vectors
             #the tangent vector whose cross product does not change between
             #the curve vectors points to the tangent vertex we want
             for i in range(0,2):
@@ -357,7 +358,7 @@ class Tangent():
             if constraint.Type == "Tangent":
 
                 if constraint.First == index or constraint.Second == index:
-                    attached.append(GeoUtils.ElementContainer(constraint, i))
+                    attached.append(skel.SketchElement(constraint, i))
 
         #abort if no geometry is attached or if more than two tangent
         #constraints are applied
