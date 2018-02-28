@@ -6,6 +6,73 @@ Provides a mathematically-defined geometry objects.
 
 import FreeCAD as App
 import Part
+import GeometryUtilities as GeoUtils
+
+class Curve2d(object):
+    """
+    Provides convenience functions for manipulating Part.ArcOfCircle
+    objects.
+    """
+
+    def __init__(self, curve):
+        """
+        Initializes the Curve2d object based on the passed curve
+
+        Arguments:
+        curve - the curve as a Part.ArcOfCircle
+        """
+
+        self.curve = curve
+        
+        self.parameters = [curve.FirstParameter, curve.LastParameter]
+
+        self._get_points()
+
+        self.sweep_angle = curve.LastParameter - curve.FirstParameter
+
+    def _get_points(self):
+
+        verts = self.curve.toShape().Vertexes
+        start_vec = self.curve.value(self.curve.FirstParameter)
+        end_vec = self.curve.value(self.curve.LastParameter)
+
+        for i in range(0, len(verts)):
+
+            v = verts[i].Point
+
+            if GeoUtils.compare_vectors(v, start_vec):
+                self.start_point = v
+                self.start_index = i
+
+            elif GeoUtils.compare_vectors(v, end_vec):
+                self.end_point = v
+                self.end_index = i
+
+        self.points = [self.start_point, self.end_point]
+
+    def from_vertex_index(self, index):
+        """
+        Gets the geometrically-ordered curve point index from the 
+        passed vertex index.
+
+        Arguments:
+        index - the index of the curve's vertex
+
+        Returns:
+        Curve index, 0 == self.start_point; 1 == self.end_point
+        """
+
+        print "start: " + str(self.start_point)
+        print "end: " + str(self.end_point)
+
+        vtx = self.curve.toShape().Vertexes[index].Point
+        print "vertex: " + str(vtx)
+        result = 0
+
+        if GeoUtils.compare_vectors(vtx, self.end_point):
+            result = 1
+
+        return result
 
 class Line2d(object):
     """
