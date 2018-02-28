@@ -12,7 +12,7 @@ import CurveUtilities as CurveUtils
 import os
 import Part
 import Sketcher
-import SketchElement as Skel
+import SketchElement as skel
 
 #pylint: disable=E1601
 
@@ -65,6 +65,7 @@ class InsertCurve():
             if geo_dict["end_tangent"] == None:
                 return
 
+            print geo_dict["constraint"].element.Content
             #determine the index of the constrained point
             constrained_index = \
                 self._get_constrained_index(geo_dict["constraint"])
@@ -108,7 +109,7 @@ class InsertCurve():
         factor - The adjustment factor
 
         Returns:
-        The geoemetry dictionary with the adjusted arc as an ElementContainer
+        The geometry dictionary with the adjusted arc as an ElementContainer
         object.
         """
 
@@ -131,10 +132,6 @@ class InsertCurve():
             _u = arc.element.LastParameter - delta_angle
 
         point = arc.element.value(_u)
-
-        print "parameter: " + str(_u)
-        print "point: " + str(point)
-        print "index: " + str(idx)
 
         #move the point, update the dictionary, and return
         self.sketch.movePoint(arc.index, idx + 1, point, 0)
@@ -166,7 +163,7 @@ class InsertCurve():
     def _generate_new_back_tangent(self, geo_dict, constrained_index):
         """
         Generates a new back tangent based upon the passed
-        arc and adoining back tangents
+        arc and adjoining back tangents
 
         Arguments:
         geo_dict - Geometry dictionary
@@ -186,6 +183,8 @@ class InsertCurve():
         #get the geometrically-ordered curve index
         idx = curve_2d.from_vertex_index(constrained_index)
 
+        print "index: " + str(idx)
+
         #get the tangent vector and the curve point it passes through
         tan_vec = arc.element.tangent(curve_2d.parameters[idx])[0]
         curve_point = curve_2d.points[idx]
@@ -198,7 +197,7 @@ class InsertCurve():
         end_tan_line = GeoObj.Line2d.from_line_segment(end_tangent.element)
 
         #set the new tangent line's start end end points to the
-        #intersection of the new tangent line and the exinsting tangents
+        #intersection of the new tangent line and the existing tangents
         new_tan_line.start_point = new_tan_line.intersect(start_tan_line)
         new_tan_line.end_point = new_tan_line.intersect(end_tan_line)
 
@@ -229,7 +228,7 @@ class InsertCurve():
 
         App.ActiveDocument.recompute()
 
-        return GeoUtils.ElementContainer(new_tangent, new_tan_idx)
+        return skel.SketchElement(new_tangent, new_tan_idx)
 
     def _get_back_tangents(self, selection):
         """
@@ -311,7 +310,7 @@ class InsertCurve():
                 if tan_idx > 0:
 
                     if tan_idx == back_tangents[0].index:
-                        result["constraint"] = GeoUtils.ElementContainer\
+                        result["constraint"] = skel.SketchElement\
                         (constraint, i)
 
                     if tan_idx != back_tangents[0].index:
@@ -320,7 +319,7 @@ class InsertCurve():
         #if we found the opposing back tangent, save it in an ElementContainer
         if opp_tan_idx > 0:
 
-            result["end_tangent"] = GeoUtils.ElementContainer\
+            result["end_tangent"] = skel.SketchElement\
             (self.sketch.Geometry[opp_tan_idx], opp_tan_idx)
 
         return result
@@ -449,7 +448,7 @@ class InsertCurve():
             if not is_valid:
                 continue
 
-            result.append (GeoUtils.ElementContainer(constraint, i))
+            result.append (skel.SketchElement(constraint, i))
         
         return result
 
