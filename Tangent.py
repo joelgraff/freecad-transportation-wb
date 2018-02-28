@@ -50,7 +50,7 @@ class Tangent():
             return
 
         #validate the attached constrains as tangents, that only one or two
-        #are attached, and that their adjoinging geometry are Part.ArcOfCircle
+        #are attached, and that their adjoining geometry are Part.ArcOfCircle
         constraints = self._get_attached_constraints(selection[0])
 
         if constraints == None:
@@ -76,7 +76,7 @@ class Tangent():
         #endpoints or one of the tangent end points
         new_index = self._create_tangent_line(end_points)
 
-        #tangentailly constrain the tangent to curve endpionts and
+        #tangentially constrain the tangent to curve endpoints and
         #coincidentally constrain to back tangent end points
         self._attach_tangent(new_index, end_points)
 
