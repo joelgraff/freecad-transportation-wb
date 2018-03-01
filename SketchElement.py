@@ -10,14 +10,18 @@ class SketchElement(object):
     selected.
     """
 
-    def __init__(self, element, index):
+    def __init__(self, sketch, element, index):
         self.element = element
         self.index = index
         self.type = type(self.element)
+        self.sketch = sketch
     
-    def match_by_vertex(self, sketch, index):
-    	SketchElement.find_by_vertex(sketch, \
-    	self.element.toShape().Vertexes[index].Point)
+    def match_by_vertex(self):
+    	SketchElement.find_by_vertex(self.sketch, \
+    	self.element.toShape().Vertexes[self.index].Point)
+
+    def match_attached_geometry(self):
+        SketchElement.find_attached_geometry(self.sketch, self.element)
     
     @staticmethod
     def _resolve_constraint(sketch, constraint):
@@ -58,6 +62,19 @@ class SketchElement(object):
         
         return result
         
+    @staticmethod
+    def find_attached_geometry(sketch, geometry):
+        """
+        Finds all geometry bound to the passed geometry by constraint
+
+        Arguments:
+        geometry - the geometry to match against as a SketchElement or
+        Part object
+
+        Returns:
+        SketchElement list of all associated geometry
+        """
+
     @staticmethod
     def find_by_vertex(sketch, vertex, by_type = None):
         """
@@ -116,7 +133,7 @@ class SketchElement(object):
                 for vtx in geo.toShape().Vertexes:
                 
                     if GeoUtils.compare_vectors(vtx.Point, vertex):
-                        result.append(SketchElement(geo, i))
+                        result.append(SketchGeometry(sketch, i))
                         break
     
             
@@ -140,7 +157,23 @@ class SketchElement(object):
                         continue
                 
                     if GeoUtils.compare_vectors(vertex, item[1].Point):
-                        result.append(SketchElement(constraint, i))
+                        result.append(SketchConstraint(sketch, i))
                         break
                 
         return result
+
+class SketchGeometry(SketchElement):
+    """
+    Subclass of SketchElement for geometry object types
+    """
+
+    def __init__(self, sketch, index):
+        SketchElement.__init__(sketch, sketch.Geometry[index], index)
+
+class SketchConstraint(SketchElement):
+    """
+    Subclass of SketchElement for constraint object types
+    """
+
+    def __init__(self, sketch, index):
+        SketchElement.__init__(sketch, sketch.Constraint[index], index)
