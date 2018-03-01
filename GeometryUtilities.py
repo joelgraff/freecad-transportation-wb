@@ -117,7 +117,7 @@ def find_geometry(sketch_object, shape_name):
 
     #return a GeometryContainer object with a reference to the geometry
     #and it's index in the Geometry list
-    return skel.SketchElement(sketch_object.Geometry[index-1], index-1)
+    return skel.SketchGeometry(sketch_object, index-1)
 
 def get_intersection (line, point, vector):
     """
@@ -184,14 +184,14 @@ def compare(geom_1, geom_2):
 
     return True
 
-def getConstraintContent(constriant):
+def getConstraintContent(constraint):
 
     """
     Deprecated function which retrives
     contraint properties from content attribute.
     Use only for properties not exposed as attributes
     """
-    contents = constriant.Content
+    contents = constraint.Content
     values = contents.split(" ")
     result = {}
 
