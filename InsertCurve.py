@@ -65,7 +65,6 @@ class InsertCurve():
             if geo_dict["end_tangent"] == None:
                 return
 
-            print geo_dict["constraint"].element.Content
             #determine the index of the constrained point
             constrained_index = \
                 self._get_constrained_index(geo_dict["constraint"])
@@ -91,7 +90,7 @@ class InsertCurve():
 
         Arguments:
         geo_dict - Geometry dictionary containing selected geometry as
-        ElementContainers
+        SketchElements
 
         Returns:
         geometry dictionary with new arc added as "new_arc"
