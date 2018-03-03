@@ -43,6 +43,7 @@ class NewAlignment():
     
     def _attach_handlers(self):
         Gui.ActiveDocument.ActiveView.addDraggable
+        
     def _set_camera(self, height):
         """
         Set the camera to a specific height.  Assumes 2D Orthographic view
