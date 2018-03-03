@@ -3,6 +3,7 @@ import FreeCAD as App
 import Sketcher
 import FreeCADGui as Gui
 import GeometryUtilities as GeoUtils
+import GeometryObjects as GeoObj
 
 class SketchElement(object):
     """
@@ -15,14 +16,7 @@ class SketchElement(object):
         self.index = index
         self.type = type(self.element)
         self.sketch = sketch
-    
-    def match_by_vertex(self):
-    	SketchElement.find_by_vertex(self.sketch, \
-    	self.element.toShape().Vertexes[self.index].Point)
-
-    def match_attached_geometry(self):
-        SketchElement.find_attached_geometry(self.sketch, self.element)
-    
+        
     @staticmethod
     def _resolve_constraint(sketch, constraint):
         """
@@ -63,7 +57,7 @@ class SketchElement(object):
         return result
         
     @staticmethod
-    def find_attached_geometry(sketch, geometry):
+    def find_attached_geometry(sketch, geometry_index):
         """
         Finds all geometry bound to the passed geometry by constraint
 
@@ -74,6 +68,55 @@ class SketchElement(object):
         Returns:
         SketchElement list of all associated geometry
         """
+
+        geom = []
+
+        #iterate the constraints, matching against the passed index
+        for constraint in sketch.Constraints:
+
+            indices = [constraint.First, constraint.Second, \
+            constraint.Third]
+
+            #if matched, add non-zero indices to the array not including
+            #the passed index
+            if geometry_index in indices:
+
+                geom.extend(\
+                    [idx for _x, idx in enumerate(indices) \
+                    if idx > 0 and idx != geometry_index])
+
+        result = []
+
+        #build the SketchElement list and return
+        for idx in geom:
+
+            geo = SketchGeometry(sketch, idx)
+            result.append(geo)
+
+        return result
+
+    @staticmethod
+    def get_binding_constraint(sketch, geo_index_1, geo_index_2):
+        """
+        Returns the constaint which binds the two geometries
+
+        Arguments:
+        geo_index_1 / geo_index_2 - indices of bound geometries
+
+        Returns:
+        binding constraint as a SketchConstraint, if found.  None, otherwise
+        """
+
+        _tuples = [pair for pair in enumerate(sketch.Constraints)]
+
+        for _tuple in _tuples:
+
+            indices = [_tuple[1].First, _tuple[1].Second, _tuple[1].Third]
+
+            if (geo_index_1 in indices) and (geo_index_2 in indices):
+                return SketchConstraint(sketch, _tuple[0])
+
+        return None
 
     @staticmethod
     def find_by_vertex(sketch, vertex, by_type = None):
@@ -168,7 +211,52 @@ class SketchGeometry(SketchElement):
     """
 
     def __init__(self, sketch, index):
-        SketchElement.__init__(sketch, sketch.Geometry[index], index)
+        SketchElement.__init__(self, sketch, sketch.Geometry[index], index)
+        self.line2d = None
+        self.arc2d = None
+
+    def match_by_vertex(self):
+    	SketchElement.find_by_vertex(self.sketch, \
+    	self.element.toShape().Vertexes[self.index].Point)
+
+    def match_attached_geometry(self):
+        """
+        Returns the geometry attached to the SketchGeometry element
+        """
+        return SketchElement.find_attached_geometry(self.sketch, self.index)
+
+    def get_binding_constraint(self, geometry_index):
+        """
+        Returns the constraint which binds the SketchGeometry element to the
+        passed geometry
+
+        Arguments:
+        geometry_index - index of bound geometry 
+        """
+        return SketchElement.get_binding_constraint(self.sketch, self.index, \
+            geometry_index)
+
+    def as_line2d(self):
+        """
+        Returns a Part.LineSegment as a Line2d object, None otherwise
+        """
+
+        if self.line2d == None:
+            if self.type == Part.LineSegment:
+                self.line2d = GeoObj.Line2d.from_line_segment(self.element)
+
+        return self.line2d
+
+    def as_arc2d(self):
+        """
+        Returns a Part.ArcOfCircle as an Arc2d object, None otherwise
+        """
+
+        if self.arc2d == None:
+            if self.type == Part.ArcOfCircle:
+                self.arc2d = GeoObj.Arc2d(self.element)
+
+        return self.arc2d
 
 class SketchConstraint(SketchElement):
     """
@@ -176,4 +264,5 @@ class SketchConstraint(SketchElement):
     """
 
     def __init__(self, sketch, index):
-        SketchElement.__init__(sketch, sketch.Constraint[index], index)
+        SketchElement.__init__(self, sketch, \
+        sketch.Constraints[index], index)
