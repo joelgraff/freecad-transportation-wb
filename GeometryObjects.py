@@ -8,33 +8,37 @@ import FreeCAD as App
 import Part
 import GeometryUtilities as GeoUtils
 
-class Curve2d(object):
+class Arc2d(object):
     """
     Provides convenience functions for manipulating Part.ArcOfCircle
     objects.
     """
 
-    def __init__(self, curve):
+    def __init__(self, arc):
         """
-        Initializes the Curve2d object based on the passed curve
+        Initializes the Arc2d object based on the passed arc
 
         Arguments:
-        curve - the curve as a Part.ArcOfCircle
+        arc - the arc as a Part.ArcOfCircle
         """
 
-        self.curve = curve
+        self.arc = arc
         
-        self.parameters = [curve.FirstParameter, curve.LastParameter]
+        self.parameters = [arc.FirstParameter, arc.LastParameter]
 
         self._get_points()
 
-        self.sweep_angle = curve.LastParameter - curve.FirstParameter
+        self.sweep_angle = arc.LastParameter - arc.FirstParameter
 
     def _get_points(self):
+        """
+        Returns the start and end point of the curve, ordered
+        counterclockwise.
+        """
 
-        verts = self.curve.toShape().Vertexes
-        start_vec = self.curve.value(self.curve.FirstParameter)
-        end_vec = self.curve.value(self.curve.LastParameter)
+        verts = self.arc.toShape().Vertexes
+        start_vec = self.arc.value(self.arc.FirstParameter)
+        end_vec = self.arc.value(self.arc.LastParameter)
 
         for i in range(0, len(verts)):
 
@@ -65,7 +69,7 @@ class Curve2d(object):
         print "start: " + str(self.start_point)
         print "end: " + str(self.end_point)
 
-        vtx = self.curve.toShape().Vertexes[index].Point
+        vtx = self.arc.toShape().Vertexes[index].Point
         print "vertex: " + str(vtx)
         result = 0
 
