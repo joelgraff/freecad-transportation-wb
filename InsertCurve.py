@@ -14,8 +14,6 @@ import Part
 import Sketcher
 import SketchElement as skel
 
-#pylint: disable=E1601
-
 class InsertCurve():
 
     def GetResources(self):
@@ -56,7 +54,8 @@ class InsertCurve():
 
         #if one of the geometries is a curve, need to get the opposite
         #back tangent before continuing
-        geo_dict = self._get_back_tangents(selection)
+        #geo_dict = self._get_back_tangents(selection)
+        geo_dict = self._get_tangents(selection)
 
         #create a new back tangent and adjust the existing arc
         #so we can place a new arc
@@ -65,9 +64,16 @@ class InsertCurve():
             if geo_dict["end_tangent"] == None:
                 return
 
+            geo_dict["constraint"] = geo_dict["arc"].get_binding_constraint\
+                (geo_dict["start_tangent"].index)
+
             #determine the index of the constrained point
             constrained_index = \
                 self._get_constrained_index(geo_dict["constraint"])
+
+            if constrained_index < 0:
+                self._notify_error("Invalid Constraint")
+                return
 
             #adjust the existing arc
             geo_dict=self._adjust_curve(constrained_index, geo_dict, 0.375)
@@ -96,6 +102,7 @@ class InsertCurve():
         geometry dictionary with new arc added as "new_arc"
         """
 
+        #        
         return geo_dict
 
     def _adjust_curve(self, constrained_index, geo_dict, factor):
@@ -111,18 +118,41 @@ class InsertCurve():
         The geometry dictionary with the adjusted arc as an ElementContainer
         object.
         """
+#############
+        #need to determine which constraints are bound to the point
+        #if additional constraints from other geometry are applied, then
+        #they need to be deleted as well and that geometry needs to be 
+        #reconstrained
+
+        #cases:
+        #1.  Arc endpoints bound.  If another arc endpoint is bound to
+        #this endpoint, it should be a tangent constraint.  The current
+        #point, if it has two tangent constraints, one should be to the
+        #tangent line, the other to the arc end point.  Delete both
+        #reconstrain the other arc endpoint to the tangent line and
+        #recompute.  If only one tangent constraint, should be to the
+        #other arc.  If only one, and bound to tangent line, other arc
+        #may need it's constraint deleted and reapplied to tangent line
+
+        #NOTE - It should be acceptable to bind only one coincident endpoint
+        #to the tangent line, then tangentially bind the other arc endpoint
+        #to the first
+
+        #2.  Arc bound to tangent line.  Tangent line should be bound
+        #by coincident constraint to the arc end point.  Delete coincident
+        #constraint and leave it.
 
         #delete the constraint on the point we're about to move
         self.sketch.delConstraint(geo_dict["constraint"].index)
 
         App.ActiveDocument.recompute()
+############
 
-        #get references to objects and valueswe're going to use
+        #get references to objects and values we're going to use
         arc = geo_dict["arc"]
-        curve_2d = GeoObj.Curve2d(arc.element)
-        delta_angle = curve_2d.sweep_angle * factor
+        delta_angle = arc.as_arc2d().sweep_angle * factor
 
-        idx = curve_2d.from_vertex_index(constrained_index)
+        idx = arc.as_arc2d().from_vertex_index(constrained_index)
 
         #calculate the parameter for the point's new location
         _u = arc.element.FirstParameter + delta_angle
@@ -177,28 +207,25 @@ class InsertCurve():
         start_tangent = geo_dict["start_tangent"]
         end_tangent = geo_dict["end_tangent"]
 
-        curve_2d = GeoObj.Curve2d(arc.element)
+        arc_2d = arc.as_arc2d()
 
         #get the geometrically-ordered curve index
-        idx = curve_2d.from_vertex_index(constrained_index)
-
-        print "index: " + str(idx)
+        idx = arc_2d.from_vertex_index(constrained_index)
 
         #get the tangent vector and the curve point it passes through
-        tan_vec = arc.element.tangent(curve_2d.parameters[idx])[0]
-        curve_point = curve_2d.points[idx]
+        tan_vec = arc.element.tangent(arc_2d.parameters[idx])[0]
+        arc_point = arc_2d.points[idx]
 
         #create the line which describes the new tangent line
-        new_tan_line = GeoObj.Line2d(curve_point, direction = tan_vec)
-
-        #create lines for the existing tangents
-        start_tan_line = GeoObj.Line2d.from_line_segment(start_tangent.element)
-        end_tan_line = GeoObj.Line2d.from_line_segment(end_tangent.element)
+        new_tan_line = GeoObj.Line2d(arc_point, direction = tan_vec)
 
         #set the new tangent line's start end end points to the
         #intersection of the new tangent line and the existing tangents
-        new_tan_line.start_point = new_tan_line.intersect(start_tan_line)
-        new_tan_line.end_point = new_tan_line.intersect(end_tan_line)
+        new_tan_line.start_point = \
+            new_tan_line.intersect(start_tangent.as_line2d())
+
+        new_tan_line.end_point = \
+            new_tan_line.intersect(end_tangent.as_line2d())
 
         #create the new geometry, add it to the document, and return the
         #geometry in an ElementContainer
@@ -227,100 +254,51 @@ class InsertCurve():
 
         App.ActiveDocument.recompute()
 
-        return skel.SketchElement(new_tangent, new_tan_idx)
+        return skel.SketchGeometry(self.sketch, new_tan_idx)
 
-    def _get_back_tangents(self, selection):
+    def _get_tangents(self, selection):
         """
-        Returns the back_tangents valid for the selection
+        Get the back tangents associated with the selected arc.
+        If no arc is selected, returns the original selection
 
         Arguments:
-        selection - An ElementContainer list of the selection geometry
+        selection - The selected geometry as a SketchElement list
 
         Returns:
-        A dictionary of the geometry:
-        "arc" - None if not selected
-        "start_tangent" - The first selected back tangent
-        "end_tangent" - The second back tangent (selected or discovered)
-        "constraint" - The tangent constraint binding the arc to the selected
-            back tangent if an arc is selected, None otherwise
+        Dictionary of SketchElements containing the tangents and arc
         """
-
-        arc = None
-        back_tangents = []
-
-        for sel in selection:
-
-            if type(sel.element) == Part.ArcOfCircle:
-                arc = sel
-            else:
-                back_tangents.append(sel)
-
-        result = {"arc": arc, \
-                "start_tangent": back_tangents[0], \
+        result = {"arc": None, \
+                "start_tangent": None, \
                 "end_tangent": None, \
                 "constraint": None}
 
+        #iterate the selected elements and sort them accordingly
+        for sel in selection:
+
+            if type(sel.element) == Part.ArcOfCircle:
+                result["arc"] = sel
+            else:
+                if result["start_tangent"] == None:
+                    result["start_tangent"] = sel
+                else:
+                    result["end_tangent"] = sel
+
         #quit early if two back tangents are already selected
         #or if no arc is selected, but a second back tangent is not found
-        if arc == None:
+        if result["arc"] == None:
+            return result
 
-            if (len(back_tangents) == 2):
-                result["end_tangent"] = back_tangents[1]
-                return result
-            else:
-                self._notify_error("")
-                return None
+        #get the geometry attached to the arc
+        attached_geo = result["arc"].match_attached_geometry()
 
-        opp_tan_idx = 0
+        #iterate, saving the Part.LineSegment with the unique index
+        for geo in attached_geo:
 
-        #get ElementContainer list of all constraints attached to the arc
-        #constraints = GeoUtils.get_geometry_constraints(self.sketch, arc.index)
-
-        #iterate the constraints to determine our opposing tangent
-        #for constraint in constraints:
-
-            #coincident constraints bind two curve endpoints
-            #get opposing curve, and find the tangent constraint that
-            #binds it to the tangent
-
-
-        #iterate the constraints looking for the tangent constraints
-        #which are applied to the curve
-        for i in range (0, self.sketch.ConstraintCount):
-
-            constraint = self.sketch.Constraints[i]
-
-            if constraint.Type == "Tangent":
-
-                tan_idx = 0
-
-                #if the constraint is applied to the curve,
-                #determine if the other geometry is the selected
-                #back_tangent
-                if constraint.First == arc.index:
-                    tan_idx = constraint.Second
-
-                elif constraint.Second == arc.index:
-                    tan_idx = constraint.First
-
-                #if the tangent index doesn't match the selected
-                #tangent, it's the opposite tangent
-                #otherwise, save the constraint in the dictionary
-                if tan_idx > 0:
-
-                    if tan_idx == back_tangents[0].index:
-                        result["constraint"] = skel.SketchElement\
-                        (constraint, i)
-
-                    if tan_idx != back_tangents[0].index:
-                        opp_tan_idx = tan_idx
-
-        #if we found the opposing back tangent, save it in an ElementContainer
-        if opp_tan_idx > 0:
-
-            result["end_tangent"] = skel.SketchElement\
-            (self.sketch.Geometry[opp_tan_idx], opp_tan_idx)
-
+            if geo.index != result["start_tangent"].index:
+                if geo.type == Part.LineSegment:
+                    result["end_tangent"] = geo
+                    break
+        
         return result
 
     def _get_arc_vectors(self, arc):
@@ -447,7 +425,7 @@ class InsertCurve():
             if not is_valid:
                 continue
 
-            result.append (skel.SketchElement(constraint, i))
+            result.append (skel.SketchConstraint(self.sketch, i))
         
         return result
 
@@ -515,8 +493,7 @@ class InsertCurve():
             construction mode."
 
         elif error_type == "Invalid Constraint":
-            message = "Selected geometry are not properly constrained. \
-            Geometry must be bound by a tangent constraint."
+            message = "Selected geometry are not properly constrained."
 
         QtGui.QMessageBox.critical(None, title, message)
 
