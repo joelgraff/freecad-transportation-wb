@@ -105,18 +105,20 @@ class InsertCurve():
         #        
         return geo_dict
 
-    def _adjust_curve(self, constrained_index, geo_dict, factor):
+    def _delete_constraints(self, constrained_index, geo_dict):
         """
-        Adjusts the length of the arc by the factor value.
-
+        Deletes existing constraints from an existing arc's end point
+        and returns adjacent geometry that shares an endpoint with the
+        constrained vertex
+        
         Arguments:
         constrained_index - curve index constrained to the selected tangent
-        geo_dict - The dictionary of selected geometry in ElementContainers
+        geo_dict - The dictionary of selected geometry as SketchElements
         factor - The adjustment factor
 
         Returns:
-        The geometry dictionary with the adjusted arc as an ElementContainer
-        object.
+        geo-dict with additional "adjacent" member, identifying adjacent
+        geometry attached to the constrained endpoint, if any.
         """
 #############
         #need to determine which constraints are bound to the point
@@ -143,15 +145,50 @@ class InsertCurve():
         #constraint and leave it.
 
         #delete the constraint on the point we're about to move
+################
 
-        constraints = geo_dict["arc"].match_by_vertex(constrained_index, \
-            Sketcher.Constraint)
+        #get all attached constraints and geometry attached to the point
+        attached = geo_dict["arc"].match_by_vertex(constrained_index)
 
-        for _c in constraints:
-            self.sketch.delConstraint(_c.index)
+        #delete existing constraints first
+        for _a in attached:
+
+            if _a.type != Sketcher.Constraint:
+                geo_dict["adjacent"] = _a
+
+            self.sketch.delConstraint(_a.index)
 
         App.ActiveDocument.recompute()
-############
+
+        return geo_dict
+
+    def _reconstrain(self, geo_dict):
+        """
+        Reconstrains existing geometry previously attached to the
+        previous arc end point to the new arc end poin
+
+        Arguments:
+        geo_dict - Dictionary of relevant geometry in SketchElements
+
+        Returns:
+        Nothing
+        """
+
+        return
+
+    def _adjust_curve(self, constrained_index, geo_dict, factor):
+        """
+        Adjusts the length of the arc by the factor value.
+
+        Arguments:
+        constrained_index - curve index constrained to the selected tangent
+        geo_dict - The dictionary of selected geometry in SketchElements
+        factor - The adjustment factor
+
+        Returns:
+        The geometry dictionary with the adjusted arc as an ElementContainer
+        object.
+        """
 
         #get references to objects and values we're going to use
         arc = geo_dict["arc"]
@@ -304,21 +341,6 @@ class InsertCurve():
                     result["end_tangent"] = geo
                     break
         
-        return result
-
-    def _get_arc_vectors(self, arc):
-        """
-        Returns vectors from center to the end points of the arc
-        """
-
-        result = []
-
-        arc_vec = arc.Center.sub(arc.StartPoint)
-        result.append(CurveUtils.sort_vectors(arc_vec))
-
-        arc_vec = arc.Center.sub(arc.EndPoint)
-        result.append(CurveUtils.sort_vectors(arc_vec))
-
         return result
 
     def _validate_selection(self):
