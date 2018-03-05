@@ -30,7 +30,7 @@ class SketchElement(object):
         Returns:
         List of geometry / vertex pairs accessible as:
         result[0][0] - First matched geometry
-        result[0][1] - First matched vertex
+        result[0][1] - First matched vertex as App.Vector
         """
     
         geo = [constraint.First, constraint.Second, constraint.Third]
@@ -42,15 +42,21 @@ class SketchElement(object):
     
             item = []
         
-    	    if geo[i] == 0:
+    	    if geo[i] <= 0:
                 continue
         
-            item.append(sketch.Geometry[geo[i]])
+            geom = sketch.Geometry[geo[i]]
+            item.append(geom)
         
-            if vert[i] > 0:
-                vert = geo[i].toShape().Vertexes[vert[i]]
+            vtx = None
             
-            item.append(vert)
+            if vert[i] > 0:
+                vertices = geom.toShape().Vertexes
+
+                if vert[i] <= len(vertices):
+                    vtx = vertices[vert[i] - 1].Point
+            
+            item.append(vtx)
 
             result.append(item)
         
@@ -135,33 +141,32 @@ class SketchElement(object):
         Returns:
         list of SketchElements containing the matched geometry / constraints
         """
-    
+        match_geo = True
+        match_constraint = True
+        constraint_types = ["All"]
+        result = []
+        class_type = None
+
         if type(vertex) == Part.Vertex:
     	    vertex = vertex.Point
-    	
-            result = []
-            match_geo = True
-            match_constraint = True
-            constraint_type = ["All"]
-            class_type = None
-    
+
         if type(by_type) == str:
             match_geo = False
-            constraint_type = [by_type]
+            constraint_types = [by_type]
     
         elif type(by_type) == list:
             match_geo = False
-            constraint_type = by_type
+            constraint_types = by_type
         
-        elif "Part" in str(type(by_type)):
+        elif "Part" in str(by_type):
             match_constraint = False
             class_type = by_type
         
-        elif "Sketcher" in str(type(by_type)):
+        elif "Sketcher" in str(by_type):
             match_geo = False
             class_type = by_type
-        
-        if (match_geo):
+
+        if match_geo:
     
             for i in range(0, len(sketch.Geometry)):
 
@@ -174,35 +179,36 @@ class SketchElement(object):
 
                 #match geometry vertices against passed vector                
                 for vtx in geo.toShape().Vertexes:
-                
+
                     if GeoUtils.compare_vectors(vtx.Point, vertex):
                         result.append(SketchGeometry(sketch, i))
                         break
-    
-            
-        if (match_constraint):
+
+        if match_constraint:
         
             for i in range(0, sketch.ConstraintCount):
             
-                constraint = sketch.Constraint[i]
+                constraint = sketch.Constraints[i]
             
                 #filter on constraint type
-                if constraint_type != "All":
-                    if not constraint_type in constraint.Content:
+                if not "All" in constraint_types:
+
+                    if not constraint.type in constraint_types:
                         continue
                 
                 attached = SketchElement._resolve_constraint(sketch, constraint)
-            
+
                 #match resolved vertices against passed vector
                 for item in attached:
                 
                     if item[1] == None:
                         continue
-                
-                    if GeoUtils.compare_vectors(vertex, item[1].Point):
+
+                    if GeoUtils.compare_vectors(vertex, item[1]):
+                        "selecting constraint: " + str(i)
                         result.append(SketchConstraint(sketch, i))
                         break
-                
+
         return result
 
 class SketchGeometry(SketchElement):
@@ -215,9 +221,12 @@ class SketchGeometry(SketchElement):
         self.line2d = None
         self.arc2d = None
 
-    def match_by_vertex(self):
-    	SketchElement.find_by_vertex(self.sketch, \
-    	self.element.toShape().Vertexes[self.index].Point)
+    def match_by_vertex(self, vertex_index, object_type = None):
+
+    	result = SketchElement.find_by_vertex(self.sketch, \
+            self.element.toShape().Vertexes[vertex_index], object_type)
+
+        return [_x for _x in result if _x.index != self.index]
 
     def match_attached_geometry(self):
         """
