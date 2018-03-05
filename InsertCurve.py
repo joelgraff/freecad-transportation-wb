@@ -143,7 +143,12 @@ class InsertCurve():
         #constraint and leave it.
 
         #delete the constraint on the point we're about to move
-        self.sketch.delConstraint(geo_dict["constraint"].index)
+
+        constraints = geo_dict["arc"].match_by_vertex(constrained_index, \
+            Sketcher.Constraint)
+
+        for _c in constraints:
+            self.sketch.delConstraint(_c.index)
 
         App.ActiveDocument.recompute()
 ############
