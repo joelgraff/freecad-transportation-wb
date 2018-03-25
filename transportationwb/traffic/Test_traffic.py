@@ -4,6 +4,7 @@
 import FreeCAD, os, unittest, FreeCADGui, transportationwb
 
 class TrafficTest(unittest.TestCase):
+   '''testcade blabla'''
 
     def setUp(self):
         # setting a new document to hold the tests

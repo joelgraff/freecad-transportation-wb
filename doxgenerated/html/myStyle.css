@@ -1,0 +1,31 @@
+.image
+{
+   text-align: left;
+}
+
+.aaa
+{
+	float: left;
+   text-align: left;
+   border-right: 2px solid #fff;
+   border-bottom: 4px solid #fff;
+}
+
+.bbb
+{
+   text-align: left;
+   clear: both;
+   border: 1px solid red;
+}
+
+
+div.image {
+	border: 1px solid green;
+	float: left !important;
+   display:inline!important;
+}
+
+
+h1 {
+	clear:both;
+}

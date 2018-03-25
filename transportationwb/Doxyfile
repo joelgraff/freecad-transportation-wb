@@ -1,0 +1,31 @@
+FILTER_SOURCE_FILES = YES
+INPUT_FILTER = "python /home/thomas/.FreeCAD/Mod/freecad-transportation-wb/transportationwb//mydoxypy.py"
+INPUT_FILTER = "python mydoxypy.py"
+
+PROJECT_NAME           = "Transportation Workbench for FreeCAD"
+
+# EXCLUDE_SYMBOLS =  __init__  
+
+ENABLE_PREPROCESSING = YES
+# PREDEFINED = DOXYGEN_SHOULD_SKIP_THISY
+
+QUIET                  = YES
+
+OUTPUT_DIRECTORY = ../doxgenerated
+GENERATE_LATEX = NO
+
+
+INPUT = traffic/__init__.py
+# INPUT += traffic/Test_traffic.py
+
+INPUT += vehicle/__init__.py
+# INPUT += traffic/Test_traffic.py
+
+
+INPUT += readme.md 
+USE_MDFILE_AS_MAINPAGE = readme.md
+
+IMAGE_PATH = ../../icons
+
+HTML_EXTRA_STYLESHEET = myStyle.css
+

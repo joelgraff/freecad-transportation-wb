@@ -54,6 +54,19 @@ class MyTestCmd3:
 FreeCADGui.addCommand('My_Transprtation_Tests'        ,MyTestCmd3())
 
 
+class DokuTW:
+
+    def Activated(self):
+        import WebGui
+        fn='file:///home/thomas/.FreeCAD/Mod/freecad-transportation-wb/doxgenerated/html/index.html'
+        WebGui.openBrowser(fn)
+
+
+    def GetResources(self):
+        return {'MenuText': 'Documentation', 'ToolTip': 'Runs the self-test for the workbench'}
+
+FreeCADGui.addCommand('Doku'        ,DokuTW())
+
 
 
 
@@ -213,7 +226,7 @@ if FreeCAD.GuiUp:
     terrain = [c3b(["Terrain"],onselection1,'geodesic_lines','create Context','/../icons/draw.svg')]
     terrain += [c3b(["Terrain"],onselection1,'geodesic_lines','create something','/../icons/draw.svg')]
 
-    toolbars=[['Simulation',toolbar],['Terrain',terrain],['Tests',[ 'My_Transprtation_Tests']]]
+    toolbars=[['Simulation',toolbar],['Terrain',terrain],['Tests',[ 'My_Transprtation_Tests','Doku']]]
 
 
 
