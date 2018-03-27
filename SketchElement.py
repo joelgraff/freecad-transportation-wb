@@ -11,10 +11,9 @@ class SketchElement(object):
     selected.
     """
 
-    def __init__(self, sketch, element, index):
-        self.element = element
+    def __init__(self, sketch, index, element_type):
         self.index = index
-        self.type = type(self.element)
+        self.type = element_type
         self.sketch = sketch
         
     @staticmethod
@@ -211,20 +210,49 @@ class SketchElement(object):
 
         return result
 
+    @staticmethod
+    def coincident_geometry(sketch, geo_index_1, geo_index_2):
+        """
+        Compares the vertices of tow geometries, testing to see if
+        any are coincident.
+
+        Arguments:
+        sketch - sketch object containing the geometries
+        geo_index_1, geo_index_2 - indices of two geometries to compare
+
+        Returns:
+        True if any vertices are coincident, False otherwise
+        """
+
+        vertices_1 = sketch.Geometry[geo_index_1].toShape().Vertexes
+        vertices_2 = sketch.Geometry[geo_index_2].toShape().Vertexes
+
+        for vertex_1 in vertices_1:
+
+            for vertex_2 in vertices_2:
+
+                if GeoUtils.compare_vectors(vertex_1.Point, vertex_2.Point):
+                    return True
+
+        return False
+
 class SketchGeometry(SketchElement):
     """
     Subclass of SketchElement for geometry object types
     """
 
     def __init__(self, sketch, index):
-        SketchElement.__init__(self, sketch, sketch.Geometry[index], index)
+
+        SketchElement.__init__(self, sketch, index, \
+            type(sketch.Geometry[index]))
+
         self.line2d = None
         self.arc2d = None
 
     def match_by_vertex(self, vertex_index, object_type = None):
 
     	result = SketchElement.find_by_vertex(self.sketch, \
-            self.element.toShape().Vertexes[vertex_index], object_type)
+            self.get_element().toShape().Vertexes[vertex_index], object_type)
 
         return [_x for _x in result if _x.index != self.index]
 
@@ -250,9 +278,8 @@ class SketchGeometry(SketchElement):
         Returns a Part.LineSegment as a Line2d object, None otherwise
         """
 
-        if self.line2d == None:
-            if self.type == Part.LineSegment:
-                self.line2d = GeoObj.Line2d.from_line_segment(self.element)
+        if self.type == Part.LineSegment:
+            self.line2d = GeoObj.Line2d.from_line_segment(self.get_element())
 
         return self.line2d
 
@@ -261,17 +288,73 @@ class SketchGeometry(SketchElement):
         Returns a Part.ArcOfCircle as an Arc2d object, None otherwise
         """
 
-        if self.arc2d == None:
-            if self.type == Part.ArcOfCircle:
-                self.arc2d = GeoObj.Arc2d(self.element)
+        if self.type == Part.ArcOfCircle:
+             self.arc2d = GeoObj.Arc2d(self.get_element())
 
         return self.arc2d
 
+    def get_element(self):
+        """
+        Returns the element form the sketch
+        """
+
+        return self.sketch.Geometry[self.index]
+
+    def is_coincident(self, geo_index):
+        """
+        Test to see if the passed geometry is consecutive with the object.
+        Consecutive tests for at least one coincident vertex between the
+        geometries.
+
+        Arguments:
+        geo_index - index of the geometry to test against
+
+        Returns:
+        True / False
+        """
+
+        return SketchElement.coincident_geometry(self.sketch, \
+            self.index, geo_index)
+
+    def get_points(self):
+        """
+        Return the element's Vertexes as a list of App.Vector points
+        """
+
+        result = []
+
+        for vtx in self.get_element().toShape().Vertexes:
+            result.append(vtx.Point)
+
+        return result
+
+    def intersect2d(self, sketch_geo):
+        """
+        Wraps the Part intersect2d() function call
+
+        Arguments:
+        sketch_geo - SketchGeometry object
+
+        Returns:
+        intersection of geometry with sketch_geo object as an App.Vector
+        """
+
+        point_tuple = self.get_element().intersect2d(\
+            sketch_geo.get_element(), Part.Plane())[0]
+
+        return App.Vector(point_tuple[0], point_tuple[1])
+        
 class SketchConstraint(SketchElement):
     """
     Subclass of SketchElement for constraint object types
     """
 
     def __init__(self, sketch, index):
-        SketchElement.__init__(self, sketch, \
-        sketch.Constraints[index], index)
+        SketchElement.__init__(self, sketch, index, Sketcher.Constraint)
+
+    def get_element(self):
+        """
+        Returns the constraint
+        """
+
+        return self.sketch.Constraints[self.index]
