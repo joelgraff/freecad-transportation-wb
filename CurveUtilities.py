@@ -2,41 +2,17 @@
 Provides basic utilities for curve construction in Sketcher
 """
 
-#pylint: disable=E1601
-
 from PySide import QtGui
 import math
 import GeometryUtilities as GeoUtils
 import FreeCAD as App
 import Part
-import GeometryObjects
+import GeometryObjects as GeoObj
 
 UNIT_X = App.Vector(1.0, 0.0, 0.0)
 UNIT_Y = App.Vector(0.0, 1.0, 0.0)
 UNIT_Z = App.Vector(0.0, 0.0, 1.0)
 ORIGIN = App.Vector(0.0, 0.0, 0.0)
-
-def _get_pt_of_int(back_tangents):
-    """
-    Determine the point of intersection between two tangents
-    """
-
-    #assume point of intersection is the end point of the
-    #first-selected back tangent
-    pt_of_int = back_tangents[0].element.EndPoint
-
-    other = back_tangents[0].element.StartPoint
-
-    #test to see if the other point is coincident with
-    #the either point on the other back tangent
-    #Equality test must accommodate small floating piont error
-    if (other - back_tangents[1].element.EndPoint).Length < 0.00001:
-        pt_of_int = other
-
-    elif (other - back_tangents[1].element.StartPoint).Length < 0.00001:
-        pt_of_int = other
-
-    return pt_of_int
 
 def _get_arc_angles(vectors):
     """
@@ -84,7 +60,10 @@ def create_arc(back_tangents):
     """
 
     #get the point of intersection
-    pt_of_int = _get_pt_of_int(back_tangents)
+    pt_of_int = back_tangents[0].get_element().intersect2d( \
+        back_tangents[1].get_element(), Part.Plane())[0]
+
+    pt_of_int = App.Vector(pt_of_int[0],pt_of_int[1],0)
 
     #get directed vectors from the point of intersection
     vectors = GeoUtils._get_vectors(back_tangents, pt_of_int)
@@ -92,9 +71,6 @@ def create_arc(back_tangents):
     #sort the vectors such that the first one is the starting vector for
     #the arc's counter-clockwise rotation
     result = sort_vectors(vectors)
-
-    #note if the vectors have been swapped
-    swapped_tangents = GeoUtils.compare_vectors (result[0], vectors[0])
 
     vectors = result
 
@@ -104,27 +80,21 @@ def create_arc(back_tangents):
 
     #normalize and scale the vectors for the default back tangent length
     for i in range(0,2):
-        print str(vectors[i])
         vectors[i].normalize()
         vectors[i].multiply(length)
 
     #calculate the radius points back from the point of intersection
     #along the directed vectors
+    #and create lines representing the back tangents
     radius_points = []
+    ortho_lines = []
 
     for vec in vectors:
-        radius_points.append(pt_of_int.sub(vec))
+        rad_pt = pt_of_int.sub(vec)
+        radius_points.append(rad_pt)
 
-    #generate two MathLine objects based on the actual geometry
-    #but with the starting points set at the point of intersection
-    math_lines = GeoUtils._get_math_lines(vectors, pt_of_int)
-
-    ortho_lines = []
-    ortho_vectors = []
-
-    #get the orthogonal lines using the radius points
-    for i in range(0, 2):
-        ortho_lines.append(math_lines[i].get_orthogonal(radius_points[i]))
+        line = GeoObj.Line2d(pt_of_int, direction = vec)
+        ortho_lines.append(line.get_orthogonal(rad_pt))
 
     #calculate the point of intersection between the two orhogonal lines
     #and save the result as the arc's center point
@@ -135,6 +105,16 @@ def create_arc(back_tangents):
 
     offset = 0.0
     start_ortho = ortho_vectors[0]
+
+    print "vector length: " + str(length)
+    print "bt0: " + str(back_tangents[0].get_element())
+    print "bt1: " + str(back_tangents[1].get_element())
+    print str(result)
+    print str(vectors)
+    print "point of intersection: " + str(pt_of_int)
+    print "radius points: " + str(radius_points)
+    print "center point: " + str(center_point)
+    print "ortho_vectors: " + str(ortho_vectors)
 
     if radius_points[0].y > pt_of_int.y:
         offset = math.pi
@@ -152,11 +132,8 @@ def create_arc(back_tangents):
 
     circle_part = Part.Circle(center_point, UNIT_Z, ortho_vectors[0].Length)
 
-    result = []
-
     #return a list with the resulting arc and the vectors in proper order
-    result.append (Part.ArcOfCircle(circle_part, start_angle, sweep_angle))
-    result.append (vectors)
+    result = [Part.ArcOfCircle(circle_part, start_angle, sweep_angle), vectors]
 
     return result
 
@@ -171,15 +148,11 @@ def validate_selection(sketch):
         _notify_error("Selection")
         return None
 
-    print selection
-
     #selections must be construction mode and line segments
     for geo in selection:
 
-        print geo
-
-        if (not geo.element.Construction) or \
-        (type(geo.element).__name__ != "LineSegment"):
+        if (not geo.get_element().Construction) or \
+            (geo.type != Part.LineSegment):
 
             _notify_error("Invalid Geometry")
             return None
