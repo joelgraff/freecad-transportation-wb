@@ -2,8 +2,6 @@
 Provides a mathematically-defined geometry objects.
 """
 
-#pylint: disable=E1601
-
 import FreeCAD as App
 import Part
 import GeometryUtilities as GeoUtils
@@ -26,7 +24,7 @@ class Arc2d(object):
         
         self.parameters = [arc.FirstParameter, arc.LastParameter]
 
-        self._get_points()
+        self.points = self._get_points()
 
         self.sweep_angle = arc.LastParameter - arc.FirstParameter
 
@@ -44,6 +42,7 @@ class Arc2d(object):
 
             v = verts[i].Point
 
+            print "vertex #" + str(i) + ": " + str(v)
             if GeoUtils.compare_vectors(v, start_vec):
                 self.start_point = v
                 self.start_index = i
@@ -52,7 +51,7 @@ class Arc2d(object):
                 self.end_point = v
                 self.end_index = i
 
-        self.points = [self.start_point, self.end_point]
+        return [self.start_point, self.end_point]
 
     def from_vertex_index(self, index):
         """
@@ -66,11 +65,8 @@ class Arc2d(object):
         Curve index, 0 == self.start_point; 1 == self.end_point
         """
 
-        print "start: " + str(self.start_point)
-        print "end: " + str(self.end_point)
-
         vtx = self.arc.toShape().Vertexes[index].Point
-        print "vertex: " + str(vtx)
+
         result = 0
 
         if GeoUtils.compare_vectors(vtx, self.end_point):
@@ -85,17 +81,17 @@ class Line2d(object):
     Assumes line is defined in X and Y axes.
     """
 
-    def __init__(self, origin, end_point = None, direction = None):
+    def __init__(self, origin, end_point=None, direction=None):
         """
         Generate the key line parameters.  Designed to work with a line
         specified by two end points or by an origin and direction.
         At least one of the optional parameters must be specified.
-        
+
         Arguments:
         origin (optional) - App.Vector specifying th eorigin point
         end_point (optional) - App.Vector specifying the end point
         direction (optional) - App.Vector specifying the direction
-            
+
         Notes:
             Z-coordinates are ignored
         """
@@ -105,21 +101,26 @@ class Line2d(object):
         self.end_point = end_point
 
         #Abort if none of the optional parameters are defined
-        if direction == None:
-            if end_point == None:
+        if direction is None:
+            if end_point is None:
                 return
 
         #If direction is undefined, end_point is defined.
-        if direction == None:
+        if direction is None:
             direction = self.end_point.sub(self.start_point)
 
-        direction.normalize()
+        if direction.Length > 0:
+            direction.normalize()
 
-        if self.end_point == None:
+        if direction.x != 0:
+            self.slope = direction.y / direction.x
+
+        if self.end_point is None:
             self.end_point = self.start_point.add(direction)
 
-        self.slope = direction.y / direction.x
-        self.intercept = self.start_point.y - self.slope * self.start_point.x
+        if self.slope != None:
+            self.intercept = self.start_point.y - self.slope * \
+            self.start_point.x
 
     def __str__(self):
         """
@@ -137,12 +138,32 @@ class Line2d(object):
     @staticmethod
     def from_line_segment(line_segment):
         """
-        Generates a new MathLine object from a passed Part.LineSegment
+        Generates a new Line2d object from a passed Part.LineSegment
         """
 
         vtx = line_segment.toShape().Vertexes
 
         return Line2d(vtx[0].Point, vtx[1].Point)
+
+    def get_side(self, point):
+        """
+        Returns a value indicating which side of the line the points falls on
+        using 1, 0, -1 where 0 = point falls directly on line
+        """
+
+        a = self.start_point
+        b = self.end_point
+
+        side = (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x)
+
+        return GeoUtils.sign(side)
+        
+    def get_points(self):
+        """
+        Return the start and end points as a list of App.Vectors
+        """
+
+        return [self.start_point, self.end_point]
 
     def to_line_segment(self):
         """
@@ -151,10 +172,10 @@ class Line2d(object):
 
         return Part.LineSegment(self.start_point, self.end_point)
 
-    def fn_x (self, _x):
+    def fn_x(self, _x):
         """
         Evaluate the line as a function of x.
-        
+
         Arguments:
         _x - x coordinate (scalar)
 
@@ -164,7 +185,7 @@ class Line2d(object):
 
         return self.slope * _x + self.intercept
 
-    def fn_y (self, _y):
+    def fn_y(self, _y):
         """
         Evaluate the line as a function of y, returning x
 
@@ -177,9 +198,36 @@ class Line2d(object):
 
         return (_y - self.intercept) / self.slope
 
+    def is_bounded(self, point):
+        """
+        Determines if the passed point falls within the line's
+        bounding box
+
+        Arguments:
+        point - Point to test in App.Vector form
+
+        Returns:
+        True / False if within / outside bounding box
+        """
+
+        vectors = [App.Vector(self.start_point.x, self.end_point.x), \
+            App.Vector(self.start_point.y, self.end_point.y)]
+
+        for i in range(0, 2):
+
+            vec = vectors[i]
+
+            if vec.x > vec.y:
+                vec.x, vec.y = vec.y, vec.x
+
+            if not point[i] in range(vec.x, vec.y):
+                return False
+
+        return True
+
     def get_orthogonal(self, point):
         """
-        Generates an line object othogonal to itself from the
+        Generates an line object orthogonal to itself from the
         passed point.
 
         Arguments:
@@ -194,10 +242,10 @@ class Line2d(object):
         #horizontal line case
         if self.slope == 0.0:
             result.slope = None
-            result.intercept = None            
+            result.intercept = None
 
         #vertical line case
-        elif self.slope == None:
+        elif self.slope is None:
             result.slope = 0.0
             result.intercept = point.y
 
@@ -207,7 +255,7 @@ class Line2d(object):
             result.intercept = point.y - result.slope * point.x
 
         return result
-        
+
     def intersect(self, line):
         """
         Calculates the point of intersection between the object
@@ -220,8 +268,8 @@ class Line2d(object):
         App.Vector specifying the point of intersection
         """
 
-        line_is_vert = (line.slope == None)
-        self_is_vert = (self.slope == None)
+        line_is_vert = (line.slope is None)
+        self_is_vert = (self.slope is None)
 
         if line_is_vert and self_is_vert:
             return None
@@ -229,15 +277,18 @@ class Line2d(object):
         #if the passed line is vertical, solve the current line with the
         #vertical line's x-coordinate
         if line_is_vert:
-            x = line.start_point.x
-            y = self.fn_x(x)
+            _x = line.start_point.x
+            _y = self.fn_x(_x)
 
         elif self_is_vert:
-            x = self.start_point.x
-            y = line.fn_x(x)
+            _x = self.start_point.x
+            _y = line.fn_x(_x)
+
+        elif self.slope == line.slope:
+            return None
 
         else:
-            x = (line.intercept - self.intercept) / (self.slope - line.slope)
-            y = self.slope * x + self.intercept
+            _x = (line.intercept - self.intercept) / (self.slope - line.slope)
+            _y = self.slope * _x + self.intercept
 
-        return App.Vector(x, y, 0.0)
+        return App.Vector(_x, _y, 0.0)
