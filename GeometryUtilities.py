@@ -16,28 +16,6 @@ UNIT_Y = App.Vector(0.0, 1.0, 0.0)
 UNIT_Z = App.Vector(0.0, 0.0, 1.0)
 ORIGIN = App.Vector(0.0, 0.0, 0.0)
 
-def _get_pt_of_int(back_tangents):
-    """
-    Determine the point of intersection between two tangents
-    """
-
-    #assume point of intersection is the end point of the
-    #first-selected back tangent
-    pt_of_int = back_tangents[0].element.EndPoint
-
-    other = back_tangents[0].element.StartPoint
-
-    #test to see if the other point is coincident with
-    #the either point on the other back tangent
-    #Equality test must accommodate small floating point error
-    if (other - back_tangents[1].element.EndPoint).Length < 0.00001:
-        pt_of_int = other
-
-    elif (other - back_tangents[1].element.StartPoint).Length < 0.00001:
-        pt_of_int = other
-
-    return pt_of_int
-
 def _get_arc_angles(vectors):
     """
     Return the start and sweep angles for an arc
@@ -78,11 +56,11 @@ def _get_vectors(back_tangents, pt_of_int):
     #iterate each tangent, converting it into a directed vector
     #toward the point of intersection
     for tangent in back_tangents:
-        point = tangent.element.StartPoint
+        point = tangent.get_element().StartPoint
 
         #test for equality must accommodate small floating point error
         if (point - pt_of_int).Length < 0.00001:
-            point = tangent.element.EndPoint
+            point = tangent.get_element().EndPoint
 
         vec = App.Vector(pt_of_int.sub(point))
         result.append(vec)
@@ -119,34 +97,14 @@ def find_geometry(sketch_object, shape_name):
     #and it's index in the Geometry list
     return skel.SketchGeometry(sketch_object, index-1)
 
-def get_intersection (line, point, vector):
-    """
-    Calculates the point of intersection between the passed line
-    segment and the point / direction vector combination
+def sign(value):
 
-    Arguments:
-    line - A Part.LineSegment object
-    point - An App.Vector representing a point
-    vector - An App.Vector representing a direction
+    if value > 0:
+        return 1
+    elif value < 0:
+        return -1
 
-    Returns:
-    App.Vector point of intersection
-    """
-
-    slope_1 = (line.EndPoint.y - line.StartPoint.y) / \
-    (line.EndPoint.x - line.StartPoint.x)
-
-    slope_2 = vector.y / vector.x
-
-    intercept_1 = line.EndPoint.y - (slope_1 * line.EndPoint.x)
-    intercept_2 = vector.y - (slope_2 * vector.x)
-
-    intersection = App.Vector(0.0, 0.0, 0.0)
-
-    intersection.x = (intercept_2 - intercept_1) / (slope_1 - slope_2)
-    intersection.y = (slope_1 * intersection.x) + intercept_1
-
-    return intersection
+    return 0
 
 def get_selection(sketch_object):
     """
