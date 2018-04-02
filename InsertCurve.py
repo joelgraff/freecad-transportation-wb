@@ -10,6 +10,7 @@ import GeometryUtilities as GeoUtils
 import GeometryObjects as GeoObj
 import CurveUtilities as CurveUtils
 import os
+import math
 import Part
 import Sketcher
 import SketchElement as skel
@@ -67,73 +68,140 @@ class InsertCurve():
                 (geo_dict["start_tangent"].index)
 
             #determine the index of the constrained point
-            geo_dict["arc_vertex"] = \
-                self._get_constrained_index(geo_dict["constraint"])
+            vertex_index = self._get_constrained_vertex(geo_dict["constraint"])
 
-            if geo_dict["arc_vertex"] < 0:
+            if vertex_index < 0:
                 self._notify_error("Invalid Constraint")
                 return
 
             #delete the existing constraints and return any geometry
             #adjacent to the arc
-            geo_dict = self._delete_constraints(geo_dict)
+            geo_dict = self._delete_constraints(geo_dict, vertex_index)
 
             #adjust the existing arc
-            geo_dict = self._adjust_curve(geo_dict, 0.375)
+            geo_dict = self._adjust_curve(geo_dict, vertex_index, 0.25)
 
             #create the arc back tangent
             geo_dict["new_tangent"] = \
-                self._generate_new_back_tangent(geo_dict)
+                self._generate_new_back_tangent(geo_dict, vertex_index)
 
             #update the dictionary before adding the arc
             geo_dict["end_tangent"] = geo_dict["new_tangent"]
 
-            res = self._get_line_segments(geo_dict)
-
-            print ("tan_1 = " + str(res[0]))
-            print ("tan_2 = " + str(res[1]))
             #arc_params = self._get_arc_parameters(geo_dict)
 
-        #check the tangents to ensure they form two line segments connected
-        #by a vertex
-        #tangents = _get_arc_parameters(geo_dict, constrained_index)
+        arc_parameters = self._get_arc_parameters(geo_dict, vertex_index)
 
         #create a new arc based on the specified back tangents
-        CurveUtils.create_arc(\
-            [geo_dict["start_tangent"], geo_dict["end_tangent"]])
+        new_arc = CurveUtils.create_arc(arc_parameters))
+
+        self.sketch.addGeometry(new_arc)
+        App.ActiveDocument.recompute()
+
+        geo_dict["new arc"] = new_arc
+
+        self._reconstrain(geo_dict)
 
         return
 
-    def _get_arc_parameters(self, geo_dict):
+    def _get_arc_parameters(self, geo_dict, vertex_index):
+        """
+        Get the basic parameters required to define an arc
 
-        #if two points found, the end points of the lines are coincident
-        #if only one point is found, one tangent intersects the other
+        Arguments:
+        geo_dict - Dictionary of geometry
+        vertex_index - Index of the arc vertex that was moved
 
-        self.get_line_segments()
+        Returns:
 
-        radius_line = GeoObj.Line2d(arc.Center, arc_vertex)
+        Dictionary of arc parameters with the following keys:
 
-        ortho = radius_line.get_orthogonal(arc.Center)
-        end_point = ortho.intersect(lines[0])
+        location - The center of the arc as an App.Vector
+        radius - The radius of the arc as a float
+        start_angle - The starting angle of the arc in radians
+        sweep_angle - The angle through which the arc rotates (CCW) in radians
+        """
 
-        if end_point == None:
-            end_point = ortho.intersect(lines[1])
+        arc = geo_dict["arc"]
+        arc_vertex = arc.get_points()[vertex_index]
 
-        print str(tangents)
-        print "p.i.: " + str(p_i)
-        print "radius_vec: " + str(radius_vec)
-        print "ortho: " + str(ortho)
-        print "end_point: " + str(end_point)
+        arc_loc = arc.get_element().Location
 
-        return None
+        print ("arc vertex: " + str(arc_vertex))
 
-    def _get_line_segments(self, geo_dict):
+        tangents = self._get_line_segments(geo_dict, arc_vertex)
+
+        orthos = []
+        result = {}
+
+        #get the orthogonal for the tangent from the existing arc
+        orthos.append(tangents[0].get_orthogonal(arc_vertex))
+
+        #get the orthogonal for the opposing tangent
+        tangent_vertex = tangents[1].start_point
+        
+        if GeoUtils.compare_vectors(geo_dict["p_i"], tangent_vertex):
+            tangent_vertex = tangents[1].end_point
+
+        orthos.append(tangents[1].get_orthogonal(tangent_vertex))
+
+        #calculate the arc radius
+        arc_rad = arc_loc.sub(tangent_vertex).Length
+
+        #calculate the start angle
+        offset = 0
+
+        cp =  orthos[0].to_vector()\
+            .cross(orthos[1].to_vector())
+
+        if cp.z < 0.0:
+            orthos[0], orthos[1] = orthos[1], orthos[0]
+
+        #set the initial offset by determining the quadrant
+        quad = abs(GeoUtils.get_quadrant(arc_loc, orthos[0].start_point))
+
+        #test for undefined slope
+        if orthos[0].slope is None:
+            if arc.Location.y > orthos[0].start_point.y:
+                start_angle *= -1.0
+        else:
+            start_angle += math.atan(abs(1.0 / orthos[0].slope))
+
+        sweep_angle = orthos[1].to_vector()\
+            .getAngle(orthos[0].to_vector()) + start_angle
+
+        return {"location": arc_loc,
+                "radius": arc_rad,
+                "start_angle": start_angle,
+                "sweep_angle": sweep_angle}
+
+    def _sort_vectors(self, vectors):
+        """
+        Takes a list of two App.Vectors and orders them
+        such that the first is rotated counterclockwise from the second.
+        """
+
+        vec0 = vectors[0]
+        vec1 = vectors[1]
+
+        cross_product = vec0.cross(vectors[1])
+
+        result = [vec0, vec1]
+
+        if cross_product.z > 0.0:
+
+            result = [vec1, vec0]
+
+        return result
+
+    def _get_line_segments(self, geo_dict, arc_vertex):
         """
         Returns two Line2d objects representing the line segments
         of the tangents to which the arc will be bound.
 
         Arguments:
         geo_dict - dictionary of SketchElement geometry
+        arc_vertex - App.Vector of the vertex that was moved
 
         Returns:
         List of Line2d objects representing the exact tangents
@@ -162,10 +230,11 @@ class InsertCurve():
         #get the point of intersection
         p_i = tangents[0].intersect2d(tangents[1])
 
+        geo_dict["p_i"] = p_i
+
         #get the tangent segment between the arc vertex and p.i.
         arc = geo_dict["arc"].get_element()
-        arc_vertex = arc.toShape().Vertexes[geo_dict["arc_vertex"]].Point
-        arc_line = GeoObj.Line2d(arc_vertex, p_i)
+        arc_line = GeoObj.Line2d(p_i, arc_vertex)
 
         #get the tangent that's split by the p_i
         split_tangent = tangents[0]
@@ -174,81 +243,24 @@ class InsertCurve():
             if GeoUtils.compare_vectors(p_i, point):
                 split_tangent = tangents[1]
 
-        #determine which side of the line the arc location falls on
-        arc_side = arc_line.get_side(arc.Location)
+        ortho = split_tangent.as_line2d().\
+            get_orthogonal(arc.Location)
 
-        split_line = None
+        tangent_vertex = ortho.intersect(split_tangent.as_line2d())
 
-        #compare with side of the line the split tangents' end point is
-        for point in split_tangent.get_points():
-            if arc_line.get_side(point) == arc_side:
-                split_line = GeoObj.Line2d(p_i, point)
-                break
+        split_line = GeoObj.Line2d(p_i, tangent_vertex)
 
         #return the two tangents as 2D lines
         return [arc_line, split_line]
 
-    def __get_arc_parameters(self, geo_dict, constrained_index):
-        """
-        Given the provided geometry, determines the center point,
-        start angle, end angle and radius needed for arc construction.
-        Distinguishes between arcs which are inserted (an existing arc is
-        defined in the geometry dictionary) and new creation (only tangents
-        are provided.)
-
-        Arguments:
-        geo-dict - Dictionary of relevant geometry as SketchElements
-
-        Returns:
-        Dictionary of App.Vector object with keys:
-        ["center point", "start angle", "end angle", "radius"]
-        """
-
-        tangents = [geo_dict["start_tangent"].get_element(), \
-            geo_dict["end_tangent"].get_element()]
-
-        #get the point of intersection
-        p_i = tangents[0].intersect2d(tangents[1], Part.Plane())
-
-        vertexes = [tangents[0].get_element().start_point,\
-                    tangents[0].get_element().end_point,\
-                    tangents[1].get_element().start_point,\
-                    tangents[1].get_element().end_point]
-
-        #for vertex in vertexes:
-           # if p_i.sub(vtx) > 0.0001:
-        #accumulate non-zero vectors
-        for tangent in tangents:
-            _t = p_i.sub(tangent.start_point)
-            _u = p_i.sub(tangent.end_point)
-
-            #if _t.Length > 0.00001:
-            #    vectors.append(_t)
-
-           # if _u.Length > 0.00001:
-            #    vectors.append(_u)
-
-        #abort conditions
-        if len(tangents) > 2:
-            if geo_dict["arc"] == None or constrained_index < 0:
-                return None
-
-        arc_vertex = geo_dict["arc"].get_element().toShape().Vertexes\
-            (constrained_index)
-
-        back_tangent = p_i.sub(arc_vertex)
-
-        _tan = None
-
-
-    def _delete_constraints(self, geo_dict):
+    def _delete_constraints(self, geo_dict, vertex_index):
         """
         Deletes existing constraints from an existing arc's end point
         and returns adjacent geometry that shares an endpoint with the
         constrained vertex
         
         Arguments:
-        constrained_index - curve index constrained to the selected tangent
+        vertex_index - curve index constrained to the selected tangent
         geo_dict - The dictionary of selected geometry as SketchElements
         factor - The adjustment factor
 
@@ -284,7 +296,8 @@ class InsertCurve():
 ################
 
         #get all attached constraints and geometry attached to the point
-        arc_vertex = geo_dict["arc_vertex"]
+        arc_vertex = geo_dict["arc"].get_points()[vertex_index]
+
         attached = geo_dict["arc"].match_by_vertex(arc_vertex)
 
         #delete existing constraints first
@@ -313,7 +326,7 @@ class InsertCurve():
 
         return
 
-    def _adjust_curve(self, geo_dict, factor):
+    def _adjust_curve(self, geo_dict, vertex_index, factor):
         """
         Adjusts the length of the arc by the factor value.
 
@@ -330,20 +343,16 @@ class InsertCurve():
         arc = geo_dict["arc"]
         delta_angle = arc.as_arc2d().sweep_angle * factor
 
-        arc_vertex = geo_dict["arc_vertex"]
-
-        idx = arc.as_arc2d().from_vertex_index(arc_vertex)
-
         #calculate the parameter for the point's new location
         _u = arc.get_element().FirstParameter + delta_angle
 
-        if idx == 1:
+        if vertex_index == 1:
             _u = arc.get_element().LastParameter - delta_angle
 
         point = arc.get_element().value(_u)
 
         #move the point, update the dictionary, and return
-        self.sketch.movePoint(arc.index, idx + 1, point, 0)
+        self.sketch.movePoint(arc.index, vertex_index + 1, point, 0)
 
         App.ActiveDocument.recompute()
 
@@ -353,7 +362,7 @@ class InsertCurve():
 
         return geo_dict
 
-    def _get_constrained_index(self, constraint):
+    def _get_constrained_vertex(self, constraint):
         """
         Given a dictionary of an arc and two tangents, return the
         vertex index of the arc which is constrained by the start tangent
@@ -371,12 +380,13 @@ class InsertCurve():
 
         return result - 1
 
-    def _generate_new_back_tangent(self, geo_dict):
+    def _generate_new_back_tangent(self, geo_dict, vertex_index):
         """
         Generates a new back tangent based upon the passed
         arc and adjoining back tangents
 
         Arguments:
+        vertex_index - the index of the arc vertex that is to be adjusted
         geo_dict - Geometry dictionary
 
         Returns:
@@ -385,18 +395,14 @@ class InsertCurve():
         """
 
         arc = geo_dict["arc"]
-        arc_vertex = geo_dict["arc_vertex"]
         start_tangent = geo_dict["start_tangent"]
         end_tangent = geo_dict["end_tangent"]
 
         arc_2d = arc.as_arc2d()
 
-        #get the geometrically-ordered curve index
-        idx = arc_2d.from_vertex_index(arc_vertex)
-
         #get the tangent vector and the curve point it passes through
-        tan_vec = arc.get_element().tangent(arc_2d.parameters[idx])[0]
-        arc_point = arc_2d.points[idx]
+        tan_vec = arc.get_element().tangent(arc_2d.parameters[vertex_index])[0]
+        arc_point = arc.get_points()[vertex_index]
 
         #create the line which describes the new tangent line
         new_tan_line = GeoObj.Line2d(arc_point, direction = tan_vec)
@@ -410,7 +416,7 @@ class InsertCurve():
             new_tan_line.intersect(end_tangent.as_line2d())
 
         #create the new geometry, add it to the document, and return the
-        #geometry in an ElementContainer
+        #geometry as a SketchElement
         new_tangent = new_tan_line.to_line_segment()
 
         new_tan_idx = self.sketch.addGeometry(new_tangent, True)
@@ -430,7 +436,7 @@ class InsertCurve():
 
         #create constraint to bind curve end point to new tangent
         constraint = Sketcher.Constraint("Tangent", arc.index,\
-            idx + 1, new_tan_idx)
+            vertex_index + 1, new_tan_idx)
 
         self.sketch.addConstraint(constraint)
 
