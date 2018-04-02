@@ -93,7 +93,7 @@ class InsertCurve():
         arc_parameters = self._get_arc_parameters(geo_dict, vertex_index)
 
         #create a new arc based on the specified back tangents
-        new_arc = CurveUtils.create_arc(arc_parameters))
+        new_arc = CurveUtils.create_arc(arc_parameters)
 
         self.sketch.addGeometry(new_arc)
         App.ActiveDocument.recompute()
