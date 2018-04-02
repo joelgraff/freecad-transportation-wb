@@ -249,10 +249,9 @@ class SketchGeometry(SketchElement):
         self.line2d = None
         self.arc2d = None
 
-    def match_by_vertex(self, vertex_index, object_type = None):
+    def match_by_vertex(self, vertex, object_type = None):
 
-    	result = SketchElement.find_by_vertex(self.sketch, \
-            self.get_element().toShape().Vertexes[vertex_index], object_type)
+    	result = SketchElement.find_by_vertex(self.sketch, vertex, object_type)
 
         return [_x for _x in result if _x.index != self.index]
 
@@ -343,7 +342,31 @@ class SketchGeometry(SketchElement):
             sketch_geo.get_element(), Part.Plane())[0]
 
         return App.Vector(point_tuple[0], point_tuple[1])
-        
+
+    def get_vertex_index(self, point):
+        """
+        Gets the geometrically-ordered curve point index from the 
+        passed vertex index.
+
+        Arguments:
+        vertex - the vertex point to match as App.Vector
+
+        Returns:
+        Curve index, 0 == self.start_point; 1 == self.end_point
+        """
+
+        result = -1
+
+        points = self.get_points()
+
+        if GeoUtils.compare_vectors(point, points[0]):
+            result = 0
+
+        elif GeoUtils.compare_vectors(point, points[1]):
+            result = 1
+
+        return result        
+
 class SketchConstraint(SketchElement):
     """
     Subclass of SketchElement for constraint object types
