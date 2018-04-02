@@ -5,6 +5,7 @@ Provides a mathematically-defined geometry objects.
 import FreeCAD as App
 import Part
 import GeometryUtilities as GeoUtils
+import math
 
 class Arc2d(object):
     """
@@ -42,7 +43,6 @@ class Arc2d(object):
 
             v = verts[i].Point
 
-            print "vertex #" + str(i) + ": " + str(v)
             if GeoUtils.compare_vectors(v, start_vec):
                 self.start_point = v
                 self.start_index = i
@@ -52,27 +52,6 @@ class Arc2d(object):
                 self.end_index = i
 
         return [self.start_point, self.end_point]
-
-    def from_vertex_index(self, index):
-        """
-        Gets the geometrically-ordered curve point index from the 
-        passed vertex index.
-
-        Arguments:
-        index - the index of the curve's vertex
-
-        Returns:
-        Curve index, 0 == self.start_point; 1 == self.end_point
-        """
-
-        vtx = self.arc.toShape().Vertexes[index].Point
-
-        result = 0
-
-        if GeoUtils.compare_vectors(vtx, self.end_point):
-            result = 1
-
-        return result
 
 class Line2d(object):
     """
@@ -145,6 +124,15 @@ class Line2d(object):
 
         return Line2d(vtx[0].Point, vtx[1].Point)
 
+    def length(self):
+        """
+        Return the length of the line
+        """
+
+        delta = self.end_point.sub(self.start_point)
+
+        return delta.Length
+
     def get_side(self, point):
         """
         Returns a value indicating which side of the line the points falls on
@@ -172,6 +160,13 @@ class Line2d(object):
 
         return Part.LineSegment(self.start_point, self.end_point)
 
+    def to_vector(self):
+        """
+        Returns the line as a vector
+        """
+
+        return self.start_point.sub(self.end_point)
+
     def fn_x(self, _x):
         """
         Evaluate the line as a function of x.
@@ -197,6 +192,44 @@ class Line2d(object):
         """
 
         return (_y - self.intercept) / self.slope
+
+    def resize(self, length, from_start_point = True):
+        """
+        Resize the line to the specified length
+
+        Arguments:
+        length - New length for the line
+        from_start_point - Boolean indicating whether the start point is the
+        reference point (remains fixed).  If false, end point remains fixed.
+
+        Returns:
+        Nothing
+        """
+
+        points = self.get_points()
+
+        if not from_start_point:
+            points[0].x, points[1].x = points[1].x, points[0].x
+            points[0].y, points[1].y = points[1].y, points[0].y
+
+        if self.slope is None:
+            points[1] = App.Vector(points[0].x + length, points[0].y)
+
+        elif self.slope == 0.0:
+            points[1] = App.Vector(points[0].x, points[0].y + length)
+
+        else:
+            dx = length / math.sqrt(1 + self.slope * self.slope)
+            x_dir = GeoUtils.sign(points[1].x - points[0].x)
+
+            if x_dir == 0:
+                x_dir = 1
+
+            points[1].x = points[0].x + (x_dir * dx)
+            points[1].y = self.fn_x(points[1].x)
+
+        self.start_point = points[0]
+        self.end_point = points[1]
 
     def is_bounded(self, point):
         """
@@ -237,7 +270,7 @@ class Line2d(object):
         MathLine2d object representing the orthogonal
         """
 
-        result = Line2d(point, point)
+        result = Line2d(App.Vector(point), App.Vector(point))
 
         #horizontal line case
         if self.slope == 0.0:
@@ -253,6 +286,8 @@ class Line2d(object):
         else:
             result.slope = -1.0 / self.slope
             result.intercept = point.y - result.slope * point.x
+
+        result.resize(1.0)
 
         return result
 
