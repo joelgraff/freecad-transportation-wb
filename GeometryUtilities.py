@@ -16,6 +16,9 @@ UNIT_Y = App.Vector(0.0, 1.0, 0.0)
 UNIT_Z = App.Vector(0.0, 0.0, 1.0)
 ORIGIN = App.Vector(0.0, 0.0, 0.0)
 
+#tolerance for floating point comparisons
+ZERO_TOLERANCE = 0.0001
+
 def _get_arc_angles(vectors):
     """
     Return the start and sweep angles for an arc
@@ -105,6 +108,80 @@ def sign(value):
         return -1
 
     return 0
+
+def get_quadrant(origin, point):
+    """
+    Given an origin, determine the quadrant in which the specified
+    point lives.  Quadrants are laid out in counter-clockwise order,
+    starting from upper left:
+
+           |
+       2   |   1
+           |
+    -------0-------
+           |
+       3   |   4
+           |
+
+    Arguments:
+    origin: The center reference of the system
+    point:  The point for which the quadrant is determined
+
+    Returns:
+    quadrant with values 1 - 4
+
+    Points which fall directly in line with the origin horizontally / vertically
+    are assigned the next quadrant's number, negated.  Thus, a point between
+    quadrants 4 and 1 is assigned -1, between 2 and 3 is assigned -3, etc.
+
+    Take absolute value of result to ignore between-quadrant condition.
+
+    Points which fall on the origin return quadrant zero.
+    """
+
+    #calculate deltas, and ensure values within the zero tolerance are to zero
+    _dx = point.x - origin.x
+    _dy = point.y - origin.y
+
+    print "POINT: " + str(point)
+    print "ORIGIN: " + str(origin)
+
+    zero_x = abs(_dx) < ZERO_TOLERANCE
+    zero_y = abs(_dy) < ZERO_TOLERANCE
+
+    print "ZERO_X: " + str(zero_x)
+    print "ZERO_Y: " + str(zero_y)
+    if zero_x:
+        _dx = 0.0
+
+    if zero_y:
+        _dy = 0.0
+
+    if zero_x and zero_y:
+        return 0
+
+    if zero_x:
+        if _dy > 0:
+            return -2
+        else:
+            return -4
+
+    if zero_y:
+        if _dx > 0:
+            return -1
+        else:
+            return -3
+
+    if _dx > 0:
+        if _dy > 0:
+            return 1
+        else:
+            return 4
+
+    elif _dy > 0:
+        return 2
+
+    return 3
 
 def get_selection(sketch_object):
     """
