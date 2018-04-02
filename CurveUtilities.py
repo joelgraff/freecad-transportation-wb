@@ -52,7 +52,30 @@ def sort_vectors(vectors):
 
     return result
 
-def create_arc(back_tangents):
+def create_arc(params):
+    """
+    Generate arc based on passed parameters specifying:
+     - Centerpoint (arc location)
+     - Radius
+     - Start angle (radians)
+     - Sweep angle (radians)
+
+     Arguments:
+     params - dictionary containing the necessary parameters
+
+     Returns:
+     The new geometry to add to the sketch
+    """
+
+    circle_part = Part.Circle(params["location"], UNIT_Z, params["radius"])
+
+    #return a list with the resulting arc and the vectors in proper order
+    result = Part.ArcOfCircle(circle_part, params["start_angle"],\
+        params["sweep_angle"])
+
+    return result
+
+def _create_arc(back_tangents):
     """
     Generate arc parameters based on the passed tangents.
     Parameters create an arc which fits the internal angle of the
