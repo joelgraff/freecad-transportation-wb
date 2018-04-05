@@ -44,9 +44,10 @@ class MyTestCmd3:
 
     def Activated(self):
         import QtUnitGui
+        QtUnitGui.addTest("transportationwb.Test_miki")
         QtUnitGui.addTest("transportationwb.traffic.Test_traffic")
         QtUnitGui.addTest("transportationwb.vehicle.Test_vehicle")
-        QtUnitGui.addTest("transportationwb.Test_MeinAll.Col2")
+        QtUnitGui.addTest("transportationwb.Test_All.Col1")
 
     def GetResources(self):
         return {'MenuText': 'Unit Tests', 'ToolTip': 'Runs the self-test for the workbench'}
@@ -228,6 +229,10 @@ if FreeCAD.GuiUp:
 
     toolbars=[['Simulation',toolbar],['Terrain',terrain],['Tests',[ 'My_Transprtation_Tests','Doku']]]
 
+    c3b(["Demos"],always,'miki_g','test Dialog MainWindow')
+    c3b(["Demos"],always,'miki_g','test Dialog Tab')
+    c3b(["Demos"],always,'miki_g','test Dialog DockWidget')
+    c3b(["Demos"],always,'miki_g','test Dialog')
 
 
 #----------------------

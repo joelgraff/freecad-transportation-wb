@@ -21,6 +21,8 @@ INPUT = traffic/__init__.py
 INPUT += vehicle/__init__.py
 # INPUT += traffic/Test_traffic.py
 
+INPUT += miki_g.py
+
 
 INPUT += readme.md 
 USE_MDFILE_AS_MAINPAGE = readme.md

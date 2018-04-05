@@ -13,16 +13,15 @@
 
 .bbb
 {
-   text-align: left;
-   clear: both;
    border: 1px solid red;
+   
 }
 
 
 div.image {
 	border: 1px solid green;
 	float: left !important;
-   display:inline!important;
+	display:inline!important;
 }
 
 
