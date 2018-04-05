@@ -17,8 +17,8 @@
 import FreeCAD
 import FreeCADGui
 
-from geodat.say import sayexc, say
-from geodat.say import  *
+from transportationwb.say import sayexc, say
+from transportationwb.say import  *
 
 from PySide import QtGui, QtCore
 
@@ -1013,6 +1013,10 @@ class MikiDemoApp(object):
 		self.close2()
 
 
+class Controller(MikiDemoApp):
+	pass
+
+
 def createMikiGui(layout, app):
 	'''creates a miki Gui object (widget and logic)
 	for the view layout string and the controller app'''
@@ -1035,8 +1039,8 @@ def testme(mode=''):
 
 	layout = '''
 #VerticalLayoutTab:
-#MainWindow:
-DockWidget:
+MainWindow:
+#DockWidget:
 
 #	id:'main'
 	QtGui.QLabel:
