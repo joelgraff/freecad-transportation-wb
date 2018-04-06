@@ -11,56 +11,56 @@ class SketchElement(object):
     selected.
     """
 
-    def __init__(self, sketch, index, element_type):
+    def __init__(self, sketch, index):
         self.index = index
-        self.type = element_type
+        self.type = None
         self.sketch = sketch
-        
+
     @staticmethod
     def _resolve_constraint(sketch, constraint):
         """
         Resolves any references in the passed element to geometry and vertex
         vectors
-    
+
         Arguments:
         sketch - reference to the containing sketch
         constraint - A Sketcher constraint
-    
+
         Returns:
         List of geometry / vertex pairs accessible as:
         result[0][0] - First matched geometry
         result[0][1] - First matched vertex as App.Vector
         """
-    
+
         geo = [constraint.First, constraint.Second, constraint.Third]
         vert = [constraint.FirstPos, constraint.SecondPos, constraint.ThirdPos]
-    
+
         result = []
 
         for i in range(0, 2):
-    
+
             item = []
-        
-    	    if geo[i] <= 0:
+
+            if geo[i] <= 0:
                 continue
-        
+
             geom = sketch.Geometry[geo[i]]
             item.append(geom)
-        
+
             vtx = None
-            
+
             if vert[i] > 0:
                 vertices = geom.toShape().Vertexes
 
                 if vert[i] <= len(vertices):
                     vtx = vertices[vert[i] - 1].Point
-            
+
             item.append(vtx)
 
             result.append(item)
-        
+
         return result
-        
+
     @staticmethod
     def find_attached_geometry(sketch, geometry_index):
         """
@@ -79,8 +79,7 @@ class SketchElement(object):
         #iterate the constraints, matching against the passed index
         for constraint in sketch.Constraints:
 
-            indices = [constraint.First, constraint.Second, \
-            constraint.Third]
+            indices = [constraint.First, constraint.Second, constraint.Third]
 
             #if matched, add non-zero indices to the array not including
             #the passed index
@@ -90,15 +89,17 @@ class SketchElement(object):
                     [idx for _x, idx in enumerate(indices) \
                     if idx > 0 and idx != geometry_index])
 
-        result = []
+        return geom
+
+        #result = []
 
         #build the SketchElement list and return
-        for idx in geom:
+        #for idx in geom:
 
-            geo = SketchGeometry(sketch, idx)
-            result.append(geo)
+        #    geo = SketchGeometry(sketch, idx)
+        #    result.append(geo)
 
-        return result
+        #return result
 
     @staticmethod
     def get_binding_constraint(sketch, geo_index_1, geo_index_2):
@@ -243,19 +244,19 @@ class SketchGeometry(SketchElement):
 
     def __init__(self, sketch, index):
 
-        SketchElement.__init__(self, sketch, index, \
-            type(sketch.Geometry[index]))
+        SketchElement.__init__(self, sketch, index)
 
+        self.type = type(sketch.Geometry[index])
         self.line2d = None
         self.arc2d = None
 
     def match_by_vertex(self, vertex, object_type = None):
 
-    	result = SketchElement.find_by_vertex(self.sketch, vertex, object_type)
+        result = SketchElement.find_by_vertex(self.sketch, vertex, object_type)
 
         return [_x for _x in result if _x.index != self.index]
 
-    def match_attached_geometry(self):
+    def get_attached_geometry(self):
         """
         Returns the geometry attached to the SketchGeometry element
         """
@@ -373,7 +374,9 @@ class SketchConstraint(SketchElement):
     """
 
     def __init__(self, sketch, index):
-        SketchElement.__init__(self, sketch, index, Sketcher.Constraint)
+
+        SketchElement.__init__(self, sketch, index)
+        self.type = type(sketch.Constraints[index])
 
     def get_element(self):
         """
