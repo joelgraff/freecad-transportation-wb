@@ -57,6 +57,8 @@ class InsertCurve():
         #back tangent before continuing
         geo_dict = self._get_tangents(selection)
 
+        vertex_index = -1
+
         #create a new back tangent and adjust the existing arc
         #so we can place a new arc
         if geo_dict["arc"] != None:
@@ -100,7 +102,7 @@ class InsertCurve():
 
         geo_dict["new arc"] = new_arc
 
-        self._reconstrain(geo_dict)
+        self._reconstrain(geo_dict, vertex_index)
 
         return
 
@@ -148,9 +150,7 @@ class InsertCurve():
         #calculate the arc radius
         arc_rad = arc_loc.sub(tangent_vertex).Length
 
-        #calculate the start angle
-        offset = 0
-
+        #swap orthogonals to ensure counter-clockwise ordering
         cp =  orthos[0].to_vector()\
             .cross(orthos[1].to_vector())
 
@@ -159,6 +159,9 @@ class InsertCurve():
 
         #set the initial offset by determining the quadrant
         quad = abs(GeoUtils.get_quadrant(arc_loc, orthos[0].start_point))
+
+        #calculate the start angle
+        start_angle = (quad - 1) * (math.pi / 2.0)
 
         #test for undefined slope
         if orthos[0].slope is None:
@@ -312,7 +315,7 @@ class InsertCurve():
 
         return geo_dict
 
-    def _reconstrain(self, geo_dict):
+    def _reconstrain(self, geo_dict, vertex_index):
         """
         Reconstrains existing geometry previously attached to the
         previous arc end point to the new arc end poin
@@ -323,6 +326,38 @@ class InsertCurve():
         Returns:
         Nothing
         """
+
+        #test to determine if there is an arc in the geometry dictionary
+        #if so, the arc's vertex in the dictionary will need to be bound
+        #to the end tangent, which is the created tangent.
+        if geo_dict.has_key("arc"):
+            
+            arc = geo_dict["arc"]
+
+            if vertex_index == -1:
+                return
+
+            new_arc = geo_dict["new_arc"]
+
+            arc_point = arc.get_points[vertex_index]
+
+            arc_start = new_arc.get_points[0]
+            arc_end = new_arc.get_points[1]
+
+            #if the end point is closer to the adjusted arc than the start
+            #point is, swap them
+            if arc_end.sub(arc_point).Length < arc_start.sub(arc_point).Length:
+
+                arc_start, arc_end = arc_end, arc_start
+
+            #build tangent constraints for new arc
+            tan_constr_1 = Sketcher.Constraint("tangent", new_arc.index, \
+            arc_start, arc.index, vertex_index)
+
+            tan_constr_2 = Sketcher.Constraint("Tangent", new_arc.index, \
+            arc_end, geo_dict["end_tangnet"].index)
+
+            #add tangent constraints to the sketch
 
         return
 
