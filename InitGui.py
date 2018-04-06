@@ -43,7 +43,7 @@ class TransportationWorkbench (Workbench):
         import NewAlignment
         import Tangent
         import Curve1
-        import InsertCurve
+        import InsertCurve2
         #import Curve2, Curve3, CurveSpiral
 
         Gui.activateWorkbench("SketcherWorkbench")
