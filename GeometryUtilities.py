@@ -96,7 +96,7 @@ def find_geometry(sketch_object, shape_name):
 
     index = int(filter(str.isdigit, shape_name))
 
-    #return a GeometryContainer object with a reference to the geometry
+    #return a SketchGeometry object with a reference to the geometry
     #and it's index in the Geometry list
     return skel.SketchGeometry(sketch_object, index-1)
 
