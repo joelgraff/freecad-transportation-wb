@@ -233,6 +233,8 @@ if FreeCAD.GuiUp:
     c3b(["Demos"],always,'miki_g','test Dialog Tab')
     c3b(["Demos"],always,'miki_g','test Dialog DockWidget')
     c3b(["Demos"],always,'miki_g','test Dialog')
+    c3b(["Curves"],always,'beziersketch','create Bezier Sketch')
+    c3b(["Curves"],always,'beziersketch','create Simple Bezier Sketch')
 
 
 #----------------------
@@ -259,6 +261,7 @@ class TransportationWorkbench (Workbench):
         import Curve1
         #import Curve2, Curve3, CurveSpiral
 
+        Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
 
         self.appendToolbar("Transportation", self.general_fn_list)
@@ -286,6 +289,11 @@ class TransportationWorkbench (Workbench):
         for m in ml:
             self.appendMenu(list(m),menues[m])
 
+
+
+        cmds= ['Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid']
+        cmds += ['Nurbs_LightOn','Nurbs_LightOff']
+        self.appendToolbar("My Helpers", cmds )
 
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(self.version))
@@ -429,6 +437,16 @@ static char * workbench_xpm[] = {
 "[. c #E5DFD1",
 "}. c #C7C7C5",
 "|. c #2B2822",
+		cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
+		'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
+		'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
+		'Nurbs_createcloverleaf',
+		'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
+		'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+
+		cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+		
+		cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff']
 "1. c #151514",
 "2. c #B5B8B1",
 "3. c #C9CDC4",
@@ -846,6 +864,16 @@ static char * workbench_xpm[] = {
 "K$ c #3B3B3B",
 "L$ c #878A85",
 "M$ c #BDA476",
+		cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
+		'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
+		'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
+		'Nurbs_createcloverleaf',
+		'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
+		'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+
+		cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+		
+		cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff']
 "N$ c #0F0F0F",
 "O$ c #9FA39D",
 "P$ c #90938C",
@@ -912,7 +940,17 @@ static char * workbench_xpm[] = {
 ". . & * * * * = - ; > $ . . .                                                                   . . . , ' ) ! ~ { ] ^ / ( _ % . ",
 ". . : * * * * * * < [ } | $ . . .                                                           . . . 1 2 3 ! 4 5 6 7 8 9 0 a b % . ",
 ". . c d * * * * * * * e f 8 g . . . .                                                   . . . h i j ! k l m n / o 0 p 8 q r % . ",
-". . s s t u * * * * * * & v w x y . . . .                                           . . . z A j ! B C D E F G 0 H / I J ! K $ . ",
+". . s s t u * * * * * * &
+		cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
+		'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
+		'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
+		'Nurbs_createcloverleaf',
+		'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
+		'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+
+		cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+		
+		cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff'] v w x y . . . .                                           . . . z A j ! B C D E F G 0 H / I J ! K $ . ",
 ". . L M s N O * * * * P Q R & v S T U . . . .                                   . . . V W X ! Y Z `  ./ / ..+.F @.#.$.k %.&.. . ",
 ". . . . *.=.s -.;.* * >.,.'.).* & !.S t ~.. . . .                           . . . V {.].! 4 ^./.(._.8 :. ./ / <.[.! }.|.. . . . ",
 ". . . . . 1.2.s 3.4.* 5.6.,.,.7.8.* & 9.0.a.b.. . . .                   . . . c.d.].! e.f.g.0 a / ( 0 _.8 h.i.j.].k.# . .   . . ",

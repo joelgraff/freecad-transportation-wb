@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['verticalgroup',['VerticalGroup',['../namespacetransportationwb_1_1miki__g.html#a26f6c012b9d9818300b2952f439a544b',1,'transportationwb::miki_g']]],
-  ['verticallayout',['VerticalLayout',['../namespacetransportationwb_1_1miki__g.html#ae780b8d2f5d8ce0422d6a6cf722869b8',1,'transportationwb::miki_g']]],
-  ['verticallayouttab',['VerticalLayoutTab',['../namespacetransportationwb_1_1miki__g.html#a579374fa60d51df8b85b4f684a6d44ff',1,'transportationwb::miki_g']]]
+  ['testme',['testme',['../namespacetransportationwb_1_1miki__g.html#a4d1e5eecd952b51eb05504f6a346c449',1,'transportationwb::miki_g']]],
+  ['toggle_5ftitle_5fwidget',['toggle_title_widget',['../classtransportationwb_1_1miki__g_1_1MikiDockWidget.html#a6571a212610413c325b9ae70d68c16aa',1,'transportationwb::miki_g::MikiDockWidget']]]
 ];

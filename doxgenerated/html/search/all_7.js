@@ -1,9 +1,5 @@
 var searchData=
 [
-  ['mainwindow',['MainWindow',['../namespacetransportationwb_1_1miki__g.html#a2fd7c855b0e45c8b01ee7f3464a6f683',1,'transportationwb::miki_g']]],
-  ['miki',['Miki',['../classtransportationwb_1_1miki__g_1_1Miki.html',1,'transportationwb::miki_g']]],
-  ['miki2',['Miki2',['../classtransportationwb_1_1miki__g_1_1Miki2.html',1,'transportationwb::miki_g']]],
-  ['mikidemoapp',['MikiDemoApp',['../classtransportationwb_1_1miki__g_1_1MikiDemoApp.html',1,'transportationwb::miki_g']]],
-  ['mikidockwidget',['MikiDockWidget',['../classtransportationwb_1_1miki__g_1_1MikiDockWidget.html',1,'transportationwb::miki_g']]],
-  ['mikiwidget',['MikiWidget',['../classtransportationwb_1_1miki__g_1_1MikiWidget.html',1,'transportationwb::miki_g']]]
+  ['ids',['ids',['../classtransportationwb_1_1miki__g_1_1Miki.html#a949e4f9a99c93e9f77d784edbd36e3b3',1,'transportationwb::miki_g::Miki']]],
+  ['itemclicked',['itemClicked',['../classtransportationwb_1_1vehicle_1_1VehicleController.html#adb33f7f0b49f8207541cc311ea04523d',1,'transportationwb.vehicle.VehicleController.itemClicked()'],['../classtransportationwb_1_1miki__g_1_1MikiDemoApp.html#ad0fb94ea9b5b3ff2cd8197504961a759',1,'transportationwb.miki_g.MikiDemoApp.itemClicked()']]]
 ];

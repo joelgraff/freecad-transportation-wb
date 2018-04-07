@@ -22,6 +22,7 @@ INPUT += vehicle/__init__.py
 # INPUT += traffic/Test_traffic.py
 
 INPUT += miki_g.py
+INPUT += beziersketch.py
 
 
 INPUT += readme.md 
