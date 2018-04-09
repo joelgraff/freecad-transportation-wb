@@ -19,6 +19,20 @@ Gui = FreeCADGui
 
 from PySide import QtCore
 
+'''
+# kofig sketcher 
+# see 
+hGrpsk = App.ParamGet("User parameter:BaseApp/Preferences/Mod/Sketcher/General")
+
+hGrpsk.GetBool("BSplineDegreeVisible")
+hGrpsk.GetBool("BSplineControlPolygonVisible")
+hGrpsk.GetBool("BSplineCombVisible")
+hGrpsk.GetBool("BSplineKnotMultiplicityVisible")
+
+
+
+
+'''
 
 import numpy as np
 import time
@@ -145,6 +159,7 @@ class BezierSketch(FeaturePython):
 
 		print "myExecute ..."
 		if not obj.simple:
+			print "Simple---------"
 			if obj.aSketch <>None:
 				print obj.aSketch
 				print obj.aSketch.getDatum('Ax')
@@ -152,29 +167,41 @@ class BezierSketch(FeaturePython):
 				obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
 				obj.setDriving(27,True)
 				obj.setDatum('Ay',obj.aSketch.getDatum('By'))
-				obj.setDriving(30,True)
-				obj.setDatum('Aarc',(180+obj.aSketch.getDatum('Barc').Value)*np.pi/180)
-				
+				if obj.aTangential:
+					print "huhuaa"
+					obj.setDriving(30,True)
+					obj.setDatum('Aarc',(180+obj.aSketch.getDatum('Barc').Value)*np.pi/180)
+				else:
+					print "huhufdfd"
+					obj.setDriving(30,False)
 			else:
 				obj.setDriving(26,False)
 				obj.setDriving(27,False)
 				obj.setDriving(30,False)
 
 			if obj.bSketch <>None:
+				print "yy"
 				print obj.aSketch
 				print obj.aSketch.getDatum('Ax')
 				obj.setDriving(28,True)
 				obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
 				obj.setDriving(29,True)
 				obj.setDatum('By',obj.bSketch.getDatum('Ay'))
-				obj.setDriving(31,True)
-				obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
+				if obj.bTangential:
+					print "huhu"
+					obj.setDriving(31,True)
+					obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
+				else:
+					print "haha"
+					obj.setDriving(31,False)
+
 
 			else:
 				obj.setDriving(28,False)
 				obj.setDriving(29,False)
 				obj.setDriving(31,False)
 		else:
+			print "ho simple"
 			if obj.aSketch <>None:
 				print obj.aSketch
 				print obj.aSketch.getDatum('Ax')
@@ -182,9 +209,11 @@ class BezierSketch(FeaturePython):
 				obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
 				obj.setDriving(15,True)
 				obj.setDatum('Ay',obj.aSketch.getDatum('By'))
-				obj.setDriving(18,True)
-				obj.setDatum('Aarc',(180+obj.aSketch.getDatum('Barc').Value)*np.pi/180)
-				
+				if obj.aTangential:
+					obj.setDriving(18,True)
+					obj.setDatum('Aarc',(180+obj.aSketch.getDatum('Barc').Value)*np.pi/180)
+				else:
+					obj.setDriving(18,False)
 			else:
 				obj.setDriving(14,False)
 				obj.setDriving(15,False)
@@ -197,8 +226,12 @@ class BezierSketch(FeaturePython):
 				obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
 				obj.setDriving(17,True)
 				obj.setDatum('By',obj.bSketch.getDatum('Ay'))
-				obj.setDriving(19,True)
-				obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
+				if obj.bTangential:
+					obj.setDriving(19,True)
+					obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
+				else:
+					obj.setDriving(19,
+					False)
 
 			else:
 				obj.setDriving(16,False)
@@ -215,6 +248,30 @@ class BezierSketch(FeaturePython):
 #		print ("onChange", prop)
 #		return
 
+
+
+def combineSketches():
+
+	xys=App.ActiveDocument.MySimpleBezierSketch
+	c=xys.Shape.Edges[0].Curve
+	psa=c.getPoles()
+
+	xys=App.ActiveDocument.MySimpleBezierSketch001
+	c=xys.Shape.Edges[0].Curve
+	psb=c.getPoles()
+	psb.reverse()
+
+	pts=[]
+	for (a,b) in zip(psa,psb):
+		print a
+		print b 
+		p=FreeCAD.Vector(a.x,a.y,b.z)
+		pts += [p]
+
+
+	bs=Part.BSplineCurve(pts)
+	Part.show(bs.toShape())
+	App.ActiveDocument.ActiveObject.ViewObject.LineColor=(1.0,0.0,0.0)
 
 
 def createbezier(sk):
