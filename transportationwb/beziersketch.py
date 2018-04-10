@@ -433,6 +433,227 @@ def createsimplebezier(sk):
 	sk.addConstraint(Sketcher.Constraint('Coincident',cc,3,3,3)) 
 
 
+
+def ArcSplineSketch(sk):
+	import Part
+	import numpy as np
+
+#	name="hu"
+#	sk = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
+
+	if 1:
+		pts=[
+				(-100,0,0),(-50,50,0),(0,100,0),
+				(50,50,0),(100,0,0),
+				(0,-50,0)
+			]
+
+		pts2=[FreeCAD.Vector(p) for p in pts]
+		pts=pts2
+
+
+
+	App.ActiveDocument.recompute()
+	sk.addGeometry(Part.LineSegment(pts[0],pts[1]),False)
+	sk.addGeometry(Part.LineSegment(pts[1],pts[2]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',0,2,1,1)) 
+	App.ActiveDocument.recompute()
+	sk.addGeometry(Part.LineSegment(pts[2],pts[3]),False)
+	# top
+	sk.addConstraint(Sketcher.Constraint('Coincident',1,2,2,1)) 
+	App.ActiveDocument.recompute()
+
+	sk.addGeometry(Part.LineSegment(pts[3],pts[4]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',2,2,3,1)) 
+	App.ActiveDocument.recompute()
+	sk.addGeometry(Part.LineSegment(pts[4],pts[5]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',3,2,4,1)) 
+	App.ActiveDocument.recompute()
+	App.ActiveDocument.recompute()
+	sk.addGeometry(Part.LineSegment(pts[5],pts[0]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',4,2,5,1)) 
+
+	sk.addConstraint(Sketcher.Constraint('Coincident',5,2,0,1)) 
+	App.ActiveDocument.recompute()
+
+
+	#breite
+
+	sk.addConstraint(Sketcher.Constraint('Perpendicular',5,0)) 
+	App.ActiveDocument.recompute()
+	sk.addConstraint(Sketcher.Constraint('Perpendicular',4,3)) 
+	App.ActiveDocument.recompute()
+
+	sk.addConstraint(Sketcher.Constraint('Equal',5,4)) 
+	App.ActiveDocument.recompute()
+	sk.addConstraint(Sketcher.Constraint('Equal',0,3)) 
+	App.ActiveDocument.recompute()
+	App.ActiveDocument.recompute()
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',1,2,0)) 
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',1,2,3)) 
+
+	App.ActiveDocument.recompute()
+	App.ActiveDocument.recompute()
+
+	#--------------------
+
+
+	sk.addGeometry(Part.Circle(pts[0],App.Vector(0,0,1),10),True)
+	sk.addConstraint(Sketcher.Constraint('Coincident',6,3,0,1)) 
+	sk.addGeometry(Part.Circle(pts[1],App.Vector(0,0,1),10),True)
+	sk.addConstraint(Sketcher.Constraint('Radius',6,10.000000)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',6,7)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',7,3,0,2)) 
+	sk.addGeometry(Part.Circle(pts[3],App.Vector(0,0,1),10),True)
+	sk.addConstraint(Sketcher.Constraint('Equal',6,8)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',8,3,2,2)) 
+	sk.addGeometry(Part.Circle(pts[4],App.Vector(0,0,1),10),True)
+	sk.addConstraint(Sketcher.Constraint('Equal',6,9)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',9,3,3,2)) 
+	sk.addGeometry(Part.BSplineCurve([pts[0],pts[1],pts[3],pts[4]],None,None,False,3,None,False),False)
+
+	conList = []
+	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',6,3,10,0))
+	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',7,3,10,1))
+	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',8,3,10,2))
+	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',9,3,10,3))
+	sk.addConstraint(conList)
+
+	sk.exposeInternalGeometry(10)
+	App.ActiveDocument.recompute()
+
+
+	sk.addConstraint(Sketcher.Constraint('DistanceX',0,1,pts[0].x)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceY',0,1,pts[0].y)) 
+	App.ActiveDocument.recompute()
+	sk.addConstraint(Sketcher.Constraint('DistanceX',3,2,pts[4].x)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceY',3,2,pts[4].y)) 
+	App.ActiveDocument.recompute()
+
+	sk.addConstraint(Sketcher.Constraint('Angle',-1,1,0,1,0.25*np.pi)) 
+
+	App.ActiveDocument.recompute()
+
+#----------------------------
+
+	pts2=[FreeCAD.Vector(200,-100,0)-p for p in pts]
+
+
+	gc=13
+	pts=pts2
+
+	App.ActiveDocument.recompute()
+	sk.addGeometry(Part.LineSegment(pts[0],pts[1]),False)
+	sk.addGeometry(Part.LineSegment(pts[1],pts[2]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+0,2,gc+1,1)) 
+	App.ActiveDocument.recompute()
+	sk.addGeometry(Part.LineSegment(pts[2],pts[3]),False)
+	# top
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+1,2,gc+2,1)) 
+	App.ActiveDocument.recompute()
+
+
+	sk.addGeometry(Part.LineSegment(pts[3],pts[4]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+2,2,gc+3,1)) 
+	App.ActiveDocument.recompute()
+	sk.addGeometry(Part.LineSegment(pts[4],pts[5]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+3,2,gc+4,1)) 
+	App.ActiveDocument.recompute()
+	App.ActiveDocument.recompute()
+	sk.addGeometry(Part.LineSegment(pts[5],pts[0]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+4,2,gc+5,1)) 
+
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+5,2,gc+0,1)) 
+	App.ActiveDocument.recompute()
+
+
+	#breite
+
+	sk.addConstraint(Sketcher.Constraint('Perpendicular',gc+5,gc+0)) 
+	App.ActiveDocument.recompute()
+	sk.addConstraint(Sketcher.Constraint('Perpendicular',gc+4,gc+3)) 
+	App.ActiveDocument.recompute()
+
+
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+5,gc+4)) 
+	App.ActiveDocument.recompute()
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+0,gc+3)) 
+	App.ActiveDocument.recompute()
+	App.ActiveDocument.recompute()
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',gc+1,2,gc+0)) 
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',gc+1,2,gc+3)) 
+
+	App.ActiveDocument.recompute()
+	App.ActiveDocument.recompute()
+
+	#--------------------
+
+	sk.addGeometry(Part.Circle(pts[0],App.Vector(0,0,1),10),True)
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+6,3,gc+0,1)) 
+	sk.addGeometry(Part.Circle(pts[1],App.Vector(0,0,1),10),True)
+	sk.addConstraint(Sketcher.Constraint('Radius',gc+6,10.000000)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+7)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+7,3,gc+0,2)) 
+	sk.addGeometry(Part.Circle(pts[3],App.Vector(0,0,1),10),True)
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+8)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+8,3,gc+2,2)) 
+	sk.addGeometry(Part.Circle(pts[4],App.Vector(0,0,1),10),True)
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+9)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+9,3,gc+3,2)) 
+	sk.addGeometry(Part.BSplineCurve([pts[0],pts[1],pts[3],pts[4]],None,None,False,3,None,False),False)
+
+	
+	conList = []
+	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',gc+6,3,gc+10,0))
+	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',gc+7,3,gc+10,1))
+	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',gc+8,3,gc+10,2))
+	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',gc+9,3,gc+10,3))
+	sk.addConstraint(conList)
+
+	sk.exposeInternalGeometry(gc+10)
+	App.ActiveDocument.recompute()
+
+
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',16,2,3)) 
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',15,2,3)) 
+
+
+	la=sk.addGeometry(Part.LineSegment(pts[0],pts[1]),False)
+	sk.addConstraint(Sketcher.Constraint('Coincident',la,1,3,2)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',la,2,gc+4,1)) 
+
+
+	sk.addConstraint(Sketcher.Constraint('DistanceX',gc+0,1,pts[0].x)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceY',gc+0,1,pts[0].y)) 
+	App.ActiveDocument.recompute()
+#	sk.addConstraint(Sketcher.Constraint('DistanceX',3,2,pts[4].x)) 
+#	sk.addConstraint(Sketcher.Constraint('DistanceY',3,2,pts[4].y)) 
+#	App.ActiveDocument.recompute()
+
+	for i in [1,2,3,4,5,14,15,16,17,18]:
+		sk.toggleConstruction(i) 
+		pass
+	App.ActiveDocument.recompute()
+
+#--------------
+
+
+
+
+
+
+
+
+def createArcSpline(name="Arc"):
+	obj = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
+	FeaturePython(obj)
+	ViewProvider(obj.ViewObject)
+	ArcSplineSketch(obj)
+	# createbezier(obj)
+	obj.ViewObject.LineColor=(random.random(),random.random(),random.random(),)
+	return obj
+
+
 def createBezierSketch(name="MyBezierSketch"):
 	'''create a Bezier Sketch'''
 
