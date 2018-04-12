@@ -443,8 +443,8 @@ def ArcSplineSketch(sk):
 
 	if 1:
 		pts=[
-				(-100,0,0),(-50,50,0),(0,100,0),
-				(50,50,0),(100,0,0),
+				(-100,0,0),(-10,90,0),(0,100,0),
+				(10,90,0),(100,0,0),
 				(0,-50,0)
 			]
 
@@ -589,9 +589,12 @@ def ArcSplineSketch(sk):
 	#--------------------
 
 	sk.addGeometry(Part.Circle(pts[0],App.Vector(0,0,1),10),True)
+
 	sk.addConstraint(Sketcher.Constraint('Coincident',gc+6,3,gc+0,1)) 
 	sk.addGeometry(Part.Circle(pts[1],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Radius',gc+6,10.000000)) 
+#	sk.addConstraint(Sketcher.Constraint('Radius',gc+6,10.000000)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',6,gc+6)) 
+
 	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+7)) 
 	sk.addConstraint(Sketcher.Constraint('Coincident',gc+7,3,gc+0,2)) 
 	sk.addGeometry(Part.Circle(pts[3],App.Vector(0,0,1),10),True)
@@ -634,6 +637,22 @@ def ArcSplineSketch(sk):
 		sk.toggleConstruction(i) 
 		pass
 	App.ActiveDocument.recompute()
+
+	if 10:
+		sk.renameConstraint(26, u'Ax')
+		sk.renameConstraint(27, u'Ay')
+		sk.renameConstraint(61, u'Bx')
+		sk.renameConstraint(62, u'By')
+		sk.renameConstraint(30, u'Aarc')
+
+	App.ActiveDocument.recompute()
+#	App.ActiveDocument.recompute()
+
+	sk.toggleDriving(29) 
+	sk.toggleDriving(28) 
+
+	aa=sk.addConstraint(Sketcher.Constraint('Angle',13,-0.5*np.pi)) 
+	sk.renameConstraint(63, u'Barc')
 
 #--------------
 
