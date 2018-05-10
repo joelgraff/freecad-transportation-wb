@@ -239,6 +239,12 @@ if FreeCAD.GuiUp:
     c3b(["Curves"],ondocument,'geodesic_lines','create Marker')
     c3b(["Curves"],ondocument,'stationing','combine Curves')
 
+    c3b(["Labels"],ondocument,'labeltools','create Geo Location')
+    c3b(["Labels"],ondocument,'labeltools','create Stationing')
+    c3b(["Labels"],ondocument,'labeltools','create Graphic Label')
+    c3b(["Labels"],ondocument,'labeltools','create All Labels')
+
+
 #----------------------
 
 class TransportationWorkbench (Workbench):

@@ -142,6 +142,9 @@ class BezierSketch(FeaturePython):
 #		obj.addProperty("App::PropertyBool",'clearReportview', 'Base',"clear window for every execute")
 
 		obj.addProperty("App::PropertyBool",'simple', )
+		obj.addProperty("App::PropertyEnumeration","model")
+		obj.model=["simple","three points","arc line arc"]
+
 		obj.addProperty("App::PropertyBool",'aTangential',)
 		obj.addProperty("App::PropertyBool",'bTangential',)
 		obj.addProperty("App::PropertyLink",'aSketch', )
@@ -157,8 +160,113 @@ class BezierSketch(FeaturePython):
 	def execute(proxy,obj):
 		'''sync connection aSketch and bSketch'''
 
+#if obj.model ==["simple","three points",]
+
+		if obj.model== "arc line arc": #arcSpline  special
+			print "execute---------"
+
+			obj.setDriving(26,False)
+			obj.setDriving(27,False)
+			obj.setDriving(30,False)
+			obj.setDriving(61,False)
+			obj.setDriving(62,False)
+			obj.setDriving(63,False)
+
+			try:
+				if obj.aSketch <>None:
+					print obj.aSketch
+					print obj.getDatum('Ax')
+					print obj.getDatum('Ay')
+					print obj.getDatum('Aarc')
+					print obj.getDatum(26)
+					print obj.getDatum(26)
+					print obj.getDatum(30)
+					print "----------"
+
+					if  obj.aTangential:
+						print "huhuaa"
+						obj.setDriving(30,True)
+						vn=(obj.aSketch.getDatum('Barc').Value)*np.pi/180+np.pi
+						print "Neuer wert ",vn
+						print obj.getDatum(30)
+						print "-----------"
+						try:
+							obj.setDatum('Aarc',vn)
+						except:
+							print "kann 30 nicht setzen"
+						print "++++++++++"
+					else:
+						print "huhufdfd"
+						obj.setDriving(30,False)
+						obj.recompute()
+
+					print "jijiji"
+
+					obj.setDriving(26,True)
+					obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
+					obj.recompute()
+					obj.setDriving(27,True)
+					obj.setDatum('Ay',obj.aSketch.getDatum('By'))
+					obj.recompute()
+				else:
+					obj.setDriving(26,False)
+					obj.setDriving(27,False)
+					obj.setDriving(30,False)
+				obj.recompute()
+
+			except:
+				print "probleme mit a--Sketch"
+
+			try:
+				if obj.bSketch <>None:
+					print "yy-----------gggg-----"
+
+					if obj.bTangential:
+						print "huhu hhhh tangential .."
+						
+						obj.setDriving(63,True)
+						print "hahah--a bar, arc ..."
+						print obj.getDatum('Barc')
+						print obj.bSketch.getDatum('Aarc').Value
+						
+						#obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
+						vn=(-obj.bSketch.getDatum('Aarc').Value)*np.pi/180+np.pi*0.5
+						print "Neuer wert ",vn
+
+						obj.setDatum('Barc',vn)
+						obj.recompute()
+						print "gemacht dfgfg"
+					else:
+						print "haha--aaa"
+						obj.setDriving(63,False)
+
+
+
+					print obj.bSketch
+					print obj.bSketch.getDatum('Ax')
+					obj.setDriving(61,True)
+					obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
+					obj.recompute()
+					obj.setDriving(62,True)
+					obj.setDatum('By',obj.bSketch.getDatum('Ay'))
+					obj.recompute()
+
+				else:
+						obj.setDriving(61,False)
+						obj.setDriving(62,False)
+						obj.setDriving(63,False)
+			except:
+				print "probleme mit bSketch"
+
+
+
+			obj.recompute()
+			return
+
+
 		print "myExecute ..."
-		if not obj.simple:
+		if obj.model == "three points":
+#		if not obj.simple:
 			print "Simple---------"
 			if obj.aSketch <>None:
 				print obj.aSketch
@@ -200,7 +308,11 @@ class BezierSketch(FeaturePython):
 				obj.setDriving(28,False)
 				obj.setDriving(29,False)
 				obj.setDriving(31,False)
-		else:
+			obj.recompute()
+			return
+
+
+		if obj.model == "simple":
 			print "ho simple"
 			if obj.aSketch <>None:
 				print obj.aSketch
@@ -651,7 +763,9 @@ def ArcSplineSketch(sk):
 	sk.toggleDriving(29) 
 	sk.toggleDriving(28) 
 
-	aa=sk.addConstraint(Sketcher.Constraint('Angle',13,-0.5*np.pi)) 
+#	aa=sk.addConstraint(Sketcher.Constraint('Angle',13,-0.5*np.pi)) 
+
+	aa=sk.addConstraint(Sketcher.Constraint('Angle',14,2,-1,2, -0.56)) 
 	sk.renameConstraint(63, u'Barc')
 
 #--------------
@@ -665,9 +779,15 @@ def ArcSplineSketch(sk):
 
 def createArcSpline(name="Arc"):
 	obj = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
-	FeaturePython(obj)
+	# FeaturePython(obj)
+	BezierSketch(obj)
+	obj.model='arc line arc'
 	ViewProvider(obj.ViewObject)
 	ArcSplineSketch(obj)
+	obj.aTangential=False
+	obj.bTangential=False
+#	obj.bSketch=App.ActiveDocument.Sketch
+	obj.aSketch=App.ActiveDocument.Sketch
 	# createbezier(obj)
 	obj.ViewObject.LineColor=(random.random(),random.random(),random.random(),)
 	return obj
@@ -679,6 +799,7 @@ def createBezierSketch(name="MyBezierSketch"):
 
 	obj = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
 	BezierSketch(obj)
+	obj.model='three points'
 	createbezier(obj)
 	obj.ViewObject.LineColor=(random.random(),random.random(),random.random(),)
 	return obj
@@ -689,7 +810,8 @@ def createSimpleBezierSketch(name="MySimpleBezierSketch"):
 
 	obj = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
 	BezierSketch(obj)
-	obj.simple=True
+#	obj.simple=True
+	obj.model='simple'
 	createsimplebezier(obj)
 	obj.ViewObject.LineColor=(random.random(),random.random(),random.random(),)
 	return obj
