@@ -7,19 +7,25 @@
 #-- GNU Lesser General Public License (LGPL)
 #-------------------------------------------------
 
+'''tools to create labels and symbols in the 3D space
+these methods extend the idea of the Draft.Label to special use cases'''
+
+##\cond
 import FreeCAD,FreeCADGui
 Gui=FreeCADGui
 
 import transportationwb
-from transportationwb.miki_g import createMikiGui, MikiDemoApp
-	
+from transportationwb.miki_g import createMikiGui, MikiApp
+
 import Draft
 import nurbswb
 from nurbswb.sketch_to_bezier import SuperDraftLabel
+from pivy import coin
+##\endcond
 
 
 def createLatLonMarker(lat,lon):
-	'''create a lat lon marker'''
+	'''create a Label for a location given by Lat, Lon coordinates'''
 
 	obj = FreeCAD.ActiveDocument.addObject("App::FeaturePython","Marker")
 
@@ -48,52 +54,12 @@ def createLatLonMarker(lat,lon):
 	obj.Placement=FreeCAD.Placement(obj.TargetPoint+ FreeCAD.Vector (-100, 100, 0.0),FreeCAD.Rotation(0.0, 0.0, 0.0, 1.0))
 
 
-
-class GeoLocationApp(MikiDemoApp):
-
-	def run(self):
-		createLatLonMarker(
-				self.root.ids['lat'].text(),
-				self.root.ids['lon'].text()
-			)
-
-def createGeoLocation():
-
-	layout = '''MainWindow:
-	resize: QtCore.QSize(400,200)
-	QtGui.QLabel:
-		setText:"***  Create a Location object  ***"
-	VerticalLayout:
-		HorizontalGroup:
-			setTitle: "data"
-			HorizontalLayout:
-				QtGui.QLabel:
-					setText: "LAT"
-				QtGui.QLineEdit:
-					id: 'lat'
-					setText:"51.12345678"
-			HorizontalLayout:
-				QtGui.QLabel:
-					setText: "LON"
-				QtGui.QLineEdit:
-					id: 'lon'
-					setText:"10.987654321"
-		HorizontalGroup:
-			setTitle: "actions"
-			QtGui.QPushButton:
-				setText: "run"
-				clicked.connect: app.run
-			QtGui.QPushButton:
-				setText: "close"
-				clicked.connect: app.close
-	'''
-
-	mikigui = createMikiGui(layout, GeoLocationApp)
-	return mikigui
-
 #------------------------------------------------
 
 def createLabel(obj,ref,ctext):
+	'''creates a label for the suboject ref of the object obj
+	the label is connected with the coordiantes of the subobject
+	'''
 
 	l = Draft.makeLabel(
 	target=(obj,ref),
@@ -136,6 +102,8 @@ def createLabel(obj,ref,ctext):
 
 
 def createLabels(f,e,v):
+	'''creates labels for faces, edges,vertexes of selected objects
+	the flags f,e,v indicate which componentes should be labeled''' 
 
 	for obj in Gui.Selection.getSelection():
 
@@ -155,57 +123,11 @@ def createLabels(f,e,v):
 			createLabel(obj,d[0],d[1])
 
 
-class LabelApp(MikiDemoApp):
-
-	def run(self):
-		createLabels(
-				self.root.ids['faces'].isChecked(),
-				self.root.ids['edges'].isChecked(),
-				self.root.ids['vertexes'].isChecked()
-			)
-
-
-def createAllLabels():
-	'''create labels for all components of a selected object'''
-
-
-	layout = '''MainWindow:
-	#resize: QtCore.QSize(400,200)
-	QtGui.QLabel:
-		setText:"***  Create Labels for subobjects of a selected object  ***"
-	VerticalGroup:
-		setTitle: "selection"
-		QtGui.QCheckBox:
-			id: 'faces' 
-			setText: 'create labels for all faces'
-		QtGui.QCheckBox:
-			id: 'edges' 
-			setText: 'create labels for all edges'
-		QtGui.QCheckBox:
-			id: 'vertexes' 
-			setText: 'create labels for all vertexes'
-
-	HorizontalGroup:
-		setTitle: "actions"
-		QtGui.QPushButton:
-			setText: "run"
-			clicked.connect: app.run
-		QtGui.QPushButton:
-			setText: "close"
-			clicked.connect: app.close
-	'''
-
-	mikigui = createMikiGui(layout, LabelApp)
-	return mikigui
-
-
-
-
-from pivy import coin
-
 
 class BillBoard(object):
 	'''a billboard object for the active view '''
+
+	##\cond
 	def __init__(self,layout=0):
 		node=Gui.ActiveDocument.ActiveView.getSceneGraph() 
 
@@ -232,7 +154,6 @@ class BillBoard(object):
 
 		vc=len(vertices)
 		numvertices = (vc,vc)
-
 
 		myVertexProperty = coin.SoVertexProperty()
 		myVertexProperty.vertex.setValues(0, vc, vertices)
@@ -268,29 +189,40 @@ class BillBoard(object):
 		self.placement=t
 		self.material=mat
 		self.face=ss
-		self.parent=node
+
+		self.parentN=node
 		self.billboard=ssa
 		self.text=africaText
 
+	##\endcond
+
 	def hide(self):
-		self.parent.removeChild(self.billboard)
+		'''hide the billboard'''
+		self.parentN.removeChild(self.billboard)
 
 	def show(self):
-		self.parent=Gui.ActiveDocument.ActiveView.getSceneGraph() 
-		self.parent.addChild(self.billboard)
+		'''show the billboard'''
+		self.parentN=Gui.ActiveDocument.ActiveView.getSceneGraph() 
+		self.parentN.addChild(self.billboard)
 
 	def setColor(self,r,g,b):
+		'''set the color of the billboard figure'''
 		self.material.emissiveColor.setValue([r,g,b])
 
 	def setLocation(self,pos):
+		'''set the placement.base of the billboard''' 
 		self.placement.translation.setValue(pos)
 
 	def setText(self,text):
+		'''set the multiline text of the billboard'''
 		self.text.string.setValues(text)
 
 
 def createBillBoard(layout):
-	
+	'''create a billboard with graphic layout
+	layouts={'trapez':0,'triangle':1,'rectangle':2}
+	'''
+
 	layouts={'trapez':0,'triangle':1,'rectangle':2}
 
 	a=BillBoard(layout=layouts[layout])
@@ -307,14 +239,118 @@ def createBillBoard(layout):
 	b.setColor(0,1,0)
 	b.setText(["Example","","A 71","# 45","","Hof","Thal"]) 
 
+#
+# Gui for the methods ...
+#
 
-class BillBoardApp(MikiDemoApp):
 
+##\cond
+class GeoLocationApp(MikiApp):
+	'''backend for the createGeoLocation dialog'''
+
+	def run(self):
+		createLatLonMarker(
+				self.root.ids['lat'].text(),
+				self.root.ids['lon'].text()
+			)
+##\endcond
+
+def createGeoLocationGUI():
+	'''dialog to create a Label for a location given by Lat, Lon coordinates'''
+
+	layout = '''MainWindow:
+	resize: QtCore.QSize(400,200)
+	QtGui.QLabel:
+		setText:"***  Create a Location object  ***"
+	VerticalLayout:
+		HorizontalGroup:
+			setTitle: "data"
+			HorizontalLayout:
+				QtGui.QLabel:
+					setText: "LAT"
+				QtGui.QLineEdit:
+					id: 'lat'
+					setText:"51.12345678"
+			HorizontalLayout:
+				QtGui.QLabel:
+					setText: "LON"
+				QtGui.QLineEdit:
+					id: 'lon'
+					setText:"10.987654321"
+		HorizontalGroup:
+			setTitle: "actions"
+			QtGui.QPushButton:
+				setText: "run"
+				clicked.connect: app.run
+			QtGui.QPushButton:
+				setText: "close"
+				clicked.connect: app.close
+	'''
+
+	mikigui = createMikiGui(layout, GeoLocationApp)
+	return mikigui
+
+
+
+##\cond
+class LabelApp(MikiApp):
+	'''backend for the create All Labels dialog'''
+
+	def run(self):
+		createLabels(
+				self.root.ids['faces'].isChecked(),
+				self.root.ids['edges'].isChecked(),
+				self.root.ids['vertexes'].isChecked()
+			)
+##\endcond
+
+def createAllLabelsGUI():
+	'''dialog to create labels for all components of a selected object'''
+
+
+	layout = '''MainWindow:
+	#resize: QtCore.QSize(400,200)
+	QtGui.QLabel:
+		setText:"***  Create Labels for subobjects of a selected object  ***"
+	VerticalGroup:
+		setTitle: "selection"
+		QtGui.QCheckBox:
+			id: 'faces' 
+			setText: 'create labels for all faces'
+		QtGui.QCheckBox:
+			id: 'edges' 
+			setText: 'create labels for all edges'
+		QtGui.QCheckBox:
+			id: 'vertexes' 
+			setText: 'create labels for all vertexes'
+
+	HorizontalGroup:
+		setTitle: "actions"
+		QtGui.QPushButton:
+			setText: "run"
+			clicked.connect: app.run
+		QtGui.QPushButton:
+			setText: "close"
+			clicked.connect: app.close
+	'''
+
+	mikigui = createMikiGui(layout, LabelApp)
+	return mikigui
+
+
+
+
+
+##\cond
+class BillBoardApp(MikiApp):
+	'''backend method for create Graphic Label dialog'''
 	def run(self):
 		print self.root.ids['layout'].currentText()
 		createBillBoard(self.root.ids['layout'].currentText())
+##\endcond
 
-def createGraphicLabel():
+def createGraphicLabelGUI():
+	'''dialog to create a label with some graphic as a billboard'''
 
 	layout = '''MainWindow:
 	#resize: QtCore.QSize(400,200)
@@ -345,8 +381,12 @@ def createGraphicLabel():
 	return mikigui
 
 
+#
+# StationingApp todo #+#
+#
 
-def createStationing():
+def createStationingGUI():
+	'''dialog to create a stationing for a selected wire'''
 
 	layout = '''MainWindow:
 	#resize: QtCore.QSize(400,200)
@@ -365,5 +405,5 @@ def createStationing():
 			clicked.connect: app.close
 	'''
 
-	mikigui = createMikiGui(layout, MikiDemoApp)
+	mikigui = createMikiGui(layout, MikiApp)
 	return mikigui

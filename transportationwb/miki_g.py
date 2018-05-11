@@ -979,7 +979,7 @@ class Miki2(Miki):
 		obj.ViewObject.Proxy.edit = lambda: self.run(layoutstring)
 
 
-class MikiDemoApp(object):
+class MikiApp(object):
 	'''example for the execution layer of the Gui'''
 
 	def __init__(self):
@@ -1013,7 +1013,7 @@ class MikiDemoApp(object):
 		self.close2()
 
 
-class Controller(MikiDemoApp):
+class Controller(MikiApp):
 	pass
 
 
@@ -1190,7 +1190,7 @@ DockWidget:
 	elif mode == 'DockWidget':
 		layout = layoutDW
 
-	mikigui = createMikiGui(layout, MikiDemoApp)
+	mikigui = createMikiGui(layout, MikiApp)
 	return mikigui
 
 

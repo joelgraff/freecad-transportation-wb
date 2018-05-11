@@ -196,6 +196,23 @@ def c3b(menu,isactive,name,text,icon=None,cmd=None,*info):
     FreeCAD.tcmdsTransportation.append([menu,name1])
     return name1
 
+def c3bG(menu,isactive,name,text,icon=None,cmd=None,*info):   
+    global _Command
+    if cmd==None:
+        cmd=re.sub(r' ', '', text+'GUI')+'()'
+    if name==0:
+        name=re.sub(r' ', '', text+'GUI')
+
+    t=_Command(name,text,icon,cmd,*info)
+    # if title ==0:
+    title=re.sub(r' ', '', text)
+    name1="Transportation_"+title
+    t.IsActive=isactive
+    FreeCADGui.addCommand(name1,t)
+    FreeCAD.tcmdsTransportation.append([menu,name1])
+    return name1
+
+
 
 def c2b(menu,isactive,title,name,text,icon,cmd=None,*info):
 
@@ -239,10 +256,11 @@ if FreeCAD.GuiUp:
     c3b(["Curves"],ondocument,'geodesic_lines','create Marker')
     c3b(["Curves"],ondocument,'stationing','combine Curves')
 
-    c3b(["Labels"],ondocument,'labeltools','create Geo Location')
-    c3b(["Labels"],ondocument,'labeltools','create Stationing')
-    c3b(["Labels"],ondocument,'labeltools','create Graphic Label')
-    c3b(["Labels"],ondocument,'labeltools','create All Labels')
+
+    c3bG(["Labels"],ondocument,'labeltools','create Geo Location')
+    c3bG(["Labels"],ondocument,'labeltools','create Stationing')
+    c3bG(["Labels"],ondocument,'labeltools','create Graphic Label')
+    c3bG(["Labels"],ondocument,'labeltools','create All Labels')
 
 
 #----------------------

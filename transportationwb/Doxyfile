@@ -23,6 +23,7 @@ INPUT += vehicle/__init__.py
 
 INPUT += miki_g.py
 INPUT += beziersketch.py
+INPUT += labeltools.py
 
 
 INPUT += readme.md 
