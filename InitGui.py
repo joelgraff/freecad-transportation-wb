@@ -272,6 +272,9 @@ if FreeCAD.GuiUp:
     c3b(["Demos"], always, 'miki_g', 'test Dialog Tab')
     c3b(["Demos"], always, 'miki_g', 'test Dialog DockWidget')
     c3b(["Demos"], always, 'miki_g', 'test Dialog')
+    c3b(["Demos"], ondocument, 'clipplane', 'demo Clip Plane Animation')
+
+    c3b(["Curves"], always, 'beziersketch', 'create Bezier Sketch')
     c3b(["Curves"], always, 'beziersketch', 'create Bezier Sketch')
     c3b(["Curves"], always, 'beziersketch', 'create Simple Bezier Sketch')
     c3b(["Curves"], always, 'beziersketch', 'create Arc Spline')
@@ -282,6 +285,7 @@ if FreeCAD.GuiUp:
     c3bG(["Labels"], ondocument, 'labeltools', 'create Stationing')
     c3bG(["Labels"], ondocument, 'labeltools', 'create Graphic Label')
     c3bG(["Labels"], ondocument, 'labeltools', 'create All Labels')
+    
 
 
 #----------------------
