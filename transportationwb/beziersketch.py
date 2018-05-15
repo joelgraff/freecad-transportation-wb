@@ -89,15 +89,12 @@ class ViewProvider:
 		self.methodA(None)
 
 	def methodA(self,obj):
-		print "my Method A"
 		FreeCAD.activeDocument().recompute()
 
 	def methodB(self,obj):
-		print "my method B"
 		FreeCAD.activeDocument().recompute()
 
 	def methodC(self,obj):
-		print "my method C"
 		FreeCAD.activeDocument().recompute()
 
 	def unsetEdit(self,vobj,mode=0):
@@ -105,9 +102,7 @@ class ViewProvider:
 
 
 	def doubleClicked(self,vobj):
-		print "double clicked"
 		self.myedit(vobj.Object)
-		print "Ende double clicked"
 
 
 def getNamedConstraint(sketch,name):
@@ -163,7 +158,6 @@ class BezierSketch(FeaturePython):
 #if obj.model ==["simple","three points",]
 
 		if obj.model== "arc line arc": #arcSpline  special
-			print "execute---------"
 
 			obj.setDriving(26,False)
 			obj.setDriving(27,False)
@@ -174,33 +168,18 @@ class BezierSketch(FeaturePython):
 
 			try:
 				if obj.aSketch <>None:
-					print obj.aSketch
-					print obj.getDatum('Ax')
-					print obj.getDatum('Ay')
-					print obj.getDatum('Aarc')
-					print obj.getDatum(26)
-					print obj.getDatum(26)
-					print obj.getDatum(30)
-					print "----------"
 
 					if  obj.aTangential:
-						print "huhuaa"
 						obj.setDriving(30,True)
 						vn=(obj.aSketch.getDatum('Barc').Value)*np.pi/180+np.pi
-						print "Neuer wert ",vn
-						print obj.getDatum(30)
-						print "-----------"
 						try:
 							obj.setDatum('Aarc',vn)
 						except:
-							print "kann 30 nicht setzen"
-						print "++++++++++"
+							print ("kann 30 nicht setzen")
 					else:
-						print "huhufdfd"
 						obj.setDriving(30,False)
 						obj.recompute()
 
-					print "jijiji"
 
 					obj.setDriving(26,True)
 					obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
@@ -215,35 +194,23 @@ class BezierSketch(FeaturePython):
 				obj.recompute()
 
 			except:
-				print "probleme mit a--Sketch"
+				print ("probleme mit a--Sketch")
 
 			try:
 				if obj.bSketch <>None:
-					print "yy-----------gggg-----"
 
 					if obj.bTangential:
-						print "huhu hhhh tangential .."
 						
 						obj.setDriving(63,True)
-						print "hahah--a bar, arc ..."
-						print obj.getDatum('Barc')
-						print obj.bSketch.getDatum('Aarc').Value
 						
 						#obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
 						vn=(-obj.bSketch.getDatum('Aarc').Value)*np.pi/180+np.pi*0.5
-						print "Neuer wert ",vn
 
 						obj.setDatum('Barc',vn)
 						obj.recompute()
-						print "gemacht dfgfg"
 					else:
-						print "haha--aaa"
 						obj.setDriving(63,False)
 
-
-
-					print obj.bSketch
-					print obj.bSketch.getDatum('Ax')
 					obj.setDriving(61,True)
 					obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
 					obj.recompute()
@@ -256,31 +223,23 @@ class BezierSketch(FeaturePython):
 						obj.setDriving(62,False)
 						obj.setDriving(63,False)
 			except:
-				print "probleme mit bSketch"
-
-
+				print ("probleme mit bSketch")
 
 			obj.recompute()
 			return
 
 
-		print "myExecute ..."
 		if obj.model == "three points":
 #		if not obj.simple:
-			print "Simple---------"
 			if obj.aSketch <>None:
-				print obj.aSketch
-				print obj.aSketch.getDatum('Ax')
 				obj.setDriving(26,True)
 				obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
 				obj.setDriving(27,True)
 				obj.setDatum('Ay',obj.aSketch.getDatum('By'))
 				if obj.aTangential:
-					print "huhuaa"
 					obj.setDriving(30,True)
 					obj.setDatum('Aarc',(180+obj.aSketch.getDatum('Barc').Value)*np.pi/180)
 				else:
-					print "huhufdfd"
 					obj.setDriving(30,False)
 			else:
 				obj.setDriving(26,False)
@@ -288,35 +247,27 @@ class BezierSketch(FeaturePython):
 				obj.setDriving(30,False)
 
 			if obj.bSketch <>None:
-				print "yy"
-				print obj.aSketch
-				print obj.aSketch.getDatum('Ax')
 				obj.setDriving(28,True)
 				obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
 				obj.setDriving(29,True)
 				obj.setDatum('By',obj.bSketch.getDatum('Ay'))
 				if obj.bTangential:
-					print "huhu"
 					obj.setDriving(31,True)
 					obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
 				else:
-					print "haha"
 					obj.setDriving(31,False)
-
 
 			else:
 				obj.setDriving(28,False)
 				obj.setDriving(29,False)
 				obj.setDriving(31,False)
 			obj.recompute()
+
 			return
 
 
 		if obj.model == "simple":
-			print "ho simple"
 			if obj.aSketch <>None:
-				print obj.aSketch
-				print obj.aSketch.getDatum('Ax')
 				obj.setDriving(14,True)
 				obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
 				obj.setDriving(15,True)
@@ -332,8 +283,6 @@ class BezierSketch(FeaturePython):
 				obj.setDriving(18,False)
 
 			if obj.bSketch <>None:
-				print obj.aSketch
-				print obj.aSketch.getDatum('Ax')
 				obj.setDriving(16,True)
 				obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
 				obj.setDriving(17,True)
@@ -355,13 +304,6 @@ class BezierSketch(FeaturePython):
 
 
 
-
-#	def onChanged(self, obj, prop):
-#		print ("onChange", prop)
-#		return
-
-
-
 def combineSketches():
 
 	xys=App.ActiveDocument.MySimpleBezierSketch
@@ -375,11 +317,8 @@ def combineSketches():
 
 	pts=[]
 	for (a,b) in zip(psa,psb):
-		print a
-		print b 
 		p=FreeCAD.Vector(a.x,a.y,b.z)
 		pts += [p]
-
 
 	bs=Part.BSplineCurve(pts)
 	Part.show(bs.toShape())
@@ -388,7 +327,6 @@ def combineSketches():
 
 def createbezier(sk):
 	'''create a curve segment with 7 poles'''
-
 
 	pts=[
 			(0,0,0),(0,-100,0),

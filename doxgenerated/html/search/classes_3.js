@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['vehiclecontroller',['VehicleController',['../classtransportationwb_1_1vehicle_1_1VehicleController.html',1,'transportationwb::vehicle']]]
+  ['superdraftlabel',['SuperDraftLabel',['../classtransportationwb_1_1labeltools_1_1SuperDraftLabel.html',1,'transportationwb::labeltools']]]
 ];

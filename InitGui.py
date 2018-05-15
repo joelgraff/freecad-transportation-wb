@@ -23,16 +23,16 @@
 
 import FreeCAD
 import FreeCADGui as Gui
-import sys
-import TransportationToolbar
+#import sys
+#import TransportationToolbar
 
 import transportationwb
-import os
+import os, re
 global __dir__
 __dir__ = os.path.dirname(transportationwb.__file__)
 
 
-__vers__='0.1'
+__vers__ = '0.1'
 
 #---------------------
 
@@ -44,93 +44,105 @@ class MyTestCmd3:
 
     def Activated(self):
         import QtUnitGui
+        import transportationwb
+        import transportationwb.Test_labeltools
+        reload(transportationwb.Test_labeltools)
+        QtUnitGui.addTest("transportationwb.Test_labeltools")
         QtUnitGui.addTest("transportationwb.Test_miki")
         QtUnitGui.addTest("transportationwb.traffic.Test_traffic")
         QtUnitGui.addTest("transportationwb.vehicle.Test_vehicle")
         QtUnitGui.addTest("transportationwb.Test_All.Col1")
 
     def GetResources(self):
-        return {'MenuText': 'Unit Tests', 'ToolTip': 'Runs the self-test for the workbench'}
+        return {
+            'MenuText': 'Unit Tests',
+            'ToolTip': 'Runs the self-test for the workbench'
+        }
 
-FreeCADGui.addCommand('My_Transprtation_Tests'        ,MyTestCmd3())
+FreeCADGui.addCommand('My_Transprtation_Tests', MyTestCmd3())
 
 
 class DokuTW:
 
     def Activated(self):
         import WebGui
-        fn='file:///home/thomas/.FreeCAD/Mod/freecad-transportation-wb/doxgenerated/html/index.html'
+        fn = 'file:///home/thomas/.FreeCAD/Mod/freecad-transportation-wb/doxgenerated/html/index.html'
         WebGui.openBrowser(fn)
 
-
     def GetResources(self):
-        return {'MenuText': 'Documentation', 'ToolTip': 'Runs the self-test for the workbench'}
+        return {'MenuText': 'Documentation'}
 
-FreeCADGui.addCommand('Doku'        ,DokuTW())
-
-
+FreeCADGui.addCommand('Doku', DokuTW())
 
 
 #------------------------------------------
 # fast command adder template
 
-
-
 global _Command
+
+
 class _Command():
 
-    def __init__(self,lib=None,name=None,icon=None,command=None,modul='transportationwb'):
+    def __init__(self, lib=None, name=None, icon=None, command=None, modul='transportationwb'):
 
-        if lib==None: lmod=modul
-        else: lmod=modul+'.'+lib
-        if command==None: command=lmod+".run()"
-        else: command =lmod + "."+command
+        if lib == None:
+            lmod = modul
+        else:
+            lmod = modul + '.' + lib
+        if command == None:
+            command = lmod + ".run()"
+        else:
+            command = lmod + "." + command
 
-        self.lmod=lmod
-        self.command=command
-        self.modul=modul
-        if icon<>None:
-            self.icon=  __dir__+ icon
-        else: self.icon=None
+        self.lmod = lmod
+        self.command = command
+        self.modul = modul
+        if icon != None:
+            self.icon = __dir__ + icon
+        else:
+            self.icon = None
 
-        if name==None: name=command
-        self.name=name
+        if name == None:
+            name = command
+        self.name = name
 
-
-    def GetResources(self): 
-        if self.icon <> None:
-            return {'Pixmap' : self.icon, 
-                'MenuText': self.name, 
-                'ToolTip': self.name, 
-                'CmdType': "ForEdit" # bleibt aktiv, wenn sketch editor oder andere tasktab an ist
-            } 
+    def GetResources(self):
+        if self.icon != None:
+            return {'Pixmap': self.icon,
+                    'MenuText': self.name,
+                    'ToolTip': self.name,
+                    'CmdType': "ForEdit"  # bleibt aktiv, wenn sketch editor oder andere tasktab an ist
+                    }
         else:
             return {
-            #'Pixmap' : self.icon, 
-                'MenuText': self.name, 
-                'ToolTip': self.name, 
-                'CmdType': "ForEdit" # bleibt aktiv, wenn sketch editor oder andere tasktab an ist
-            } 
-            
+                #'Pixmap' : self.icon,
+                'MenuText': self.name,
+                'ToolTip': self.name,
+                'CmdType': "ForEdit"  # bleibt aktiv, wenn sketch editor oder andere tasktab an ist
+            }
 
     def IsActive(self):
-        if FreeCADGui.ActiveDocument: return True
-        else: return False
+        if FreeCADGui.ActiveDocument:
+            return True
+        else:
+            return False
 
     def Activated(self):
-        #FreeCAD.ActiveDocument.openTransaction("create " + self.name)
-        if self.command <> '':
-            if self.modul <>'': modul=self.modul
-            else: modul=self.name
+        # FreeCAD.ActiveDocument.openTransaction("create " + self.name)
+        if self.command != '':
+            if self.modul != '':
+                modul = self.modul
+            else:
+                modul = self.name
             FreeCADGui.doCommand("import " + modul)
-            FreeCADGui.doCommand("import "+self.lmod)
-            FreeCADGui.doCommand("reload("+self.lmod+")")
-            docstring="print "+ re.sub(r'\(.*\)', '.__doc__', self.command)
-            
+            FreeCADGui.doCommand("import " + self.lmod)
+            FreeCADGui.doCommand("reload(" + self.lmod + ")")
+            docstring = "print " + re.sub(r'\(.*\)', '.__doc__', self.command)
+
             FreeCADGui.doCommand(docstring)
             FreeCADGui.doCommand(self.command)
-        #FreeCAD.ActiveDocument.commitTransaction()
-        if FreeCAD.ActiveDocument <> None:
+        # FreeCAD.ActiveDocument.commitTransaction()
+        if FreeCAD.ActiveDocument != None:
             FreeCAD.ActiveDocument.recompute()
 
 
@@ -141,126 +153,135 @@ class _alwaysActive(_Command):
 
 # conditions when a command should be active ..
 
+
 def always():
     ''' always'''
     return True
 
+
 def ondocument():
     '''if a document is active'''
-    return FreeCADGui.ActiveDocument <> None
+    return FreeCADGui.ActiveDocument != None
+
 
 def onselection():
     '''if at least one object is selected'''
-    return len(FreeCADGui.Selection.getSelection())>0
+    return len(FreeCADGui.Selection.getSelection()) > 0
+
 
 def onselection1():
     '''if exactly one object is selected'''
-    return len(FreeCADGui.Selection.getSelection())==1
+    return len(FreeCADGui.Selection.getSelection()) == 1
+
 
 def onselection2():
     '''if exactly two objects are selected'''
-    return len(FreeCADGui.Selection.getSelection())==2
+    return len(FreeCADGui.Selection.getSelection()) == 2
+
 
 def onselection3():
     '''if exactly three objects are selected'''
-    return len(FreeCADGui.Selection.getSelection())==3
+    return len(FreeCADGui.Selection.getSelection()) == 3
+
 
 def onselex():
     '''if at least one subobject is selected'''
-    return len(FreeCADGui.Selection.getSelectionEx())<>0
+    return len(FreeCADGui.Selection.getSelectionEx()) != 0
+
 
 def onselex1():
     '''if exactly one subobject is selected'''
-    return len(FreeCADGui.Selection.getSelectionEx())==1
-
+    return len(FreeCADGui.Selection.getSelectionEx()) == 1
 
 
 # the menu entry list
-FreeCAD.tcmdsTransportation=[]
-# create menu entries 
+FreeCAD.tcmdsTransportation = []
+# create menu entries
 
 
-def c3b(menu,isactive,name,text,icon=None,cmd=None,*info):
+def c3b(menu, isactive, name, text, icon=None, cmd=None, *info):
 
     global _Command
-    if cmd==None:
-        cmd=re.sub(r' ', '', text)+'()'
-    if name==0:
-        name=re.sub(r' ', '', text)
-    t=_Command(name,text,icon,cmd,*info)
+    if cmd == None:
+        cmd = re.sub(r' ', '', text) + '()'
+    if name == 0:
+        name = re.sub(r' ', '', text)
+    t = _Command(name, text, icon, cmd, *info)
     # if title ==0:
-    title=re.sub(r' ', '', text)
-    name1="Transportation_"+title
-    t.IsActive=isactive
-    FreeCADGui.addCommand(name1,t)
-    FreeCAD.tcmdsTransportation.append([menu,name1])
-    return name1
-
-def c3bG(menu,isactive,name,text,icon=None,cmd=None,*info):   
-    global _Command
-    if cmd==None:
-        cmd=re.sub(r' ', '', text+'GUI')+'()'
-    if name==0:
-        name=re.sub(r' ', '', text+'GUI')
-
-    t=_Command(name,text,icon,cmd,*info)
-    # if title ==0:
-    title=re.sub(r' ', '', text)
-    name1="Transportation_"+title
-    t.IsActive=isactive
-    FreeCADGui.addCommand(name1,t)
-    FreeCAD.tcmdsTransportation.append([menu,name1])
+    title = re.sub(r' ', '', text)
+    name1 = "Transportation_" + title
+    t.IsActive = isactive
+    FreeCADGui.addCommand(name1, t)
+    FreeCAD.tcmdsTransportation.append([menu, name1])
     return name1
 
 
+def c3bG(menu, isactive, name, text, icon=None, cmd=None, *info):
+    global _Command
+    if cmd == None:
+        cmd = re.sub(r' ', '', text + 'GUI') + '()'
+    if name == 0:
+        name = re.sub(r' ', '', text + 'GUI')
 
-def c2b(menu,isactive,title,name,text,icon,cmd=None,*info):
+    t = _Command(name, text, icon, cmd, *info)
+    # if title ==0:
+    title = re.sub(r' ', '', text)
+    name1 = "Transportation_" + title
+    t.IsActive = isactive
+    FreeCADGui.addCommand(name1, t)
+    FreeCAD.tcmdsTransportation.append([menu, name1])
+    return name1
+
+
+def c2b(menu, isactive, title, name, text, icon, cmd=None, *info):
 
     global _Command
-    if cmd==None:
-        cmd=re.sub(r' ', '', text)+'()'
-    if name==0:
-        name=re.sub(r' ', '', text)
-    t=_Command(name,text,icon,cmd,*info)
-    if title ==0:
-        title=re.sub(r' ', '', text)
-    name1="Transportation_"+title
-    t.IsActive=isactive
-    FreeCADGui.addCommand(name1,t)
-    FreeCAD.tcmds5.append([menu,name1])
-
+    if cmd == None:
+        cmd = re.sub(r' ', '', text) + '()'
+    if name == 0:
+        name = re.sub(r' ', '', text)
+    t = _Command(name, text, icon, cmd, *info)
+    if title == 0:
+        title = re.sub(r' ', '', text)
+    name1 = "Transportation_" + title
+    t.IsActive = isactive
+    FreeCADGui.addCommand(name1, t)
+    FreeCAD.tcmds5.append([menu, name1])
 
 
 if FreeCAD.GuiUp:
 
-    toolbar= []
-    toolbar += [c3b(["Simulation"],always,'vehicle','create Vehicle')]
-    toolbar += [c3b(["Simulation"],always,'vehicle','create Tailer')]
+    toolbar = []
+    toolbar += [c3b(["Simulation"], always, 'vehicle', 'create Vehicle')]
+    toolbar += [c3b(["Simulation"], always, 'vehicle', 'create Tailer')]
 
-    toolbar += [c3b(["Simulation","Submenu"],onselection1,'traffic','create swept path','/../icons/geodesiccircle.svg')]
-    toolbar += [c3b(["Simulation","Submenu"],onselection1,'traffic','swept area analysis','/../icons/draw.svg')]
+    toolbar += [c3b(["Simulation", "Submenu"], onselection1,
+                    'traffic', 'create swept path', '/../icons/geodesiccircle.svg')]
+    toolbar += [c3b(["Simulation", "Submenu"], onselection1,
+                    'traffic', 'swept area analysis', '/../icons/draw.svg')]
 
+    terrain = [
+        c3b(["Terrain"], onselection1, 'geodesic_lines', 'create Context', '/../icons/draw.svg')]
+    terrain += [
+        c3b(["Terrain"], onselection1, 'geodesic_lines', 'create something', '/../icons/draw.svg')]
 
-    terrain = [c3b(["Terrain"],onselection1,'geodesic_lines','create Context','/../icons/draw.svg')]
-    terrain += [c3b(["Terrain"],onselection1,'geodesic_lines','create something','/../icons/draw.svg')]
+    toolbars = [['Simulation', toolbar], ['Terrain', terrain],
+               ['Tests', ['My_Transprtation_Tests', 'Doku']]]
 
-    toolbars=[['Simulation',toolbar],['Terrain',terrain],['Tests',[ 'My_Transprtation_Tests','Doku']]]
+    c3b(["Demos"], always, 'miki_g', 'test Dialog MainWindow')
+    c3b(["Demos"], always, 'miki_g', 'test Dialog Tab')
+    c3b(["Demos"], always, 'miki_g', 'test Dialog DockWidget')
+    c3b(["Demos"], always, 'miki_g', 'test Dialog')
+    c3b(["Curves"], always, 'beziersketch', 'create Bezier Sketch')
+    c3b(["Curves"], always, 'beziersketch', 'create Simple Bezier Sketch')
+    c3b(["Curves"], always, 'beziersketch', 'create Arc Spline')
+    c3b(["Curves"], ondocument, 'geodesic_lines', 'create Marker')
+    c3b(["Curves"], ondocument, 'stationing', 'combine Curves')
 
-    c3b(["Demos"],always,'miki_g','test Dialog MainWindow')
-    c3b(["Demos"],always,'miki_g','test Dialog Tab')
-    c3b(["Demos"],always,'miki_g','test Dialog DockWidget')
-    c3b(["Demos"],always,'miki_g','test Dialog')
-    c3b(["Curves"],always,'beziersketch','create Bezier Sketch')
-    c3b(["Curves"],always,'beziersketch','create Simple Bezier Sketch')
-    c3b(["Curves"],always,'beziersketch','create Arc Spline')
-    c3b(["Curves"],ondocument,'geodesic_lines','create Marker')
-    c3b(["Curves"],ondocument,'stationing','combine Curves')
-
-
-    c3bG(["Labels"],ondocument,'labeltools','create Geo Location')
-    c3bG(["Labels"],ondocument,'labeltools','create Stationing')
-    c3bG(["Labels"],ondocument,'labeltools','create Graphic Label')
-    c3bG(["Labels"],ondocument,'labeltools','create All Labels')
+    c3bG(["Labels"], ondocument, 'labeltools', 'create Geo Location')
+    c3bG(["Labels"], ondocument, 'labeltools', 'create Stationing')
+    c3bG(["Labels"], ondocument, 'labeltools', 'create Graphic Label')
+    c3bG(["Labels"], ondocument, 'labeltools', 'create All Labels')
 
 
 #----------------------
@@ -270,22 +291,22 @@ class TransportationWorkbench (Workbench):
     MenuText = "Transportation Workbench"
     ToolTip = "A description of my workbench"
 
-    def __init__(self,toolbars,version):
+    def __init__(self, toolbars, version):
 
         self.policies_ist = ["Edit..."]
         self.general_fn_list = ["NewAlignment"]
         self.alignment_fn_list = ["Tangent", "Curve1"]
         #, "Curve2", "Curve3", "CurveSpiral"]
 
-        self.toolbars=toolbars
-        self.version=version
+        self.toolbars = toolbars
+        self.version = version
 
     def Initialize(self):
 
         import NewAlignment
         import Tangent
         import Curve1
-        #import Curve2, Curve3, CurveSpiral
+        # import Curve2, Curve3, CurveSpiral
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
@@ -293,46 +314,45 @@ class TransportationWorkbench (Workbench):
         self.appendToolbar("Transportation", self.general_fn_list)
         self.appendToolbar("Transportation alignment", self.alignment_fn_list)
         self.appendMenu("Transportation", self.general_fn_list)
-        #self.appendMenu(["Transportation", "Policies"], self.policies_list)
+        # self.appendMenu(["Transportation", "Policies"], self.policies_list)
 #-------------------
 
         # create toolbars
         for t in self.toolbars:
-            self.appendToolbar(t[0],t[1])
+            self.appendToolbar(t[0], t[1])
 
         # create menues
-        menues={}
-        ml=[]
+        menues = {}
+        ml = []
         for _t in FreeCAD.tcmdsTransportation:
-            c=_t[0]
-            a=_t[1]
-            try:menues[tuple(c)].append(a)
+            c = _t[0]
+            a = _t[1]
+            try:
+                menues[tuple(c)].append(a)
 
-            except: 
-                menues[tuple(c)]=[a]
+            except:
+                menues[tuple(c)] = [a]
                 ml.append(tuple(c))
 
         for m in ml:
-            self.appendMenu(list(m),menues[m])
+            self.appendMenu(list(m), menues[m])
 
-
-
-        cmds= ['Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid']
-        cmds += ['Nurbs_LightOn','Nurbs_LightOff']
-        self.appendToolbar("My Helpers", cmds )
+        cmds = ['Part_Cone', 'Part_Cylinder', 'Draft_Move',
+                'Draft_Rotate', 'Draft_Point', 'Draft_ToggleGrid']
+        cmds += ['Nurbs_LightOn', 'Nurbs_LightOff']
+        self.appendToolbar("My Helpers", cmds)
 
     def Activated(self):
-        Msg("Transportation Workbench version {} activated\n".format(self.version))
-                
+        Msg("Transportation Workbench version {} activated\n".format(
+            self.version))
+
     def Deactivated(self):
         Msg("Transportation Workbench deactivated\n")
 
-
 #-------------------
-
     def ContextMenu(self, recipient):
         # "recipient" will be either "view" or "tree"
-        self.appendContextMenu("My commands",self.list)
+        self.appendContextMenu("My commands", self.list)
 
     def GetClassName(self):
         # this function is mandatory if this is a full python workbench
@@ -463,16 +483,16 @@ static char * workbench_xpm[] = {
 "[. c #E5DFD1",
 "}. c #C7C7C5",
 "|. c #2B2822",
-		cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
-		'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
-		'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
-		'Nurbs_createcloverleaf',
-		'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
-		'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+        cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
+        'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
+        'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
+        'Nurbs_createcloverleaf',
+        'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
+        'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
 
-		cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
-		
-		cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff']
+        cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+
+        cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff']
 "1. c #151514",
 "2. c #B5B8B1",
 "3. c #C9CDC4",
@@ -890,16 +910,16 @@ static char * workbench_xpm[] = {
 "K$ c #3B3B3B",
 "L$ c #878A85",
 "M$ c #BDA476",
-		cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
-		'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
-		'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
-		'Nurbs_createcloverleaf',
-		'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
-		'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+        cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
+        'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
+        'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
+        'Nurbs_createcloverleaf',
+        'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
+        'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
 
-		cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
-		
-		cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff']
+        cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+
+        cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff']
 "N$ c #0F0F0F",
 "O$ c #9FA39D",
 "P$ c #90938C",
@@ -967,16 +987,16 @@ static char * workbench_xpm[] = {
 ". . : * * * * * * < [ } | $ . . .                                                           . . . 1 2 3 ! 4 5 6 7 8 9 0 a b % . ",
 ". . c d * * * * * * * e f 8 g . . . .                                                   . . . h i j ! k l m n / o 0 p 8 q r % . ",
 ". . s s t u * * * * * * &
-		cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
-		'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
-		'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
-		'Nurbs_createcloverleaf',
-		'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
-		'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+        cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
+        'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
+        'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
+        'Nurbs_createcloverleaf',
+        'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
+        'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
 
-		cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
-		
-		cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff'] v w x y . . . .                                           . . . z A j ! B C D E F G 0 H / I J ! K $ . ",
+        cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
+
+        cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff'] v w x y . . . .                                           . . . z A j ! B C D E F G 0 H / I J ! K $ . ",
 ". . L M s N O * * * * P Q R & v S T U . . . .                                   . . . V W X ! Y Z `  ./ / ..+.F @.#.$.k %.&.. . ",
 ". . . . *.=.s -.;.* * >.,.'.).* & !.S t ~.. . . .                           . . . V {.].! 4 ^./.(._.8 :. ./ / <.[.! }.|.. . . . ",
 ". . . . . 1.2.s 3.4.* 5.6.,.,.7.8.* & 9.0.a.b.. . . .                   . . . c.d.].! e.f.g.0 a / ( 0 _.8 h.i.j.].k.# . .   . . ",
@@ -1037,5 +1057,5 @@ static char * workbench_xpm[] = {
 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "};
 """
 
-    
-Gui.addWorkbench(TransportationWorkbench(toolbars,__vers__))
+
+Gui.addWorkbench(TransportationWorkbench(toolbars, __vers__))

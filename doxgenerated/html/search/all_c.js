@@ -6,5 +6,6 @@ var searchData=
   ['settext',['setText',['../classtransportationwb_1_1labeltools_1_1BillBoard.html#a3517cbb95babd8a2278840b6174a3196',1,'transportationwb::labeltools::BillBoard']]],
   ['show',['show',['../classtransportationwb_1_1labeltools_1_1BillBoard.html#a25315676c7afaaedbbe4bf5fe1c9274b',1,'transportationwb::labeltools::BillBoard']]],
   ['showso',['showSo',['../classtransportationwb_1_1miki__g_1_1Miki.html#ac8508b7c47ed99c5813f409d2c9bdc8c',1,'transportationwb::miki_g::Miki']]],
-  ['showso2',['showSo2',['../classtransportationwb_1_1miki__g_1_1Miki.html#aab1ef0683ced71fcc389407ad1e28007',1,'transportationwb::miki_g::Miki']]]
+  ['showso2',['showSo2',['../classtransportationwb_1_1miki__g_1_1Miki.html#aab1ef0683ced71fcc389407ad1e28007',1,'transportationwb::miki_g::Miki']]],
+  ['superdraftlabel',['SuperDraftLabel',['../classtransportationwb_1_1labeltools_1_1SuperDraftLabel.html',1,'transportationwb::labeltools']]]
 ];
