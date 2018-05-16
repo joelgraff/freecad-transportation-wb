@@ -8,6 +8,8 @@
 #-------------------------------------------------
 ''' kivy like creation tool'''
 
+
+
 # pylint: disable=W0331
 # pylint: disable=unused-import
 # pylint: disable=invalid-name
@@ -1013,7 +1015,8 @@ def createMikiGui2(layout, app):
 	appi.root = miki
 
 	rca = miki.run(layout)
-	return rca,miki
+	#return rca,miki
+	return appi
 
 
 

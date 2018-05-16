@@ -43,15 +43,9 @@ __vers__ = '0.1'
 class MyTestCmd3:
 
     def Activated(self):
-        import QtUnitGui
-        import transportationwb
-        import transportationwb.Test_labeltools
-        reload(transportationwb.Test_labeltools)
-        QtUnitGui.addTest("transportationwb.Test_labeltools")
-        QtUnitGui.addTest("transportationwb.Test_miki")
-        QtUnitGui.addTest("transportationwb.traffic.Test_traffic")
-        QtUnitGui.addTest("transportationwb.vehicle.Test_vehicle")
-        QtUnitGui.addTest("transportationwb.Test_All.Col1")
+        import transportationwb.startTests
+        reload(transportationwb.startTests)
+        transportationwb.startTests.startTests()
 
     def GetResources(self):
         return {
@@ -66,7 +60,8 @@ class DokuTW:
 
     def Activated(self):
         import WebGui
-        fn = 'file:///home/thomas/.FreeCAD/Mod/freecad-transportation-wb/doxgenerated/html/index.html'
+        fn ='file:///home/thomas/.FreeCAD/Mod/freecad-transportation-wb/doxgenerated/html/index.html'
+        fn='https://htmlpreview.github.io/?https://raw.githubusercontent.com/microelly2/freecad-transportation-wb/master/doxgenerated/html/index.html'
         WebGui.openBrowser(fn)
 
     def GetResources(self):
@@ -274,17 +269,17 @@ if FreeCAD.GuiUp:
     c3b(["Demos"], always, 'miki_g', 'test Dialog')
     c3b(["Demos"], ondocument, 'clipplane', 'demo Clip Plane Animation')
 
-    c3b(["Curves"], always, 'beziersketch', 'create Bezier Sketch')
-    c3b(["Curves"], always, 'beziersketch', 'create Bezier Sketch')
-    c3b(["Curves"], always, 'beziersketch', 'create Simple Bezier Sketch')
-    c3b(["Curves"], always, 'beziersketch', 'create Arc Spline')
-    c3b(["Curves"], ondocument, 'geodesic_lines', 'create Marker')
-    c3b(["Curves"], ondocument, 'stationing', 'combine Curves')
+    c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
+    c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
+    c3b(["Curves"], ondocument, 'beziersketch', 'create Simple Bezier Sketch')
+    c3b(["Curves"], ondocument, 'beziersketch', 'create Arc Spline')
+    c3b(["Curves"], onselection1, 'geodesic_lines', 'create Marker')
+    c3b(["Curves"], onselection2, 'stationing', 'combine Curves')
 
     c3bG(["Labels"], ondocument, 'labeltools', 'create Geo Location')
-    c3bG(["Labels"], ondocument, 'labeltools', 'create Stationing')
+    c3bG(["Labels"], onselection1, 'labeltools', 'create Stationing')
     c3bG(["Labels"], ondocument, 'labeltools', 'create Graphic Label')
-    c3bG(["Labels"], ondocument, 'labeltools', 'create All Labels')
+    c3bG(["Labels"], onselection1, 'labeltools', 'create All Labels')
     
 
 

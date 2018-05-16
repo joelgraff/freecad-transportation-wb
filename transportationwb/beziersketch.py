@@ -18,6 +18,7 @@ App = FreeCAD
 Gui = FreeCADGui
 
 from PySide import QtCore
+from say import sayexc
 
 '''
 # kofig sketcher 
@@ -154,17 +155,19 @@ class BezierSketch(FeaturePython):
 
 	def execute(proxy,obj):
 		'''sync connection aSketch and bSketch'''
+		print "execute ..."
+		print len(obj.Constraints)
 
 #if obj.model ==["simple","three points",]
 
 		if obj.model== "arc line arc": #arcSpline  special
-
-			obj.setDriving(26,False)
-			obj.setDriving(27,False)
-			obj.setDriving(30,False)
-			obj.setDriving(61,False)
-			obj.setDriving(62,False)
-			obj.setDriving(63,False)
+			if len(obj.Constraints)>63:
+				obj.setDriving(26,False)
+				obj.setDriving(27,False)
+				obj.setDriving(30,False)
+				obj.setDriving(61,False)
+				obj.setDriving(62,False)
+				obj.setDriving(63,False)
 
 			try:
 				if obj.aSketch <>None:
@@ -188,13 +191,14 @@ class BezierSketch(FeaturePython):
 					obj.setDatum('Ay',obj.aSketch.getDatum('By'))
 					obj.recompute()
 				else:
-					obj.setDriving(26,False)
-					obj.setDriving(27,False)
-					obj.setDriving(30,False)
+					if len(obj.Constraints)>30:
+						obj.setDriving(26,False)
+						obj.setDriving(27,False)
+						obj.setDriving(30,False)
 				obj.recompute()
 
 			except:
-				print ("probleme mit a--Sketch")
+				sayexc ("probleme mit a--Sketch")
 
 			try:
 				if obj.bSketch <>None:
@@ -219,11 +223,13 @@ class BezierSketch(FeaturePython):
 					obj.recompute()
 
 				else:
-						obj.setDriving(61,False)
-						obj.setDriving(62,False)
+					
+					obj.setDriving(61,False)
+					obj.setDriving(62,False)
+					if len(obj.Constraints)>63:
 						obj.setDriving(63,False)
 			except:
-				print ("probleme mit bSketch")
+				sayexc("probleme mit bSketch")
 
 			obj.recompute()
 			return
@@ -231,7 +237,7 @@ class BezierSketch(FeaturePython):
 
 		if obj.model == "three points":
 #		if not obj.simple:
-			if obj.aSketch <>None:
+			if obj.aSketch <> None:
 				obj.setDriving(26,True)
 				obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
 				obj.setDriving(27,True)
@@ -242,9 +248,10 @@ class BezierSketch(FeaturePython):
 				else:
 					obj.setDriving(30,False)
 			else:
-				obj.setDriving(26,False)
-				obj.setDriving(27,False)
-				obj.setDriving(30,False)
+				if len(obj.Constraints)>30:
+					obj.setDriving(26,False)
+					obj.setDriving(27,False)
+					obj.setDriving(30,False)
 
 			if obj.bSketch <>None:
 				obj.setDriving(28,True)
@@ -258,9 +265,10 @@ class BezierSketch(FeaturePython):
 					obj.setDriving(31,False)
 
 			else:
-				obj.setDriving(28,False)
-				obj.setDriving(29,False)
-				obj.setDriving(31,False)
+				if len(obj.Constraints)>31:
+					obj.setDriving(28,False)
+					obj.setDriving(29,False)
+					obj.setDriving(31,False)
 			obj.recompute()
 
 			return
@@ -278,9 +286,10 @@ class BezierSketch(FeaturePython):
 				else:
 					obj.setDriving(18,False)
 			else:
-				obj.setDriving(14,False)
-				obj.setDriving(15,False)
-				obj.setDriving(18,False)
+				if len(obj.Constraints)>18:
+					obj.setDriving(14,False)
+					obj.setDriving(15,False)
+					obj.setDriving(18,False)
 
 			if obj.bSketch <>None:
 				obj.setDriving(16,True)
@@ -295,9 +304,10 @@ class BezierSketch(FeaturePython):
 					False)
 
 			else:
-				obj.setDriving(16,False)
-				obj.setDriving(17,False)
-				obj.setDriving(19,False)
+				if len(obj.Constraints)>19:
+					obj.setDriving(16,False)
+					obj.setDriving(17,False)
+					obj.setDriving(19,False)
 
 		obj.recompute()
 		return
@@ -305,13 +315,19 @@ class BezierSketch(FeaturePython):
 
 
 def combineSketches():
+	'''creates a BsplineCurve which is the combination of a xy bspline curve A and a xz bspline curve B.
+	both curves must have the same count of poles  and the correspondig poles must have the same x coordinate. The projections of the resulting curve and the A curve to xy plane are the same.
+	The projections of the resulting curve and the B curve to xz plane are the same too.
+	the method works only for simple BSpline curves.
+	'''
 
-	xys=App.ActiveDocument.MySimpleBezierSketch
-	c=xys.Shape.Edges[0].Curve
+	[ac,bc]=Gui.Selection.getSelection()
+	#xys=App.ActiveDocument.MySimpleBezierSketch
+	c=ac.Shape.Edges[0].Curve
 	psa=c.getPoles()
 
-	xys=App.ActiveDocument.MySimpleBezierSketch001
-	c=xys.Shape.Edges[0].Curve
+	#xys=App.ActiveDocument.MySimpleBezierSketch001
+	c=bc.Shape.Edges[0].Curve
 	psb=c.getPoles()
 	psb.reverse()
 
@@ -326,7 +342,7 @@ def combineSketches():
 
 
 def createbezier(sk):
-	'''create a curve segment with 7 poles'''
+	'''create a curve segment with 7 poles inside the sketch sk'''
 
 	pts=[
 			(0,0,0),(0,-100,0),
@@ -725,7 +741,7 @@ def createArcSpline(name="Arc"):
 	obj.aTangential=False
 	obj.bTangential=False
 #	obj.bSketch=App.ActiveDocument.Sketch
-	obj.aSketch=App.ActiveDocument.Sketch
+#	obj.aSketch=App.ActiveDocument.Sketch
 	# createbezier(obj)
 	obj.ViewObject.LineColor=(random.random(),random.random(),random.random(),)
 	return obj

@@ -7,6 +7,8 @@ import PySide
 from PySide import  QtGui,QtCore
 
 import Draft
+import FreeCAD as App
+
 
 def combineCurves():
 
@@ -15,7 +17,6 @@ def combineCurves():
 
 	hw=h.Shape.Edges[0]
 	vw=v.Shape.Edges[0]
-
 
 
 	fip=hw.FirstParameter

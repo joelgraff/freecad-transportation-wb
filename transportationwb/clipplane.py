@@ -113,11 +113,8 @@ MainWindow:
 class ComboApp(MikiApp):
 
 	def close(self):
-		s=self.root.ids['IVRoot']
-		sg=Gui.ActiveDocument.ActiveView.getSceneGraph()
-		sg.removeChild(s)
-		s=self.root.ids['QtRoot']
-		s.hide()
+		Gui.ActiveDocument.ActiveView.getSceneGraph().removeChild(self.root.ids['IVRoot'])
+		self.root.ids['QtRoot'].hide()
 
 	def run(self):
 		for mid in self.root.ids:
@@ -168,8 +165,8 @@ class ComboApp(MikiApp):
 		ids['cp_green'].on.setValue(0)
 
 
-def demoClipPlaneAnimationGUI():
-	(node,miki) = createMikiGui2(layout, ComboApp)
+def demoClipPlaneAnimation():
+	app = createMikiGui2(layout, ComboApp)
 	Gui.activeDocument().activeView().viewAxonometric()
 	Gui.updateGui()
 	Gui.SendMsgToActiveView("ViewFit")
