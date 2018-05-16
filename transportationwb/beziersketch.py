@@ -223,9 +223,9 @@ class BezierSketch(FeaturePython):
 					obj.recompute()
 
 				else:
-					
-					obj.setDriving(61,False)
-					obj.setDriving(62,False)
+					if len(obj.Constraints)>61:
+						obj.setDriving(61,False)
+						obj.setDriving(62,False)
 					if len(obj.Constraints)>63:
 						obj.setDriving(63,False)
 			except:

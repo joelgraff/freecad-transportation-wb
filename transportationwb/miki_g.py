@@ -761,7 +761,6 @@ class MikiWidget(QtGui.QWidget):
 		layout = QtGui.QVBoxLayout()
 		self.setLayout(layout)
 		self.layout = layout
-		
 		self.dwl = None
 		##\endcond
 
@@ -936,7 +935,7 @@ def getdockwindowMgr2(dockwindow, winname="FreeCAD"):
 
 
 
-class Miki2(Miki):
+class Miki_Contextmenu(Miki):
 	'''the miki as contextmenu entry'''
 
 	def __init__(self, App, layoutstring, obj):

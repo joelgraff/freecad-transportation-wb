@@ -25,6 +25,7 @@ INPUT += miki_g.py
 INPUT += beziersketch.py
 INPUT += labeltools.py
 #INPUT += t.py
+INPUT += clipplane.py
 
 
 INPUT += readme.md 

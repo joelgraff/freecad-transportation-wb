@@ -1,7 +1,8 @@
 var searchData=
 [
-  ['close',['close',['../classtransportationwb_1_1miki__g_1_1MikiApp.html#a0f986fe8813cbf0bb8e4bb871d6fb7a5',1,'transportationwb::miki_g::MikiApp']]],
+  ['close',['close',['../classtransportationwb_1_1miki__g_1_1MikiApp.html#a0f986fe8813cbf0bb8e4bb871d6fb7a5',1,'transportationwb.miki_g.MikiApp.close()'],['../classtransportationwb_1_1clipplane_1_1ComboApp.html#abe1bd4e1d1ec90a9ee0878535c7ed525',1,'transportationwb.clipplane.ComboApp.close()']]],
   ['close2',['close2',['../classtransportationwb_1_1miki__g_1_1MikiApp.html#a8d1ff150cbeaf9f9b0b5ae3da5cc0d85',1,'transportationwb::miki_g::MikiApp']]],
+  ['combinesketches',['combineSketches',['../namespacetransportationwb_1_1beziersketch.html#a937ce23b3c55ad116f0d4779a1c46e76',1,'transportationwb::beziersketch']]],
   ['comboviewshowwidget',['ComboViewShowWidget',['../namespacetransportationwb_1_1miki__g.html#af960c642f1790bfe4bd61ea26e114808',1,'transportationwb::miki_g']]],
   ['createbezier',['createbezier',['../namespacetransportationwb_1_1beziersketch.html#a679a59013a622f522d81fb4a477284e1',1,'transportationwb::beziersketch']]],
   ['createbeziersketch',['createBezierSketch',['../namespacetransportationwb_1_1beziersketch.html#a44444082b0ec00fb61460fa052e5d4c2',1,'transportationwb::beziersketch']]],

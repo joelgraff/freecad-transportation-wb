@@ -99,8 +99,7 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a937ce23b3c55ad116f0d4779a1c46e76"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a937ce23b3c55ad116f0d4779a1c46e76"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>combineSketches</b></td></tr>
+<tr class="memitem:a937ce23b3c55ad116f0d4779a1c46e76"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetransportationwb_1_1beziersketch.html#a937ce23b3c55ad116f0d4779a1c46e76">combineSketches</a></td></tr>
 <tr class="separator:a937ce23b3c55ad116f0d4779a1c46e76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a679a59013a622f522d81fb4a477284e1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetransportationwb_1_1beziersketch.html#a679a59013a622f522d81fb4a477284e1">createbezier</a></td></tr>
 <tr class="separator:a679a59013a622f522d81fb4a477284e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -119,6 +118,25 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>createArcSpline</b></t
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">create bezier curves in sketcher</pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a class="anchor" id="a937ce23b3c55ad116f0d4779a1c46e76"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def transportationwb.beziersketch.combineSketches </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">creates a BsplineCurve which is the combination of a xy bspline curve A and a xz bspline curve B.
+both curves must have the same count of poles  and the correspondig poles must have the same x coordinate. The projections of the resulting curve and the A curve to xy plane are the same.
+The projections of the resulting curve and the B curve to xz plane are the same too.
+the method works only for simple BSpline curves.
+</pre> 
+</div>
+</div>
 <a class="anchor" id="a679a59013a622f522d81fb4a477284e1"></a>
 <div class="memitem">
 <div class="memproto">
@@ -132,7 +150,7 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>createArcSpline</b></t
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">create a curve segment with 7 poles</pre> 
+<pre class="fragment">create a curve segment with 7 poles inside the sketch sk</pre> 
 </div>
 </div>
 <a class="anchor" id="a44444082b0ec00fb61460fa052e5d4c2"></a>
@@ -186,7 +204,7 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>createArcSpline</b></t
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue May 15 2018 16:14:30 for Transportation Workbench for FreeCAD by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed May 16 2018 17:06:17 for Transportation Workbench for FreeCAD by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

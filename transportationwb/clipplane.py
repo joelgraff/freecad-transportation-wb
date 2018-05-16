@@ -1,7 +1,11 @@
+'''an example for use of miki for both Qt and IV'''
+
+#\cond
 import FreeCAD
 import FreeCADGui
 Gui = FreeCADGui
 App=FreeCAD
+#\endcond
 
 import time
 from pivy import coin
@@ -10,6 +14,7 @@ import transportationwb
 from transportationwb.miki_g import createMikiGui2, MikiApp
 reload(transportationwb.miki_g)
 
+# reset the scene by a fresh document
 App.closeDocument("Unnamed")
 App.newDocument("Unnamed")
 App.setActiveDocument("Unnamed")
@@ -17,6 +22,7 @@ App.ActiveDocument=App.getDocument("Unnamed")
 Gui.ActiveDocument=Gui.getDocument("Unnamed")
 
 # create the scene
+
 
 layout='''#: from pivy.coin import * 
 SoSeparator:
@@ -111,12 +117,15 @@ MainWindow:
 '''
 
 class ComboApp(MikiApp):
+	'''the controller for the use case some widgets start animation of SoClipPlanes'''
 
 	def close(self):
+		'''close the Gui dialog and delete the scenegraph'''
 		Gui.ActiveDocument.ActiveView.getSceneGraph().removeChild(self.root.ids['IVRoot'])
 		self.root.ids['QtRoot'].hide()
 
 	def run(self):
+		'''list all ids'''
 		for mid in self.root.ids:
 			print mid
 
@@ -145,6 +154,7 @@ class ComboApp(MikiApp):
 			time.sleep(0.01)
 
 	def activate_all(self):
+		'''activate all clip planes'''
 
 		ids=self.root.ids
 		ids['cp_blue_a'].on.setValue(1)
@@ -152,13 +162,14 @@ class ComboApp(MikiApp):
 		ids['cp_green'].on.setValue(1)
 
 	def reset_planes(self):
+		'''put the clip planes to an initial position'''
 		ids=self.root.ids
 		ids['cp_green'].plane.setValue(coin.SbPlane(coin.SbVec3f(-1.,0.,0.),-200))
 		ids['cp_blue_b'].plane.setValue(coin.SbPlane(coin.SbVec3f(-1.,0.,0.),-140))
 		ids['cp_blue_a'].plane.setValue(coin.SbPlane(coin.SbVec3f(0.,1.,0.),-80))
 
 	def deactivate_all(self):
-
+		'''deactivate the clip planes - show the whole bodies'''
 		ids=self.root.ids
 		ids['cp_blue_a'].on.setValue(0)
 		ids['cp_blue_b'].on.setValue(0)
@@ -166,6 +177,7 @@ class ComboApp(MikiApp):
 
 
 def demoClipPlaneAnimation():
+	'''starts the demo file and Gui'''
 	app = createMikiGui2(layout, ComboApp)
 	Gui.activeDocument().activeView().viewAxonometric()
 	Gui.updateGui()
