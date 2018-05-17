@@ -53,7 +53,7 @@ class MyTestCmd3:
             'ToolTip': 'Runs the self-test for the workbench'
         }
 
-FreeCADGui.addCommand('My_Transprtation_Tests', MyTestCmd3())
+Gui.addCommand('My_Transprtation_Tests', MyTestCmd3())
 
 
 class DokuTW:
@@ -66,7 +66,7 @@ class DokuTW:
     def GetResources(self):
         return {'MenuText': 'Documentation'}
 
-FreeCADGui.addCommand('Doku', DokuTW())
+Gui.addCommand('Doku', DokuTW())
 
 
 #------------------------------------------
@@ -116,7 +116,7 @@ class _Command():
             }
 
     def IsActive(self):
-        if FreeCADGui.ActiveDocument:
+        if Gui.ActiveDocument:
             return True
         else:
             return False
@@ -128,13 +128,13 @@ class _Command():
                 modul = self.modul
             else:
                 modul = self.name
-            FreeCADGui.doCommand("import " + modul)
-            FreeCADGui.doCommand("import " + self.lmod)
-            FreeCADGui.doCommand("reload(" + self.lmod + ")")
+            Gui.doCommand("import " + modul)
+            Gui.doCommand("import " + self.lmod)
+            Gui.doCommand("reload(" + self.lmod + ")")
             docstring = "print " + re.sub(r'\(.*\)', '.__doc__', self.command)
 
-            FreeCADGui.doCommand(docstring)
-            FreeCADGui.doCommand(self.command)
+            Gui.doCommand(docstring)
+            Gui.doCommand(self.command)
         # FreeCAD.ActiveDocument.commitTransaction()
         if FreeCAD.ActiveDocument != None:
             FreeCAD.ActiveDocument.recompute()
@@ -155,37 +155,37 @@ def always():
 
 def ondocument():
     '''if a document is active'''
-    return FreeCADGui.ActiveDocument != None
+    return Gui.ActiveDocument != None
 
 
 def onselection():
     '''if at least one object is selected'''
-    return len(FreeCADGui.Selection.getSelection()) > 0
+    return len(Gui.Selection.getSelection()) > 0
 
 
 def onselection1():
     '''if exactly one object is selected'''
-    return len(FreeCADGui.Selection.getSelection()) == 1
+    return len(Gui.Selection.getSelection()) == 1
 
 
 def onselection2():
     '''if exactly two objects are selected'''
-    return len(FreeCADGui.Selection.getSelection()) == 2
+    return len(Gui.Selection.getSelection()) == 2
 
 
 def onselection3():
     '''if exactly three objects are selected'''
-    return len(FreeCADGui.Selection.getSelection()) == 3
+    return len(Gui.Selection.getSelection()) == 3
 
 
 def onselex():
     '''if at least one subobject is selected'''
-    return len(FreeCADGui.Selection.getSelectionEx()) != 0
+    return len(Gui.Selection.getSelectionEx()) != 0
 
 
 def onselex1():
     '''if exactly one subobject is selected'''
-    return len(FreeCADGui.Selection.getSelectionEx()) == 1
+    return len(Gui.Selection.getSelectionEx()) == 1
 
 
 # the menu entry list
@@ -205,7 +205,7 @@ def c3b(menu, isactive, name, text, icon=None, cmd=None, *info):
     title = re.sub(r' ', '', text)
     name1 = "Transportation_" + title
     t.IsActive = isactive
-    FreeCADGui.addCommand(name1, t)
+    Gui.addCommand(name1, t)
     FreeCAD.tcmdsTransportation.append([menu, name1])
     return name1
 
@@ -222,7 +222,7 @@ def c3bG(menu, isactive, name, text, icon=None, cmd=None, *info):
     title = re.sub(r' ', '', text)
     name1 = "Transportation_" + title
     t.IsActive = isactive
-    FreeCADGui.addCommand(name1, t)
+    Gui.addCommand(name1, t)
     FreeCAD.tcmdsTransportation.append([menu, name1])
     return name1
 
@@ -239,7 +239,7 @@ def c2b(menu, isactive, title, name, text, icon, cmd=None, *info):
         title = re.sub(r' ', '', text)
     name1 = "Transportation_" + title
     t.IsActive = isactive
-    FreeCADGui.addCommand(name1, t)
+    Gui.addCommand(name1, t)
     FreeCAD.tcmds5.append([menu, name1])
 
 
@@ -259,7 +259,11 @@ if FreeCAD.GuiUp:
     terrain += [
         c3b(["Terrain"], onselection1, 'geodesic_lines', 'create something', '/../icons/draw.svg')]
 
+    drainage = [ c3b["Drainage"], always, '1-Cell Box', 'Create a single-cell box culvert']
+    
+
     toolbars = [['Simulation', toolbar], ['Terrain', terrain],
+               ['Drainage Structures', drainage],
                ['Tests', ['My_Transprtation_Tests', 'Doku']]]
 
     c3b(["Demos"], always, 'miki_g', 'test Dialog MainWindow')
