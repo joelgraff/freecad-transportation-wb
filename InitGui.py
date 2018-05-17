@@ -122,6 +122,7 @@ class _Command():
             return False
 
     def Activated(self):
+
         # FreeCAD.ActiveDocument.openTransaction("create " + self.name)
         if self.command != '':
             if self.modul != '':
@@ -195,6 +196,7 @@ FreeCAD.tcmdsTransportation = []
 
 def c3b(menu, isactive, name, text, icon=None, cmd=None, *info):
 
+    import re
     global _Command
     if cmd == None:
         cmd = re.sub(r' ', '', text) + '()'
