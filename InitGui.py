@@ -213,6 +213,8 @@ def c3b(menu, isactive, name, text, icon=None, cmd=None, *info):
 
 
 def c3bG(menu, isactive, name, text, icon=None, cmd=None, *info):
+
+    import re
     global _Command
     if cmd == None:
         cmd = re.sub(r' ', '', text + 'GUI') + '()'
@@ -231,6 +233,7 @@ def c3bG(menu, isactive, name, text, icon=None, cmd=None, *info):
 
 def c2b(menu, isactive, title, name, text, icon, cmd=None, *info):
 
+    import re
     global _Command
     if cmd == None:
         cmd = re.sub(r' ', '', text) + '()'
@@ -261,7 +264,7 @@ if FreeCAD.GuiUp:
     terrain += [
         c3b(["Terrain"], onselection1, 'geodesic_lines', 'create something', '/../icons/draw.svg')]
 
-    drainage = [ c3b["Drainage"], always, '1-Cell Box', 'Create a single-cell box culvert']
+    drainage = [c3b(["Drainage"], always, 'Box Culvert', '1-Cell Box')]
     
 
     toolbars = [['Simulation', toolbar], ['Terrain', terrain],
