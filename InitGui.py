@@ -60,8 +60,7 @@ class DokuTW:
 
     def Activated(self):
         import WebGui
-        fn ='file:///home/thomas/.FreeCAD/Mod/freecad-transportation-wb/doxgenerated/html/index.html'
-        fn='https://htmlpreview.github.io/?https://raw.githubusercontent.com/microelly2/freecad-transportation-wb/master/doxgenerated/html/index.html'
+        fn='https://htmlpreview.github.io/?https://raw.githubusercontent.com/microelly2/freecad-transportation-wb-docu/master/html/index.html'
         WebGui.openBrowser(fn)
 
     def GetResources(self):

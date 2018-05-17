@@ -11,7 +11,7 @@ ENABLE_PREPROCESSING = YES
 
 QUIET                  = YES
 
-OUTPUT_DIRECTORY = ../doxgenerated
+OUTPUT_DIRECTORY = ../freecad-transportation-wb-docu
 GENERATE_LATEX = NO
 
 
