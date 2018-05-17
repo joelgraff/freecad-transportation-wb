@@ -272,7 +272,8 @@ if FreeCAD.GuiUp:
     c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
     c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
     c3b(["Curves"], ondocument, 'beziersketch', 'create Simple Bezier Sketch')
-    c3b(["Curves"], ondocument, 'beziersketch', 'create Arc Spline')
+# not needed and buggy
+#    c3b(["Curves"], ondocument, 'beziersketch', 'create Arc Spline')
     c3b(["Curves"], onselection1, 'geodesic_lines', 'create Marker')
     c3b(["Curves"], onselection2, 'stationing', 'combine Curves')
 

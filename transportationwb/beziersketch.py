@@ -501,6 +501,7 @@ def createsimplebezier(sk):
 
 
 def ArcSplineSketch(sk):
+	raise Exception("rework needed")
 	import Part
 	import numpy as np
 
@@ -732,6 +733,7 @@ def ArcSplineSketch(sk):
 
 
 def createArcSpline(name="Arc"):
+	raise Exception("rework needed")
 	obj = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
 	# FeaturePython(obj)
 	BezierSketch(obj)
