@@ -268,6 +268,11 @@ if FreeCAD.GuiUp:
     c3b(["Demos"], always, 'miki_g', 'test Dialog')
     c3b(["Demos"], ondocument, 'clipplane', 'demo Clip Plane Animation')
 
+    c3b(["Demos"], always, 'createTestdata', 'create Eichleite')
+    c3b(["Demos"], always, 'createTestdata', 'create Woosung')
+    c3b(["Demos"], always, 'createTestdata', 'create Japanese Knot')
+
+
     c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
     c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
     c3b(["Curves"], ondocument, 'beziersketch', 'create Simple Bezier Sketch')

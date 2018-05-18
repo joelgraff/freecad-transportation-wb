@@ -26,7 +26,10 @@ INPUT += beziersketch.py
 INPUT += labeltools.py
 #INPUT += t.py
 INPUT += clipplane.py
+INPUT += createTestdata.py
 
+INPUT += usecases.md menues.md videos.md
+INPUT += test.md
 
 INPUT += readme.md 
 USE_MDFILE_AS_MAINPAGE = readme.md
