@@ -1,10 +1,10 @@
-'''create some real environmentswith hard codes coordinates
+'''create some real environments with hard coded coordinates
 
-this scripts use the geodat workbench.
+these scripts use the geodat workbench.
 '''
 
 def createEichleite():
-	'''Wilhelmsthal Eichleite Friesener Berg steiler kurviger Anstieg'''
+	'''Wilhelmsthal Eichleite Friesener Berg steiler kurviger Anstieg 50.2725064,11.3946793'''
 	import geodat
 	from geodat import import_osm
 
@@ -20,7 +20,7 @@ def createEichleite():
 
 
 def createWoosung():
-	'''testcase by Joel'''
+	'''testcase by Joel 41.8846258,-89.5806548'''
 	import geodat
 	from geodat import import_osm
 
@@ -37,7 +37,7 @@ def createWoosung():
 
 
 def createJapaneseKnot():
-	'''complex highway crossing'''
+	'''complex highway crossing 35.624446,139.263'''
 
 	import geodat
 	from geodat import import_osm

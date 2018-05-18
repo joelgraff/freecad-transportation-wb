@@ -16,6 +16,13 @@ A dialog is created in the Combo view window behind the Tasks Tab.
 ## Dialog with common widgets
 ## Dialog with functionality to run an animation
 
+There are some methods to import real data from openstreetmap 
+using geodat workbench
+
+## create Eichleite
+## create Woosung
+## create Japanese Knot
+
 # Curves
 ##create a Bezier Sketch
 ##create a simple Bezier sketch
