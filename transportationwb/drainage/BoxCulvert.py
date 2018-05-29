@@ -26,82 +26,43 @@
 """
 Alignment Feature Python object which wraps geometry that provides alignments for transportation facilities and structures
 """
-__title__ = "Alignment.py"
+__title__ = "alignment.py"
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
 import Draft
-import transportationwb
-import os
+from transportationwb import sketch_manager
 
 if App.Gui:
     import FreeCADGui as Gui
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def create_alignment():
+def create_1_cell_box():
     """
-    Creates an alignment object and adds to it the objects in the list
+    Creates single-cell box, and extrudes it along the selected alignment object
     """
 
-    obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", "Alignment")
+    #add a group for the box culvert structure
+    obj = App.ActiveDocument.addObject("App::FeaturePython", "BoxCulvert1Cell")
 
-    obj.Label = translate("Transportation", "Alignment")
-    _Alignment(obj)
+    obj.Label = translate("Transportation", "BoxCulvert1Cell")
 
     if App.GuiUp:
-        _ViewProviderAlignment(obj.ViewObject)
+        _ViewProviderBoxCulvert(obj.ViewObject)
 
-        object_list = Gui.Selection.getSelection()
+    #create the box culvert object
+    box = _BoxCulvert(obj)
 
-        if object_list:
-            for child in object_list:
-                obj.addObject(child)
-        else:
-            print ("No objects selected")
+    lib_path = App.ConfigGet("UserAppData") + "Mod\\freecad-transportation-wb\\data\\drainage\\box_culvert1.FCStd"
 
-    print (os.curdir)
+    box.attach_sketch(lib_path, "box_1_cell")
+    box.sweep_sketch(10000.0)
+
     return obj
 
-class _CommandAlignment:
-    """
-    The Corridor Alignment command definition
-    """
-    def GetResources(self):
-        return {'Pixmap'  : '../../icons/new_alignment.svg',
-                'MenuText': QT_TRANSLATE_NOOP("Corridor_Alignment", "Alignment"),
-                'Accel'   : "C, A",
-                'ToolTip' : QT_TRANSLATE_NOOP("Corridor_Alignment",
-                "Creates a new alignment object using a selected object")
-                }
-
-    def IsActive(self):
-        return not App.ActiveDocument is None
-
-    def Activated (self):
-        selection = Gui.Selection.getSelection()
-
-        align_geo = []
-
-        warning = False
-
-        for obj in selection:
-
-            if not Draft.getType(obj) in ["Sketch", "Shape"]:
-                align_geo.append(obj)
-            else:
-                warning = True
-
-        if warning:
-            print("Selected object is not a valid shape or sketch object.\n")
-        elif selection and not align_geo:
-            print("Invalid selection")
-        else:
-            CreateAlignment(align_geo)
-            App.ActiveDocument.recompute()
-
-class _Alignment():
+class _BoxCulvert():
 
     def __init__(self, obj):
         """
@@ -109,10 +70,24 @@ class _Alignment():
         """
 
         obj.Proxy = self
-        self.Type = "Alignment"
+        self.Type = "BoxCulvert"
         self.Object = obj
 
-        self.add_property("App::PropertyLength", "Start Station", "Starting station for the alignment").Start_Station = 0.00
+        self._add_prop("App::PropertyFloat", "Angle", "Intersection Angle").Angle = 90.0
+
+        self._add_prop("App::PropertyString", "Library", "path to the sketch library")
+
+        self._add_prop("App::PropertyPythonObject", "SweepBody", "Body defining the structure")
+
+        self._add_prop("App::PropertyPythonObject", "SweepObject", "Sweep defining the solid")
+
+        self._add_prop("App::PropertyPythonObject", "SweepProfile", "Sketch profile")
+
+        self._add_prop("App::PropertyPythonObject", "SweepPath", "Sketch path")
+
+        self._add_prop("App::PropertyPythonObject", "Solid", "Solid resulting from sketch sweep")
+
+        self._add_prop("App::PropertyLength", "Length", "Box culvert length")
 
     def __getstate__(self):
         return self.Type
@@ -121,9 +96,58 @@ class _Alignment():
         if state:
             self.Type = state
 
-    def add_property(self, prop_type, prop_name, prop_desc):
+    def _add_prop(self, p_type, p_name, p_desc):
 
-        return self.Object.addProperty(prop_type, prop_name, "Alignment", QT_TRANSLATE_NOOP("App::Property", prop_desc))
+        return self.Object.addProperty(p_type, p_name, "BoxCulvert", QT_TRANSLATE_NOOP("App::Property", p_desc))
+
+    def attach_sketch(self, library_path, sketch_name):
+
+        self.Library = library_path
+
+        self.SweepProfile = sketch_manager.load_sketch(library_path, sketch_name)
+
+    def sweep_sketch(self, length):
+
+        self.Length = 10.0
+        self._do_sweep()
+
+    def _get_selection(self):
+
+        sel = Gui.Selection.getSelection()[0]
+
+        if hasattr(sel, "Proxy"):
+
+            if hasattr(sel.Proxy, "Type"):
+
+                if sel.Proxy.Type == "Alignment":
+
+                    return sel.Group[0]
+
+        return None
+
+    def _do_sweep(self):
+
+        #get the selection data
+        sel = self._get_selection()
+
+        print ("SELECTION: " + str(sel))
+        if sel is None:
+            print ("Invalid selection for sweep")
+            return None
+
+        self.SweepPath = sel
+
+        doc = App.ActiveDocument
+
+        self.SweepBody = doc.addObject("PartDesign::Body", self.SweepProfile.Name + "_Body")
+        doc.recompute()
+
+        self.SweepObject = self.SweepBody.newObject("PartDesign::AdditivePipe", self.SweepProfile.Name + "_Sweep")
+        doc.recompute()
+
+        self.SweepObject.Spine = self.SweepPath
+        self.SweepObject.Profile = self.SweepProfile
+        doc.recompute()
 
     def onChanged(self, obj, prop):
         #reference does not persist on reload
@@ -131,43 +155,13 @@ class _Alignment():
             self.Object = obj
 
     def execute(self, fpy):
-
         pass
 
-    def addObject(self, child):
-
-        if hasattr(self, "Object"):
-            grp = self.Object.Group
-
-            if not child in grp:
-                grp.append(child)
-                self.Object.Group = grp
-
-        if type(child).__name__ == "FeaturePython":
-            if not "Shape" in dir(child):
-                return
-
-        if type(child).__name__ == "SketchObject":
-            child = child.Geometry[0].toShape()
-
-        child.setEditorMode("Alignment_Geometry", 0)
-
-        child.addProperty("App::PropertyLength", "Vertices", "Alignment", "Vertex count of geometry: ").Vertices = len(child.Vertexes)
-
-    def removeObject(self, child):
-
-        if hasattr(self, "Object"):
-            grp = self.Object.Group
-
-            if child in grp:
-                grp.remove(child)
-                self.Object.Group = grp
-
-class _ViewProviderAlignment:
+class _ViewProviderBoxCulvert:
 
     def __init__(self, obj):
         """
-        Initialize the alignment view provider
+        Initialize the box culvert view provider
         """
         obj.Proxy = self
 
@@ -187,7 +181,8 @@ class _ViewProviderAlignment:
 
         if hasattr(self, "Object"):
             if self.Object:
-                return self.Object.Group
+                if hasattr(self.Object, "Group"):
+                    return self.Object.Group
         return []
 
     def updateData(self, fp, prop):
@@ -503,5 +498,5 @@ static char * new_alignment_xpm[] = {
 "                                                                                                                                ",
 "                                                                                                                                "};
 """
-if App.GuiUp:
-    Gui.addCommand("Alignment", _CommandAlignment())
+#if App.GuiUp:
+    #Gui.addCommand("Box-1-Cell", create_1_cell_box())

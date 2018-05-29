@@ -123,6 +123,8 @@ class _Command():
 
     def Activated(self):
 
+        import re
+
         # FreeCAD.ActiveDocument.openTransaction("create " + self.name)
         if self.command != '':
             if self.modul != '':
@@ -264,11 +266,13 @@ if FreeCAD.GuiUp:
     terrain += [
         c3b(["Terrain"], onselection1, 'geodesic_lines', 'create something', '/../icons/draw.svg')]
 
-    drainage = [c3b(["Drainage"], always, 'Box Culvert', '1-Cell Box')]
+    drainage = [c3b(["Drainage"], always, 'drainage.BoxCulvert', 'create_1_cell_box')]
+    corridor = [c3b(["Corridor"], always, 'corridor.Alignment', 'create_alignment')]
     
 
     toolbars = [['Simulation', toolbar], ['Terrain', terrain],
-               ['Drainage Structures', drainage],
+               ['Drainage Structure', drainage],
+               ['Corridor', corridor],
                ['Tests', ['My_Transprtation_Tests', 'Doku']]]
 
     c3b(["Demos"], always, 'miki_g', 'test Dialog MainWindow')
