@@ -76,7 +76,7 @@ class Tangent():
         #endpoints or one of the tangent end points
         new_index = self._create_tangent_line(end_points)
 
-        print self.sketch.Geometry[new_index]
+        print (self.sketch.Geometry[new_index])
 
         #tangentially constrain the tangent to curve endpoints and
         #coincidentally constrain to back tangent end points
@@ -122,7 +122,7 @@ class Tangent():
 
             cur_index = item.index
 
-            print "deleting: " + str(item.index)
+            print ("deleting: " + str(item.index))
             #test to see if the previous index was higher in the list
             #if so, it's deletion changed the current index
             if (last_index > -1) and (cur_index >= last_index):
@@ -158,25 +158,24 @@ class Tangent():
 
         tangent = self.sketch.Geometry[new_index].toShape()
 
-        print "tangent: " + str(tangent)
+        print ("tangent: " + str(tangent))
 
-        print "end points: " + str(end_points)
+        print ("end points: " + str(end_points))
         indices = []
 
         #parse the end_point index lists and pair the tangent endpoints
         #with the corresponding attached geometry end points
         for index in end_points:
 
-            print "index: " + str(index)
-
+            print ("index: " + str(index))
             shape = self.sketch.Geometry[index[0]].toShape()
 
             vtx = shape.Vertexes[index[1]]
 
-            print "vertex: " + str(vtx.Point)
+            print ("vertex: " + str(vtx.Point))
             for i in range (0,2):
 
-                print "tangent vtx" + str(i) + ": " + str (tangent.Vertexes[i].Point)
+                print ("tangent vtx" + str(i) + ": " + str (tangent.Vertexes[i]).Point)
 
                 if vtx.Point == tangent.Vertexes[i].Point:
 
@@ -185,7 +184,7 @@ class Tangent():
                     point_pair = [point_1, point_2]
                     indices.append(point_pair)
 
-        print "indices: " + str(indices)
+        print ("indices: " + str(indices))
 
         #iterate the pairs, build the constraints, and add them to the sketch
         for pair in indices:
@@ -202,7 +201,7 @@ class Tangent():
                 constraint = Sketcher.Constraint("Coincident", pair[0][0],\
                 pair[0][1]+1, pair[1][0], pair[1][1]+1)
 
-            print constraint
+            print (constraint)
 
             self.sketch.addConstraint(constraint)
             
@@ -391,7 +390,7 @@ class Tangent():
         index = selection.index
         geom = self.sketch.Geometry
 
-        print constraints[0].index
+        print (constraints[0].index)
 
         #validate attached geometry as arcs and return
         for item in constraints:

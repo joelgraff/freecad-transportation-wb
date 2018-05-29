@@ -23,11 +23,13 @@
 
 import FreeCAD
 import FreeCADGui as Gui
+import re
 import sys
 import TransportationToolbar
 
 import transportationwb
 import os
+
 global __dir__
 __dir__ = os.path.dirname(transportationwb.__file__)
 
@@ -52,21 +54,21 @@ class MyTestCmd3:
     def GetResources(self):
         return {'MenuText': 'Unit Tests', 'ToolTip': 'Runs the self-test for the workbench'}
 
-FreeCADGui.addCommand('My_Transprtation_Tests'        ,MyTestCmd3())
+Gui.addCommand('My_Transprtation_Tests'        ,MyTestCmd3())
 
 
 class DokuTW:
 
     def Activated(self):
         import WebGui
-        fn='file:///home/thomas/.FreeCAD/Mod/freecad-transportation-wb/doxgenerated/html/index.html'
+        fn='file:///home/joel/.FreeCAD/Mod/freecad-transportation-wb/doxgenerated/html/index.html'
         WebGui.openBrowser(fn)
 
 
     def GetResources(self):
         return {'MenuText': 'Documentation', 'ToolTip': 'Runs the self-test for the workbench'}
 
-FreeCADGui.addCommand('Doku'        ,DokuTW())
+Gui.addCommand('Doku'        ,DokuTW())
 
 
 
@@ -89,7 +91,7 @@ class _Command():
         self.lmod=lmod
         self.command=command
         self.modul=modul
-        if icon<>None:
+        if icon is not None:
             self.icon=  __dir__+ icon
         else: self.icon=None
 
@@ -98,7 +100,7 @@ class _Command():
 
 
     def GetResources(self): 
-        if self.icon <> None:
+        if self.icon is not None:
             return {'Pixmap' : self.icon, 
                 'MenuText': self.name, 
                 'ToolTip': self.name, 
@@ -111,28 +113,6 @@ class _Command():
                 'ToolTip': self.name, 
                 'CmdType': "ForEdit" # bleibt aktiv, wenn sketch editor oder andere tasktab an ist
             } 
-            
-
-    def IsActive(self):
-        if FreeCADGui.ActiveDocument: return True
-        else: return False
-
-    def Activated(self):
-        #FreeCAD.ActiveDocument.openTransaction("create " + self.name)
-        if self.command <> '':
-            if self.modul <>'': modul=self.modul
-            else: modul=self.name
-            FreeCADGui.doCommand("import " + modul)
-            FreeCADGui.doCommand("import "+self.lmod)
-            FreeCADGui.doCommand("reload("+self.lmod+")")
-            docstring="print "+ re.sub(r'\(.*\)', '.__doc__', self.command)
-            
-            FreeCADGui.doCommand(docstring)
-            FreeCADGui.doCommand(self.command)
-        #FreeCAD.ActiveDocument.commitTransaction()
-        if FreeCAD.ActiveDocument <> None:
-            FreeCAD.ActiveDocument.recompute()
-
 
 class _alwaysActive(_Command):
 
@@ -147,31 +127,31 @@ def always():
 
 def ondocument():
     '''if a document is active'''
-    return FreeCADGui.ActiveDocument <> None
+    return Gui.ActiveDocument is not None
 
 def onselection():
     '''if at least one object is selected'''
-    return len(FreeCADGui.Selection.getSelection())>0
+    return len(Gui.Selection.getSelection())>0
 
 def onselection1():
     '''if exactly one object is selected'''
-    return len(FreeCADGui.Selection.getSelection())==1
+    return len(Gui.Selection.getSelection())==1
 
 def onselection2():
     '''if exactly two objects are selected'''
-    return len(FreeCADGui.Selection.getSelection())==2
+    return len(Gui.Selection.getSelection())==2
 
 def onselection3():
     '''if exactly three objects are selected'''
-    return len(FreeCADGui.Selection.getSelection())==3
+    return len(Gui.Selection.getSelection())==3
 
 def onselex():
     '''if at least one subobject is selected'''
-    return len(FreeCADGui.Selection.getSelectionEx())<>0
+    return len(Gui.Selection.getSelectionEx()) != 0
 
 def onselex1():
     '''if exactly one subobject is selected'''
-    return len(FreeCADGui.Selection.getSelectionEx())==1
+    return len(Gui.Selection.getSelectionEx())==1
 
 
 
@@ -182,17 +162,25 @@ FreeCAD.tcmdsTransportation=[]
 
 def c3b(menu,isactive,name,text,icon=None,cmd=None,*info):
 
+    import re
+
     global _Command
+
     if cmd==None:
         cmd=re.sub(r' ', '', text)+'()'
+
     if name==0:
         name=re.sub(r' ', '', text)
+
     t=_Command(name,text,icon,cmd,*info)
-    # if title ==0:
-    title=re.sub(r' ', '', text)
+    title = ""
+
+    if title ==0:
+        title=re.sub(r' ', '', text)
+
     name1="Transportation_"+title
     t.IsActive=isactive
-    FreeCADGui.addCommand(name1,t)
+    Gui.addCommand(name1,t)
     FreeCAD.tcmdsTransportation.append([menu,name1])
     return name1
 
@@ -202,14 +190,18 @@ def c2b(menu,isactive,title,name,text,icon,cmd=None,*info):
     global _Command
     if cmd==None:
         cmd=re.sub(r' ', '', text)+'()'
+
     if name==0:
         name=re.sub(r' ', '', text)
+
     t=_Command(name,text,icon,cmd,*info)
+
     if title ==0:
         title=re.sub(r' ', '', text)
+        
     name1="Transportation_"+title
     t.IsActive=isactive
-    FreeCADGui.addCommand(name1,t)
+    Gui.addCommand(name1,t)
     FreeCAD.tcmds5.append([menu,name1])
 
 
@@ -251,6 +243,7 @@ class TransportationWorkbench (Workbench):
         self.policies_ist = ["Edit..."]
         self.general_fn_list = ["NewAlignment"]
         self.alignment_fn_list = ["Tangent", "Curve1"]
+        self.data_source = ["Data Source"]
         #, "Curve2", "Curve3", "CurveSpiral"]
 
         self.toolbars=toolbars
@@ -261,6 +254,7 @@ class TransportationWorkbench (Workbench):
         import NewAlignment
         import Tangent
         import Curve1
+        import OpenOfficeBridge
         #import Curve2, Curve3, CurveSpiral
 
         Gui.activateWorkbench("DraftWorkbench")
@@ -268,7 +262,9 @@ class TransportationWorkbench (Workbench):
 
         self.appendToolbar("Transportation", self.general_fn_list)
         self.appendToolbar("Transportation alignment", self.alignment_fn_list)
+        self.appendToolbar("Data Source", self.data_source)
         self.appendMenu("Transportation", self.general_fn_list)
+
         #self.appendMenu(["Transportation", "Policies"], self.policies_list)
 #-------------------
 

@@ -181,7 +181,7 @@ def create_arc(back_tangents):
 
     #normalize and scale the vectors for the default back tangent length
     for i in range(0,2):
-        print str(vectors[i])
+        print (str(vectors[i]))
         vectors[i].normalize()
         vectors[i].multiply(length)
 
