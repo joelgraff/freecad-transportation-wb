@@ -18,6 +18,7 @@ App = FreeCAD
 Gui = FreeCADGui
 
 from PySide import QtCore
+from say import sayexc
 
 '''
 # kofig sketcher 
@@ -89,15 +90,12 @@ class ViewProvider:
 		self.methodA(None)
 
 	def methodA(self,obj):
-		print "my Method A"
 		FreeCAD.activeDocument().recompute()
 
 	def methodB(self,obj):
-		print "my method B"
 		FreeCAD.activeDocument().recompute()
 
 	def methodC(self,obj):
-		print "my method C"
 		FreeCAD.activeDocument().recompute()
 
 	def unsetEdit(self,vobj,mode=0):
@@ -105,9 +103,7 @@ class ViewProvider:
 
 
 	def doubleClicked(self,vobj):
-		print "double clicked"
 		self.myedit(vobj.Object)
-		print "Ende double clicked"
 
 
 def getNamedConstraint(sketch,name):
@@ -142,6 +138,9 @@ class BezierSketch(FeaturePython):
 #		obj.addProperty("App::PropertyBool",'clearReportview', 'Base',"clear window for every execute")
 
 		obj.addProperty("App::PropertyBool",'simple', )
+		obj.addProperty("App::PropertyEnumeration","model")
+		obj.model=["simple","three points","arc line arc"]
+
 		obj.addProperty("App::PropertyBool",'aTangential',)
 		obj.addProperty("App::PropertyBool",'bTangential',)
 		obj.addProperty("App::PropertyLink",'aSketch', )
@@ -156,55 +155,127 @@ class BezierSketch(FeaturePython):
 
 	def execute(proxy,obj):
 		'''sync connection aSketch and bSketch'''
+		print "execute ..."
+		print len(obj.Constraints)
 
-		print "myExecute ..."
-		if not obj.simple:
-			print "Simple---------"
-			if obj.aSketch <>None:
-				print obj.aSketch
-				print obj.aSketch.getDatum('Ax')
+#if obj.model ==["simple","three points",]
+
+		if obj.model== "arc line arc": #arcSpline  special
+			if len(obj.Constraints)>63:
+				obj.setDriving(26,False)
+				obj.setDriving(27,False)
+				obj.setDriving(30,False)
+				obj.setDriving(61,False)
+				obj.setDriving(62,False)
+				obj.setDriving(63,False)
+
+			try:
+				if obj.aSketch <>None:
+
+					if  obj.aTangential:
+						obj.setDriving(30,True)
+						vn=(obj.aSketch.getDatum('Barc').Value)*np.pi/180+np.pi
+						try:
+							obj.setDatum('Aarc',vn)
+						except:
+							print ("kann 30 nicht setzen")
+					else:
+						obj.setDriving(30,False)
+						obj.recompute()
+
+
+					obj.setDriving(26,True)
+					obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
+					obj.recompute()
+					obj.setDriving(27,True)
+					obj.setDatum('Ay',obj.aSketch.getDatum('By'))
+					obj.recompute()
+				else:
+					if len(obj.Constraints)>30:
+						obj.setDriving(26,False)
+						obj.setDriving(27,False)
+						obj.setDriving(30,False)
+				obj.recompute()
+
+			except:
+				sayexc ("probleme mit a--Sketch")
+
+			try:
+				if obj.bSketch <>None:
+
+					if obj.bTangential:
+						
+						obj.setDriving(63,True)
+						
+						#obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
+						vn=(-obj.bSketch.getDatum('Aarc').Value)*np.pi/180+np.pi*0.5
+
+						obj.setDatum('Barc',vn)
+						obj.recompute()
+					else:
+						obj.setDriving(63,False)
+
+					obj.setDriving(61,True)
+					obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
+					obj.recompute()
+					obj.setDriving(62,True)
+					obj.setDatum('By',obj.bSketch.getDatum('Ay'))
+					obj.recompute()
+
+				else:
+					if len(obj.Constraints)>61:
+						obj.setDriving(61,False)
+						obj.setDriving(62,False)
+					if len(obj.Constraints)>63:
+						obj.setDriving(63,False)
+			except:
+				sayexc("probleme mit bSketch")
+
+			obj.recompute()
+			return
+
+
+		if obj.model == "three points":
+#		if not obj.simple:
+			if obj.aSketch <> None:
 				obj.setDriving(26,True)
 				obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
 				obj.setDriving(27,True)
 				obj.setDatum('Ay',obj.aSketch.getDatum('By'))
 				if obj.aTangential:
-					print "huhuaa"
 					obj.setDriving(30,True)
 					obj.setDatum('Aarc',(180+obj.aSketch.getDatum('Barc').Value)*np.pi/180)
 				else:
-					print "huhufdfd"
 					obj.setDriving(30,False)
 			else:
-				obj.setDriving(26,False)
-				obj.setDriving(27,False)
-				obj.setDriving(30,False)
+				if len(obj.Constraints)>30:
+					obj.setDriving(26,False)
+					obj.setDriving(27,False)
+					obj.setDriving(30,False)
 
 			if obj.bSketch <>None:
-				print "yy"
-				print obj.aSketch
-				print obj.aSketch.getDatum('Ax')
 				obj.setDriving(28,True)
 				obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
 				obj.setDriving(29,True)
 				obj.setDatum('By',obj.bSketch.getDatum('Ay'))
 				if obj.bTangential:
-					print "huhu"
 					obj.setDriving(31,True)
 					obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
 				else:
-					print "haha"
 					obj.setDriving(31,False)
 
-
 			else:
-				obj.setDriving(28,False)
-				obj.setDriving(29,False)
-				obj.setDriving(31,False)
-		else:
-			print "ho simple"
+				if len(obj.Constraints)>31:
+					obj.setDriving(28,False)
+					obj.setDriving(29,False)
+					obj.setDriving(31,False)
+			obj.recompute()
+
+			return
+
+
+		if obj.model == "simple":
 			if obj.aSketch <>None:
-				print obj.aSketch
-				print obj.aSketch.getDatum('Ax')
 				obj.setDriving(14,True)
 				obj.setDatum('Ax',obj.aSketch.getDatum('Bx'))
 				obj.setDriving(15,True)
@@ -215,13 +286,12 @@ class BezierSketch(FeaturePython):
 				else:
 					obj.setDriving(18,False)
 			else:
-				obj.setDriving(14,False)
-				obj.setDriving(15,False)
-				obj.setDriving(18,False)
+				if len(obj.Constraints)>18:
+					obj.setDriving(14,False)
+					obj.setDriving(15,False)
+					obj.setDriving(18,False)
 
 			if obj.bSketch <>None:
-				print obj.aSketch
-				print obj.aSketch.getDatum('Ax')
 				obj.setDriving(16,True)
 				obj.setDatum('Bx',obj.bSketch.getDatum('Ax'))
 				obj.setDriving(17,True)
@@ -234,40 +304,37 @@ class BezierSketch(FeaturePython):
 					False)
 
 			else:
-				obj.setDriving(16,False)
-				obj.setDriving(17,False)
-				obj.setDriving(19,False)
+				if len(obj.Constraints)>19:
+					obj.setDriving(16,False)
+					obj.setDriving(17,False)
+					obj.setDriving(19,False)
 
 		obj.recompute()
 		return
 
 
 
-
-#	def onChanged(self, obj, prop):
-#		print ("onChange", prop)
-#		return
-
-
-
 def combineSketches():
+	'''creates a BsplineCurve which is the combination of a xy bspline curve A and a xz bspline curve B.
+	both curves must have the same count of poles  and the correspondig poles must have the same x coordinate. The projections of the resulting curve and the A curve to xy plane are the same.
+	The projections of the resulting curve and the B curve to xz plane are the same too.
+	the method works only for simple BSpline curves.
+	'''
 
-	xys=App.ActiveDocument.MySimpleBezierSketch
-	c=xys.Shape.Edges[0].Curve
+	[ac,bc]=Gui.Selection.getSelection()
+	#xys=App.ActiveDocument.MySimpleBezierSketch
+	c=ac.Shape.Edges[0].Curve
 	psa=c.getPoles()
 
-	xys=App.ActiveDocument.MySimpleBezierSketch001
-	c=xys.Shape.Edges[0].Curve
+	#xys=App.ActiveDocument.MySimpleBezierSketch001
+	c=bc.Shape.Edges[0].Curve
 	psb=c.getPoles()
 	psb.reverse()
 
 	pts=[]
 	for (a,b) in zip(psa,psb):
-		print a
-		print b 
 		p=FreeCAD.Vector(a.x,a.y,b.z)
 		pts += [p]
-
 
 	bs=Part.BSplineCurve(pts)
 	Part.show(bs.toShape())
@@ -275,8 +342,7 @@ def combineSketches():
 
 
 def createbezier(sk):
-	'''create a curve segment with 7 poles'''
-
+	'''create a curve segment with 7 poles inside the sketch sk'''
 
 	pts=[
 			(0,0,0),(0,-100,0),
@@ -435,6 +501,7 @@ def createsimplebezier(sk):
 
 
 def ArcSplineSketch(sk):
+	raise Exception("rework needed")
 	import Part
 	import numpy as np
 
@@ -651,7 +718,9 @@ def ArcSplineSketch(sk):
 	sk.toggleDriving(29) 
 	sk.toggleDriving(28) 
 
-	aa=sk.addConstraint(Sketcher.Constraint('Angle',13,-0.5*np.pi)) 
+#	aa=sk.addConstraint(Sketcher.Constraint('Angle',13,-0.5*np.pi)) 
+
+	aa=sk.addConstraint(Sketcher.Constraint('Angle',14,2,-1,2, -0.56)) 
 	sk.renameConstraint(63, u'Barc')
 
 #--------------
@@ -664,10 +733,17 @@ def ArcSplineSketch(sk):
 
 
 def createArcSpline(name="Arc"):
+	raise Exception("rework needed")
 	obj = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
-	FeaturePython(obj)
+	# FeaturePython(obj)
+	BezierSketch(obj)
+	obj.model='arc line arc'
 	ViewProvider(obj.ViewObject)
 	ArcSplineSketch(obj)
+	obj.aTangential=False
+	obj.bTangential=False
+#	obj.bSketch=App.ActiveDocument.Sketch
+#	obj.aSketch=App.ActiveDocument.Sketch
 	# createbezier(obj)
 	obj.ViewObject.LineColor=(random.random(),random.random(),random.random(),)
 	return obj
@@ -679,6 +755,7 @@ def createBezierSketch(name="MyBezierSketch"):
 
 	obj = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
 	BezierSketch(obj)
+	obj.model='three points'
 	createbezier(obj)
 	obj.ViewObject.LineColor=(random.random(),random.random(),random.random(),)
 	return obj
@@ -689,7 +766,8 @@ def createSimpleBezierSketch(name="MySimpleBezierSketch"):
 
 	obj = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython",name)
 	BezierSketch(obj)
-	obj.simple=True
+#	obj.simple=True
+	obj.model='simple'
 	createsimplebezier(obj)
 	obj.ViewObject.LineColor=(random.random(),random.random(),random.random(),)
 	return obj

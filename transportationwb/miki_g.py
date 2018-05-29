@@ -8,6 +8,8 @@
 #-------------------------------------------------
 ''' kivy like creation tool'''
 
+
+
 # pylint: disable=W0331
 # pylint: disable=unused-import
 # pylint: disable=invalid-name
@@ -67,7 +69,6 @@ def ComboViewShowWidget(widget, tabMode=False):
 	tab.addTab(widget, widget.tabname)
 	tab.setCurrentIndex(2)
 
-	print "ComboViewShowWidget done."
 	widget.tab = tab
 	return widget
 
@@ -75,7 +76,6 @@ def ComboViewShowWidget(widget, tabMode=False):
 def creatorFunction(name):
 	'''generates a python code string for the creation of a Qt/Part/So-Object'''
 
-#	print "creator Function :", name
 	if name.startswith('Part.'):
 		[_, c] = name.split('.')
 		return "App.activeDocument().addObject('Part::" + c + "','test')"
@@ -115,7 +115,6 @@ def VerticalLayoutTab(title=''):
 	except:
 		FreeCAD.w5 = [w]
 
-	print w
 	if title != '':
 		w.setWindowTitle(title)
 
@@ -397,8 +396,7 @@ class Miki(object):
 				try:
 					d[depth] = l
 				except:
-					print "error "
-					print [l, ltxt]
+					print ("error ", [l, ltxt])
 
 				parent = ln[l - 1]
 				ln[l] = line
@@ -447,24 +445,22 @@ class Miki(object):
 		self.lines = rs
 		##\endcond
 
-		debug = 0
+		debug = 1
 		if debug:
-			print
-			print "lines parsed ..."
+			print ("lines parsed ...")
 			for r in rs:
-					print r
+					print (r)
 			if len(self.anchors.keys()) > 0:
-				print
-				print "Anchors ...."
-				print
-				print self.anchors
-				print
+				print ("Anchors ....")
+				print (self.anchors)
 
 	def build(self):
 		'''execute the parsed data (expected in self.lines)'''
 		##\cond
 		self.widget = None
 		##\endcond
+#		from pivy import coin
+#		from pivy.coin import *
 
 		for l in self.lines:
 
@@ -476,11 +472,7 @@ class Miki(object):
 				continue
 			if l[3] == 'obj' or l[3] == 'anchor' or l[3] == 'local class':
 					name = l[4]
-#					print name
 					try:
-#						print "class check ..."
-#						print self.classes
-#						print self.classes[name]
 						f = name + "()"
 						f2 = name
 					except:
@@ -488,14 +480,12 @@ class Miki(object):
 
 					if len(l) < 7:  # no name for object
 						l.append('')
-#					print "**", f
 
 					if l[3] == 'local class':
 						exec("class " + name + "(object):pass")
 						h = eval(f2)
 					else:
 						h = eval(f)
-#					print h
 					if len(l) < 7:
 						l.append(None)
 					l.append(h)
@@ -509,11 +499,7 @@ class Miki(object):
 					continue
 				if l[3] == 'obj' or l[3] == 'anchor':
 					parent = self.lines[l[2]][7]
-#					print parent
-#					print l
-#					print l[7]
 					self.addChild(parent, l[7])
-#					print l
 				if l[3] == 'link':
 					parent = self.lines[l[2]][7]
 					try:
@@ -521,46 +507,32 @@ class Miki(object):
 						self.addChild(parent, child)
 					except:
 						# link eines attribs
-				#----------------------------------
 						method = l[4]
 						v = self.lines[l[6]][6]
-#						print "check atts"
 						kk = eval("parent." + l[4])
 						cnkk = kk.__class__.__name__
-#						print ["vor function ", cnkk]
 
 						if cnkk.startswith('So'):
-#							print "So ..."
-#							print v
-#							print v.__class__
 							ex = "parent." + method + ".setValue(" + str(v) + ")"
 							exec(ex)
 							continue
 						if cnkk == 'builtin_function_or_method':
-							# qt 2...
-#							print "mche was"
-#							print v
-#							print "parent."+l[4]
 							kk(v)
-#							print "okay"
 							continue
+
 						cn = v.__class__.__name__
-#						print [v,cn]
 						if cn == 'int' or cn == 'float':
 							ex = "parent." + l[4] + "=" + str(v)
 						elif cn == 'str':
 							ex = "parent." + l[4] + "='" + v + "'"
 						else:
-							print "nicht implementierter typ"
+							print ("nicht implementierter typ")
+							print ([v,cn])
+							print (l)
 							ex = ''
-#						print "!!! *!!** "+ex
 						exec(ex)
-#						print parent
 
-				#-----------------------------------
 			if l[3] == 'att val' or l[3] == 'anchor attr':
-#					print l
-#					print self.lines[l[2]]
 
 					method = l[4]
 					parent = self.lines[l[2]][7]
@@ -568,62 +540,71 @@ class Miki(object):
 					if l[3] == 'att val':
 						v = l[5]
 					else:
-#						print "anchor val"
 						v = l[6]
 					if method == 'id':
 						self.ids[v] = parent
 						continue
+
 					try:
 						kk = eval("parent." + l[4])
 					except:
 
 						cn = v.__class__.__name__
-#						print [v,cn]
 						if cn == 'int' or cn == 'float':
 							ex = "parent." + l[4] + "=" + str(v)
 						elif cn == 'str':
 							ex = "parent." + l[4] + "='" + v + "'"
+						elif cn=='Vector':
+							print ("nicht implementierter typ  Ax")
+							print ([v,cn])
+							print (l)
+							print parent
+							ex="parent."+l[4]+"(FreeCAD."+str(v)+")"
+							print "*** "+ex
+						elif l[4]=='setValue':
+							parent.setValue(v)
+							continue
 						else:
-							print "nicht implementierter typ"
-							ex = ''
-#						ex="parent."+l[4]+"="+str(v)
-#						print "*** "+ex
+							print ("nicht implementierter typ  Ayy")
+							print ([v,cn])
+							print (l)
+							ex='' 
+							print ("nicht implementierter typ")
+
 						exec(ex)
 						continue
 
 					kk = eval("parent." + l[4])
 					cnkk = kk.__class__.__name__
-#					print "vor function ", cnkk
 					if cnkk.startswith('So'):
-#						print "So ..."
-#						print v
-#						print v.__class__
-						ex = "parent." + method + ".setValue(" + str(v) + ")"
+						if v.__class__.__name__.startswith('Sb'):
+							aaa=v
+							ex = "parent." + method + ".setValue(aaa)"
+						else:
+							ex = "parent." + method + ".setValue(" + str(v) + ")"
 						exec(ex)
 						continue
 
 					if cnkk == 'builtin_function_or_method':
-							# qt 3...
-#							print "mche was"
-#							print v
-#							print "parent."+l[4]
 							kk(v)
-#							print "okay"
 							continue
 
 					cn = v.__class__.__name__
-#					print [v,cn]
 					if cn == 'int' or cn == 'float':
 						ex = "parent." + l[4] + "=" + str(v)
 					elif cn == 'str':
 						ex = "parent." + l[4] + "='" + v + "'"
+					elif cn=='Vector':
+							ex="parent."+l[4]+"(FreeCAD."+str(v)+")"
 					else:
-						print "nicht implementierter typ"
-						ex = ''
-					print "//*** " + ex
+						print ("nicht implementierter typ B")
+						print ([v,cn])
+						print (l)
+						aaa=v
+						ex="parent."+l[4]+"(aaa)"
+					print ("//*** " + ex)
 					exec(ex)
-#					print parent
-		print "Ende build 2"
+
 		return self.widget
 
 	def showSo(self):
@@ -631,13 +612,10 @@ class Miki(object):
 
 		for l in self.lines:
 			if l[2] == 0 and l[0] != -1:
-#					print l
 					if len(l) < 7:
 						continue
 					r = l[7]
-#					print r
 					if r.__class__.__name__.startswith('So'):
-#						print r
 						sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
 						sg.addChild(r)
 
@@ -646,11 +624,8 @@ class Miki(object):
 
 		for l in self.lines:
 			if l[2] == 0 and l[0] != -1:
-#					print l
 					r = l[7]
-#					print r
 					if r.__class__.__name__.startswith('So'):
-#						print r
 						dok = FreeCADGui.getDocument(dokname)
 						sg = dok.ActiveView.getSceneGraph()
 						sg.addChild(r)
@@ -661,20 +636,16 @@ class Miki(object):
 		p=parent
 		c=child
 		cc = c.__class__.__name__
-		if 1:
-			print p
-			print p.__class__
-			print
-			print c
-			print c.__class__
-			print cc
-#
+		if 0:
+			print (p)
+			print (p.__class__)
+			print ()
+			print (c)
+			print (c.__class__)
+			print (cc)
+
 
 		if str(c.__class__).startswith("<type 'PySide.QtGui."):
-#			print "pyside"
-#			print p
-#			dir(p)
-#			print p.layout
 			p.layout.addWidget(c)
 			return
 
@@ -690,7 +661,6 @@ class Miki(object):
 			except:
 				p.children = [c]
 			return
-		print p
 		try:
 			if str(p.TypeId) == 'Part::MultiFuse':
 				z = p.Shapes
@@ -706,7 +676,7 @@ class Miki(object):
 				except:
 					try:
 						if c.startswith('__MAGIC_'):
-							print  "MAGIC"
+							print  ("MAGIC")
 							run_magic(p,c)
 					except:
 						FreeCAD.Console.PrintError("\naddObject funktioniert nicht")
@@ -717,7 +687,7 @@ class Miki(object):
 				except:
 					try:
 						if c.startswith('__MAGIC_'):
-							print  "MAGIC"
+							print  ("MAGIC")
 							run_magic(p,c)
 					except:
 						FreeCAD.Console.PrintError("\naddObject funktioniert nicht")
@@ -729,20 +699,20 @@ class Miki(object):
 
 		debug = False
 		if debug:
-			print "parse2 ...."
+			print ("parse2 ....")
 		self.parse2(string)
 		if debug:
-			print "build ...#"
+			print ("build ...#")
 		rca = self.build()
 
 		if debug:
-			print "showSo ..."
+			print ("showSo ...")
 		self.showSo()
 		if cmd != None:
-			print "CMD ..."
-			print cmd
+			print ("CMD ...")
+			print (cmd)
 			rca = cmd()
-			print "rc run...", rca
+			print ("rc run...", rca)
 		return rca
 
 	def roots(self):
@@ -755,23 +725,23 @@ class Miki(object):
 
 	def report(self, results=None):
 		'''prints some debug information about objects, anchors, roots'''
-		print "Results ..."
+		print ("Results ...")
 		if results == None:
 			results = []
 		for r in results:
-			print r
+			print (r)
 			if r.__class__.__name__.startswith('So'):
 				sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
 				sg.addChild(r)
 
-		print "Data ..."
+		print ("Data ...")
 		for ob in self.objects:
-			print ob
+			print (ob)
 
-		print self.anchors
+		print (self.anchors)
 
 		for r in self.roots():
-			print r
+			print (r)
 
 
 
@@ -791,7 +761,6 @@ class MikiWidget(QtGui.QWidget):
 		layout = QtGui.QVBoxLayout()
 		self.setLayout(layout)
 		self.layout = layout
-		
 		self.dwl = None
 		##\endcond
 
@@ -966,7 +935,7 @@ def getdockwindowMgr2(dockwindow, winname="FreeCAD"):
 
 
 
-class Miki2(Miki):
+class Miki_Contextmenu(Miki):
 	'''the miki as contextmenu entry'''
 
 	def __init__(self, App, layoutstring, obj):
@@ -979,7 +948,7 @@ class Miki2(Miki):
 		obj.ViewObject.Proxy.edit = lambda: self.run(layoutstring)
 
 
-class MikiDemoApp(object):
+class MikiApp(object):
 	'''example for the execution layer of the Gui'''
 
 	def __init__(self):
@@ -988,9 +957,9 @@ class MikiDemoApp(object):
 
 	def run(self):
 		'''example button clicked method'''
-		print "Button clicked"
-		print self.root
-		print self.root.widget
+		print ("Button clicked")
+		print (self.root)
+		print (self.root.widget)
 
 	def close2(self):
 		'''close the combo view tab'''
@@ -1004,8 +973,8 @@ class MikiDemoApp(object):
 
 	def itemClicked(self, item):
 		'''example for item clicked'''
-		print item
-		print item.text()
+		print (item)
+		print (item.text())
 
 	def close(self):
 		'''delete the widget'''
@@ -1013,7 +982,7 @@ class MikiDemoApp(object):
 		self.close2()
 
 
-class Controller(MikiDemoApp):
+class Controller(MikiApp):
 	pass
 
 
@@ -1028,7 +997,28 @@ def createMikiGui(layout, app):
 	appi.root = miki
 
 	rca = miki.run(layout)
+	
 	return rca
+
+
+
+
+def createMikiGui2(layout, app):
+	'''creates a miki Gui object (widget and logic)
+	for the view layout string and the controller app'''
+
+	miki = Miki()
+	appi = app()
+
+	miki.app = appi
+	appi.root = miki
+
+	rca = miki.run(layout)
+	#return rca,miki
+	return appi
+
+
+
 
 
 def testme(mode=''):
@@ -1190,7 +1180,7 @@ DockWidget:
 	elif mode == 'DockWidget':
 		layout = layoutDW
 
-	mikigui = createMikiGui(layout, MikiDemoApp)
+	mikigui = createMikiGui(layout, MikiApp)
 	return mikigui
 
 
@@ -1209,5 +1199,5 @@ def testDialogDockWidget():
 
 def testDialog():
 	rc = testme()
-	print rc
+	print (rc)
 	return rc

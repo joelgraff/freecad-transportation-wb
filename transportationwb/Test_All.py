@@ -6,6 +6,7 @@ import unittest
 
 def Col1():
     suite = unittest.TestSuite()
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromName("transportationwb.Test_labeltools"))
     suite.addTest(unittest.defaultTestLoader.loadTestsFromName("transportationwb.Test_miki"))
     suite.addTest(unittest.defaultTestLoader.loadTestsFromName("transportationwb.traffic.Test_traffic"))
     suite.addTest(unittest.defaultTestLoader.loadTestsFromName("transportationwb.vehicle.Test_vehicle"))

@@ -1,3 +1,7 @@
 *.pyc
 .vscode/
 test.py
+_*
+*~
+pylintrc
+freecad-transportation-wb-docu/
