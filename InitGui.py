@@ -283,6 +283,11 @@ if FreeCAD.GuiUp:
     c3b(["Demos"], always, 'miki_g', 'test Dialog')
     c3b(["Demos"], ondocument, 'clipplane', 'demo Clip Plane Animation')
 
+    c3b(["Demos"], always, 'createTestdata', 'create Eichleite')
+    c3b(["Demos"], always, 'createTestdata', 'create Woosung')
+    c3b(["Demos"], always, 'createTestdata', 'create Japanese Knot')
+
+
     c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
     c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
     c3b(["Curves"], ondocument, 'beziersketch', 'create Simple Bezier Sketch')
@@ -310,6 +315,7 @@ class TransportationWorkbench (Workbench):
         self.policies_ist = ["Edit..."]
         self.general_fn_list = ["NewAlignment"]
         self.alignment_fn_list = ["Tangent", "Curve1"]
+        self.data_source = ["Data Source"]
         #, "Curve2", "Curve3", "CurveSpiral"]
 
         self.toolbars = toolbars
@@ -327,6 +333,7 @@ class TransportationWorkbench (Workbench):
 
         self.appendToolbar("Transportation", self.general_fn_list)
         self.appendToolbar("Transportation alignment", self.alignment_fn_list)
+        self.appendToolbar("Data Source", self.data_source)
         self.appendMenu("Transportation", self.general_fn_list)
         # self.appendMenu(["Transportation", "Policies"], self.policies_list)
 #-------------------
