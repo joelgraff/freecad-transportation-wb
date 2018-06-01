@@ -39,30 +39,7 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def create_1_cell_box():
-    """
-    Creates single-cell box, and extrudes it along the selected alignment object
-    """
-
-    #add a group for the box culvert structure
-    obj = App.ActiveDocument.addObject("App::FeaturePython", "BoxCulvert1Cell")
-
-    obj.Label = translate("Transportation", "BoxCulvert1Cell")
-
-    if App.GuiUp:
-        _ViewProviderBoxCulvert(obj.ViewObject)
-
-    #create the box culvert object
-    box = _BoxCulvert(obj)
-
-    lib_path = App.ConfigGet("UserAppData") + "Mod\\freecad-transportation-wb\\data\\drainage\\box_culvert1.FCStd"
-
-    box.attach_sketch(lib_path, "box_1_cell")
-    box.sweep_sketch(10000.0)
-
-    return obj
-
-class _BoxCulvert():
+class BoxCulvert():
 
     def __init__(self, obj):
         """
@@ -72,6 +49,9 @@ class _BoxCulvert():
         obj.Proxy = self
         self.Type = "BoxCulvert"
         self.Object = obj
+
+        if App.GuiUp:
+            _ViewProviderBoxCulvert(obj.ViewObject)
 
         self._add_prop("App::PropertyFloat", "Angle", "Intersection Angle").Angle = 90.0
 
@@ -101,41 +81,27 @@ class _BoxCulvert():
         return self.Object.addProperty(p_type, p_name, "BoxCulvert", QT_TRANSLATE_NOOP("App::Property", p_desc))
 
     def attach_sketch(self, library_path, sketch_name):
-
         self.Library = library_path
-
         self.SweepProfile = sketch_manager.load_sketch(library_path, sketch_name)
 
-    def sweep_sketch(self, length):
 
+    def set_sketch_normal(self):
+        self.SweepProfile.Support = [(self.SweepPath, "Edge1")]
+        self.SweepProfile.MapMode = "NormalToEdge"
+
+    def sweep_sketch(self, length):
         self.Length = 10.0
         self._do_sweep()
 
-    def _get_selection(self):
+    def draft(self, face, neutral_plane, angle):
+        doc = App.ActiveDocument
+        draft = self.SweepBody.newObject("PartDesign::Draft", "end_draft")
 
-        sel = Gui.Selection.getSelection()[0]
-
-        if hasattr(sel, "Proxy"):
-
-            if hasattr(sel.Proxy, "Type"):
-
-                if sel.Proxy.Type == "Alignment":
-
-                    return sel.Group[0]
-
-        return None
+        draft.Base = (self.SweepProfile, ["Face1"])
+        doc.setEdit("end_draft", 0)
+        
 
     def _do_sweep(self):
-
-        #get the selection data
-        sel = self._get_selection()
-
-        print ("SELECTION: " + str(sel))
-        if sel is None:
-            print ("Invalid selection for sweep")
-            return None
-
-        self.SweepPath = sel
 
         doc = App.ActiveDocument
 

@@ -266,7 +266,9 @@ if FreeCAD.GuiUp:
     terrain += [
         c3b(["Terrain"], onselection1, 'geodesic_lines', 'create something', '/../icons/draw.svg')]
 
-    drainage = [c3b(["Drainage"], always, 'drainage.BoxCulvert', 'create_1_cell_box')]
+    drainage = [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'create_1_cell_box')]
+    #drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'draft_ends')]
+
     corridor = [c3b(["Corridor"], always, 'corridor.Alignment', 'create_alignment')]
     
 
@@ -349,8 +351,7 @@ class TransportationWorkbench (Workbench):
         for m in ml:
             self.appendMenu(list(m), menues[m])
 
-        cmds = ['Part_Cone', 'Part_Cylinder', 'Draft_Move',
-                'Draft_Rotate', 'Draft_Point', 'Draft_ToggleGrid']
+        cmds = ['Part_Cone', 'Part_Cylinder', 'Draft_Move', 'Draft_Rotate', 'Draft_Point', 'Draft_ToggleGrid']
         cmds += ['Nurbs_LightOn', 'Nurbs_LightOff']
         self.appendToolbar("My Helpers", cmds)
 
