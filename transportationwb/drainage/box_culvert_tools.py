@@ -38,7 +38,7 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def create_1_cell_box():
+def add_1_cell_box():
     """
     Creates single-cell box, and extrudes it along the selected alignment object
     """
@@ -51,7 +51,7 @@ def create_1_cell_box():
     #create the box culvert object
     box = BoxCulvert.BoxCulvert(obj)
 
-    lib_path = App.ConfigGet("UserAppData") + "Mod\\freecad-transportation-wb\\data\\drainage\\box_culvert1.FCStd"
+    lib_path = App.ConfigGet("UserAppData") + "Mod\\freecad-transportation-wb\\data\\drainage\\box_culvert.FCStd"
 
     #get and validate the selected sweep path
     sel = Gui.Selection.getSelection()
@@ -85,6 +85,10 @@ def create_1_cell_box():
     return obj
 
 def draft_ends():
+    """
+    Drafts the end of a culvert, matching the skew assigned in the parameters object.
+    Select the culvert end and adjoining side face (neutral plane) to perform.
+    """
 
     app_doc = App.ActiveDocument
     gui_doc = Gui.ActiveDocument
@@ -165,3 +169,32 @@ def draft_ends():
     draft_object.Base = (sweep, [faces[0]])
 
     app_doc.recompute()
+
+def add_headwall():
+    """
+    Adds a headwall to the culvert structure.  Select the edge of the culvert to add.
+    """
+    print("Unimplemented")
+
+    sel = Gui.Selection.getSelectionEx()[0].SubObjects
+
+    if len(sel) != 1:
+        print ("Invalid Selection")
+        return None
+
+    edge = None
+    
+    if hasattr(sel[0], "ShapeType"):
+        if sel[0].ShapeType == "Edge":
+            edge = sel[0]
+
+    if edge is None:
+        print("Edge not selected")
+        return None
+
+    
+    pass
+
+def add_toewall():
+    print("Unimplemented")
+    pass
