@@ -85,7 +85,7 @@ def create_1_cell_box():
     return obj
 
 def draft_ends():
-    
+
     app_doc = App.ActiveDocument
     gui_doc = Gui.ActiveDocument
     gui_sel = Gui.Selection
@@ -111,24 +111,39 @@ def draft_ends():
         print ("Selected faces must share the same object")
         return None
 
-    add_pipe = gui_sel.getSelection()[0]
-    body = None
+    #find the parent body object
+    body = gui_sel.getSelection()[0].getParentGeoFeatureGroup()
+    sweep = None
 
-    #type-check the objects in the hierarchy
-    if add_pipe.TypeId == "PartDesign::AdditivePipe":
-        body = add_pipe.getParentGeoFeatureGroup()
-
-        if body.TypeId == "PartDesign::Body":
-            Gui.activeView().setActiveObject('pdbody', body)
-
-    if body is None:
-        print ("invalid object heirarchy.  Additive Pipe or Body not found.")
+    if body.TypeId != 'PartDesign::Body':
+        print("invalid object heirarchy.  Body not found.")
         return None
 
-    
+    #get the additive pipe sweep object
+    for child in body.Group:
+        if child.TypeId == "PartDesign::AdditivePipe":
+            sweep = child
+            break
+
+    if sweep is None:
+        print("Sweep object not found.")
+        return None
+
+    #get the parameter object
+    grp = body.getParentGroup().Group
+    parameters = None
+
+    for child in  grp:
+        if "Parameters" in child.Label:
+            parameters = child
+
+    if parameters is None:
+        print("Unable to find Parameters object")
+        return None        
+
     #perform draft
     draft_object = body.newObject("PartDesign::Draft", "Draft_" + faces[0])
-    draft_object.Base = (add_pipe, [faces[0]])
+    draft_object.Base = (sweep, [faces[0]])
     gui_sel.clearSelection()
 
     app_doc.recompute()
@@ -143,55 +158,10 @@ def draft_ends():
     gui_draft.Transparency = gui_body.Transparency
     gui_draft.DisplayMode = gui_body.DisplayMode
 
-    draft_object.Angle = 30.0
+    draft_object.setExpression("Angle", parameters.Label + ".Skew")
     draft_object.Reversed = 0
-    draft_object.NeutralPlane = (add_pipe, [faces[1]])
+    draft_object.NeutralPlane = (sweep, [faces[1]])
     draft_object.PullDirection = None
-    draft_object.Base = (add_pipe, [faces[0]])
+    draft_object.Base = (sweep, [faces[0]])
 
     app_doc.recompute()
-    
-
-#-----------------------------------------------------------------
-#>>> App.activeDocument().box_1_cell001_Body.newObject("PartDesign::Draft","Draft")
-#>>> App.activeDocument().Draft.Base = (App.ActiveDocument.box_1_cell001_Sweep,["Face1"])
-#>>> Gui.Selection.clearSelection()
-#>>> Gui.activeDocument().hide("box_1_cell001_Sweep")
-#>>> App.ActiveDocument.recompute()
-#>>> Gui.activeDocument().setEdit('Draft', 0)
-#>>> Gui.Selection.clearSelection()
-#>>> Gui.ActiveDocument.Draft.ShapeColor=Gui.ActiveDocument.box_1_cell001_Body.ShapeColor
-#>>> Gui.ActiveDocument.Draft.LineColor=Gui.ActiveDocument.box_1_cell001_Body.LineColor
-#>>> Gui.ActiveDocument.Draft.PointColor=Gui.ActiveDocument.box_1_cell001_Body.PointColor
-#>>> Gui.ActiveDocument.Draft.Transparency=Gui.ActiveDocument.box_1_cell001_Body.Transparency
-#>>> Gui.ActiveDocument.Draft.DisplayMode=Gui.ActiveDocument.box_1_cell001_Body.DisplayMode
-#>>> App.ActiveDocument.Draft.Angle = 45.000000
-#>>> App.ActiveDocument.Draft.Reversed = 0
-#>>> App.ActiveDocument.Draft.NeutralPlane = (App.ActiveDocument.box_1_cell001_Sweep, ["Face8"])
-#>>> App.ActiveDocument.Draft.PullDirection = None
-#>>> App.ActiveDocument.Draft.Base = (App.ActiveDocument.box_1_cell001_Sweep,["Face1",])
-#>>> Gui.activeDocument().hide("box_1_cell001_Sweep")
-#>>> App.ActiveDocument.recompute()
-#>>> Gui.activeDocument().resetEdit()
-
-
-#>>> App.activeDocument().box_1_cell001_Body.newObject("PartDesign::Draft","Draft001")
-#>>> App.activeDocument().Draft001.Base = (App.ActiveDocument.Draft,["Face3"])
-#>>> Gui.Selection.clearSelection()
-#>>> Gui.activeDocument().hide("Draft")
-#>>> App.ActiveDocument.recompute()
-#>>> Gui.activeDocument().setEdit('Draft001', 0)
-#>>> Gui.Selection.clearSelection()
-#>>> Gui.ActiveDocument.Draft001.ShapeColor=Gui.ActiveDocument.box_1_cell001_Body.ShapeColor
-#>>> Gui.ActiveDocument.Draft001.LineColor=Gui.ActiveDocument.box_1_cell001_Body.LineColor
-#>>> Gui.ActiveDocument.Draft001.PointColor=Gui.ActiveDocument.box_1_cell001_Body.PointColor
-#>>> Gui.ActiveDocument.Draft001.Transparency=Gui.ActiveDocument.box_1_cell001_Body.Transparency
-#>>> Gui.ActiveDocument.Draft001.DisplayMode=Gui.ActiveDocument.box_1_cell001_Body.DisplayMode
-#>>> App.ActiveDocument.Draft001.Angle = 45.000000
-#>>> App.ActiveDocument.Draft001.Reversed = 0
-#>>> App.ActiveDocument.Draft001.NeutralPlane = (App.ActiveDocument.Draft, ["Face8"])
-#>>> App.ActiveDocument.Draft001.PullDirection = None
-#>>> App.ActiveDocument.Draft001.Base = (App.ActiveDocument.Draft,["Face3",])
-#>>> Gui.activeDocument().hide("Draft")
-#>>> App.ActiveDocument.recompute()
-#>>> Gui.activeDocument().resetEdit()
