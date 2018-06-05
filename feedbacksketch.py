@@ -304,7 +304,7 @@ class FeedbackSketch(FeaturePython):
                         print ("try to set ",ci,g.Constraints[ci].Value)
 
                         g.setDatum(ci,App.Units.Quantity(str(g.Constraints[ci].Value) +' mm'))
-                        (print ("still okay?"))
+                        print ("still okay?")
                         g.setDatum(ci,g.Constraints[ci].Value)
                         print ("!!",g.Constraints[ci].Value)
                         g.setDatum(ci,App.Units.Quantity(str(val_cgi) +' mm'))
