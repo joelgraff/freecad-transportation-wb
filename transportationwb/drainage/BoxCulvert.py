@@ -84,28 +84,29 @@ class BoxCulvert():
         self.Library = library_path
         self.SweepProfile = sketch_manager.load_sketch(library_path, sketch_name)
 
+    def orient_profile(self):
+        pos = self.SweepPath.Shape.Vertexes[0].Point
+        rot = App.Rotation(App.Vector(0,0,1), 0)
+        center = App.Vector(0.0, 0.0, 0.0)
 
-    def set_sketch_normal(self):
+        self.SweepProfile.Placement = App.Placement(pos, rot, center)
+
         self.SweepProfile.Support = [(self.SweepPath, "Edge1")]
         self.SweepProfile.MapMode = "NormalToEdge"
+
+        App.ActiveDocument.recompute()
 
     def sweep_sketch(self, length):
         self.Length = 10.0
         self._do_sweep()
-
-    def draft(self, face, neutral_plane, angle):
-        doc = App.ActiveDocument
-        draft = self.SweepBody.newObject("PartDesign::Draft", "end_draft")
-
-        draft.Base = (self.SweepProfile, ["Face1"])
-        doc.setEdit("end_draft", 0)
-        
 
     def _do_sweep(self):
 
         doc = App.ActiveDocument
 
         self.SweepBody = doc.addObject("PartDesign::Body", self.SweepProfile.Name + "_Body")
+
+        self.addObject(self.SweepBody)
         doc.recompute()
 
         self.SweepObject = self.SweepBody.newObject("PartDesign::AdditivePipe", self.SweepProfile.Name + "_Sweep")
@@ -122,6 +123,15 @@ class BoxCulvert():
 
     def execute(self, fpy):
         pass
+
+    def addObject(self, child):
+
+        if hasattr(self, "Object"):
+            grp = self.Object.Group
+
+            if not child in grp:
+                grp.append(child)
+                self.Object.Group = grp
 
 class _ViewProviderBoxCulvert:
 
