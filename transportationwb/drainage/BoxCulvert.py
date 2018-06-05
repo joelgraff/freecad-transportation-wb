@@ -24,7 +24,7 @@
 #************************************************************************
 
 """
- BoxCulvertFeature Python object which wraps geometry that creates box culverts
+ BoxCulvert - Feature Python object which wraps geometry that creates box culverts
 """
 __title__ = "BoxCulvert.py"
 __author__ = "Joel Graff"
