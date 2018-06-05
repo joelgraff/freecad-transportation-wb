@@ -24,14 +24,15 @@
 #************************************************************************
 
 """
-Alignment Feature Python object which wraps geometry that provides alignments for transportation facilities and structures
+ BoxCulvertFeature Python object which wraps geometry that creates box culverts
 """
-__title__ = "alignment.py"
+__title__ = "BoxCulvert.py"
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
 import Draft
+import Parameters
 from transportationwb import sketch_manager
 
 if App.Gui:
@@ -53,7 +54,13 @@ class BoxCulvert():
         if App.GuiUp:
             _ViewProviderBoxCulvert(obj.ViewObject)
 
-        self._add_prop("App::PropertyFloat", "Angle", "Intersection Angle").Angle = 90.0
+        obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", "Parameters")
+        
+        parameters = Parameters.Parameters(obj)
+
+        parameters.add_parameter("App::PropertyFloat", "Skew", "Skew of box culvert from roadway centerline").Skew = 15.0
+
+        self.addObject(parameters.Object)
 
         self._add_prop("App::PropertyString", "Library", "path to the sketch library")
 
