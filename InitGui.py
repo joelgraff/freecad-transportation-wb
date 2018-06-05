@@ -267,7 +267,7 @@ if FreeCAD.GuiUp:
         c3b(["Terrain"], onselection1, 'geodesic_lines', 'create something', '/../icons/draw.svg')]
 
     drainage = [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'create_1_cell_box')]
-    #drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'draft_ends')]
+    drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'draft_ends')]
 
     corridor = [c3b(["Corridor"], always, 'corridor.Alignment', 'create_alignment')]
     
