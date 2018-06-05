@@ -61,7 +61,6 @@ def create_alignment():
         else:
             print ("No objects selected")
 
-    print (os.curdir)
     return obj
 
 class _CommandAlignment:
