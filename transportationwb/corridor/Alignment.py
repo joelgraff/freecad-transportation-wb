@@ -34,6 +34,7 @@ import FreeCAD as App
 import Draft
 import transportationwb
 import os
+import math
 
 if App.Gui:
     import FreeCADGui as Gui
@@ -56,12 +57,22 @@ def create_alignment():
         object_list = Gui.Selection.getSelection()
 
         if object_list:
-            for child in object_list:
-                obj.addObject(child)
+            child = object_list[0]
+            obj.addObject(child)
+            setAlignmentBearing(obj, child)
         else:
-            print ("No objects selected")
+            print("No objects selected")
 
     return obj
+
+def setAlignmentBearing(alignment, geometry):
+
+    unit_y = App.Vector(0.0, 1.0, 0.0)
+
+    edge = geometry.Points[1].sub(geometry.Points[0])
+    alignment.Object.Bearing = unit_y.getAngle(edge)
+
+    print ("bearing = " + str(alignment.Object.Bearing))
 
 class _CommandAlignment:
     """
@@ -78,7 +89,7 @@ class _CommandAlignment:
     def IsActive(self):
         return not App.ActiveDocument is None
 
-    def Activated (self):
+    def Activated(self):
         selection = Gui.Selection.getSelection()
 
         align_geo = []
@@ -112,7 +123,9 @@ class _Alignment():
         self.Object = obj
 
         self.add_property("App::PropertyLength", "Start Station", "Starting station for the alignment").Start_Station = 0.00
+        self.add_property("App::PropertyFloat", "Bearing", "Angle of alignment w.r.t. the unit y-axis")
 
+        print(dir(obj))
     def __getstate__(self):
         return self.Type
 
@@ -126,15 +139,27 @@ class _Alignment():
 
     def onChanged(self, obj, prop):
         #reference does not persist on reload
+        if prop == "Bearing":
+            #setAlignmentBearing(self.Object.Proxy, self.Object.Group[0])
+            Gui.updateGui()
+
         if not hasattr(self, "Object"):
             self.Object = obj
 
     def execute(self, fpy):
 
-        pass
+        unit_y = App.Vector(0.0, 1.0, 0.0)
+
+        geo = self.Object.Group[0]
+
+        edge = geo.Points[1].sub(geo.Points[0])
+        self.Object.Bearing = 180.0 * unit_y.getAngle(edge) / math.pi
+
+        Gui.updateGui()
 
     def addObject(self, child):
 
+        print ("adding" + str(child))
         if hasattr(self, "Object"):
             grp = self.Object.Group
 
@@ -217,6 +242,7 @@ class _ViewProviderAlignment:
         """
         Handle individual property changes
         """
+        print ("Box culvert View proeprty " + prop + " changed")
         pass
 
     def getIcon(self):

@@ -31,12 +31,40 @@ __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
 import BoxCulvert
+import EndWall
 import FreeCAD as App
 
 if App.Gui:
     import FreeCADGui as Gui
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
+
+drainage_lib_path = App.ConfigGet("UserAppData") + "Mod\\freecad-transportation-wb\\data\\drainage\\box_culvert.FCStd"
+
+def get_body():
+
+    #find the parent body object
+    body = Gui.Selection.getSelection()[0].getParentGeoFeatureGroup()
+
+    if body.TypeId != 'PartDesign::Body':
+        print("invalid object heirarchy.  Body not found.")
+        return None
+
+    return body
+
+def get_parameters(parent_obj):
+
+    parameters = None
+
+    for child in parent_obj.Group:
+        if "Parameters" in child.Label:
+            parameters = child
+
+    if parameters is None:
+        print("Unable to find Parameters object")
+        return None
+
+    return parameters
 
 def add_1_cell_box():
     """
@@ -51,13 +79,11 @@ def add_1_cell_box():
     #create the box culvert object
     box = BoxCulvert.BoxCulvert(obj)
 
-    lib_path = App.ConfigGet("UserAppData") + "Mod\\freecad-transportation-wb\\data\\drainage\\box_culvert.FCStd"
-
     #get and validate the selected sweep path
     sel = Gui.Selection.getSelection()
     valid_sel = None
 
-    #abort if no selection
+    #validate the selected path sketch
     if not sel:
         print("No alignment selected")
         return None
@@ -74,7 +100,7 @@ def add_1_cell_box():
     box.SweepPath = valid_sel
 
     #reference the sketch to sweep and orient it along the path
-    box.attach_sketch(lib_path, "box_1_cell")
+    box.attach_sketch(drainage_lib_path, "box_1_cell")
     box.orient_profile()
 
     App.ActiveDocument.recompute()
@@ -115,13 +141,8 @@ def draft_ends():
         print ("Selected faces must share the same object")
         return None
 
-    #find the parent body object
-    body = gui_sel.getSelection()[0].getParentGeoFeatureGroup()
+    body = get_body()
     sweep = None
-
-    if body.TypeId != 'PartDesign::Body':
-        print("invalid object heirarchy.  Body not found.")
-        return None
 
     #get the additive pipe sweep object
     for child in body.Group:
@@ -133,17 +154,10 @@ def draft_ends():
         print("Sweep object not found.")
         return None
 
-    #get the parameter object
-    grp = body.getParentGroup().Group
-    parameters = None
-
-    for child in  grp:
-        if "Parameters" in child.Label:
-            parameters = child
+    parameters = get_parameters(body.getParentGroup())
 
     if parameters is None:
-        print("Unable to find Parameters object")
-        return None        
+        return
 
     #perform draft
     draft_object = body.newObject("PartDesign::Draft", "Draft_" + faces[0])
@@ -176,24 +190,31 @@ def add_headwall():
     """
     print("Unimplemented")
 
-    sel = Gui.Selection.getSelectionEx()[0].SubObjects
+    geometry = EndWall.validate_selection()
 
-    if len(sel) != 1:
-        print ("Invalid Selection")
+    if geometry is None:
         return None
 
-    edge = None
-    
-    if hasattr(sel[0], "ShapeType"):
-        if sel[0].ShapeType == "Edge":
-            edge = sel[0]
+    #add a group for the box culvert structure
+    obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", "Headwall")
 
-    if edge is None:
-        print("Edge not selected")
-        return None
+    obj.Label = translate("Transportation", "Headwall")
 
-    
-    pass
+    body = get_body()
+    parameters = get_parameters(body.getParentGroup())
+
+    if parameters is None:
+        return
+
+    #create the box culvert object
+    headwall = EndWall.EndWall(obj, parameters)
+
+    #reference the sketch to sweep and orient it along the path
+    headwall.attach_sketch(drainage_lib_path, "headwall")
+    headwall.orient_profile(geometry)
+
+    App.ActiveDocument.recompute()
+
 
 def add_toewall():
     print("Unimplemented")

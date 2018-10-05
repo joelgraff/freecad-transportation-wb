@@ -28,6 +28,7 @@ import FreeCADGui as Gui
 
 import transportationwb
 import os, re
+
 global __dir__
 __dir__ = os.path.dirname(transportationwb.__file__)
 
@@ -133,10 +134,11 @@ class _Command():
                 modul = self.name
             Gui.doCommand("import " + modul)
             Gui.doCommand("import " + self.lmod)
-            Gui.doCommand("reload(" + self.lmod + ")")
+            Gui.doCommand("import importlib")
+            Gui.doCommand("importlib.reload(" + self.lmod + ")")
             docstring = "print " + re.sub(r'\(.*\)', '.__doc__', self.command)
 
-            Gui.doCommand(docstring)
+           # Gui.doCommand(docstring)
             Gui.doCommand(self.command)
         # FreeCAD.ActiveDocument.commitTransaction()
         if FreeCAD.ActiveDocument != None:
@@ -270,8 +272,10 @@ if FreeCAD.GuiUp:
     drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'draft_ends')]
     drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_headwall')]
     drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_toewall')]
+    drainage += [c3b(["Drainage"], always, "drainage.Parameters", "add parameter")]
 
     corridor = [c3b(["Corridor"], always, 'corridor.Alignment', 'create_alignment')]
+    corridor += [c3b(["Corridor"], always, 'corridor.Cell', 'createCell')]
     
 
     toolbars = [['Simulation', toolbar], ['Terrain', terrain],

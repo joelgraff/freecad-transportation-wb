@@ -24,46 +24,147 @@
 #************************************************************************
 
 """
-Parameters Feature Python object which provides general parameters for a group of objects
+Cell feature generates a 3D cell, consiting of a sketch swept along a baseline
 """
-__title__ = "parameters.py"
+__title__ = "Cell.py"
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
+import Draft
+import transportationwb
+
+OBJECT_TYPE = "Cell"
 
 if App.Gui:
     import FreeCADGui as Gui
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-class Parameters():
+class _CommandCell:
+    """
+    The Corridor Cell command definition
+    """
+    def GetResources(self):
+        return {'Pixmap'  : '../../icons/new_alignment.svg',
+                'MenuText': QT_TRANSLATE_NOOP("Corridor_Cell", "Cell"),
+                'Accel'   : "C, A",
+                'ToolTip' : QT_TRANSLATE_NOOP("Corridor_Cell",
+                "Creates a new cell object using a selected objects")
+                }
+
+    def IsActive(self):
+        return not App.ActiveDocument is None
+
+    def Activated(self):
+        pass
+
+def getSelectedEdge(obj_list):
+
+    if len(obj_list) == 0:
+        return None
+
+    if len(obj_list) > 1:
+        print("No more than one edge may be selected")
+        return None
+
+    print("detecting edge...")
+    if type(obj_list[0]).__name__ != "Edge":
+        print("Invalid geometry type selected")
+        return None
+
+    if obj_list[0].Length == 0.0:
+        print("Zero-length edge selected")
+        return None
+
+    return obj_list[0]
+
+def createCell():
+    """
+    Creates a cell object and adds to it the objects in the list
+    """
+
+    sel = Gui.Selection.getSelection()
+    selex = Gui.Selection.getSelectionEx()
+
+    base_feature = None
+    sketch = None
+    edge = None
+
+    if len(sel) != 2:
+        print("Only two objects (a Sketch and a Shape) may be selected")
+        return None
+
+    el1_type = type(sel[0]).__name__
+    el2_type = type(sel[1]).__name__
+
+    if el1_type == "Feature":
+        if el2_type != "SketchObject":
+            print ("Sketch not selected")
+            return None
+
+        base_feature = sel[0]
+        sketch = sel[1]
+
+    elif el1_type == "SketchObject":
+        if el2_type != "Feature":
+            print("Shape not selected")
+            return None
+
+        base_feature = sel[1]
+        sketch = sel[0]
+    else:
+        print("Invalid objects selected")
+        return None
+
+    for x in selex:
+        if x.HasSubObjects:
+            edge = getSelectedEdge(x.SubObjects)
+
+    if base_feature is None:
+        print("no base feature selected")
+        return
+
+    if sketch is None:
+        print("no sketch selected")
+        return
+
+    obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", OBJECT_TYPE)
+
+    obj.Label = translate("Transportation", OBJECT_TYPE)
+
+    cel = _Cell(obj)
+
+    _ViewProviderCell(obj.ViewObject)
+
+    if cel.setBaseFeature(base_feature, edge) is None:
+        print ("Unable to set base feature")
+        return None
+
+    if cel.setSketch(sketch) is None:
+        print ("Unable to set sketch")
+        return None
+
+    App.ActiveDocument.recompute()
+
+    return cel
+
+class _Cell():
 
     def __init__(self, obj):
         """
-        Default constructor
+        Default Constructor
         """
-
         obj.Proxy = self
-        self.Type = "Parameters"
+        self.Type = OBJECT_TYPE
         self.Object = obj
 
-        if App.GuiUp:
-            _ViewProviderParameters(obj.ViewObject)
-
-        self.add_parameter("App::PropertyFloat", "skew", "culvert", "Skew angle of culvert")
-        self.add_parameter("App::PropertyLength", "wall thickness", "culvert", "Thickness of side walls")
-        self.add_parameter("App::PropertyLength", "top slab", "culvert", "Thickness of top slab")
-        self.add_parameter("App::PropertyLength", "bottom slab", "culvert", "Thickness of bottom slab")
-        self.add_parameter("App::PropertyLength", "length", "culvert", "Culvert length")
-        self.add_parameter("App::PropertyLength", "clear span", "culvert", "Clear span of the box cell")
-        self.add_parameter("App::PropertyLength", "clear height", "culvert", "Clear height of the box cell")
-        self.add_parameter("App::PropertyLength", "headwall height", "headwall", "Height of headwall")
-        self.add_parameter("App::PropertyLength", "headwall thickness", "headwall", "Thickness of headwall")
-        self.add_parameter("App::PropertyLength", "toewall height", "toewall", "Height of toewall")
-        self.add_parameter("App::PropertyLength", "toewall thickness", "toewall", "Thickness of toewall")
-        self.add_parameter("App::PropertyLength", "wingwall length", "wingwall", "Length of wingwall")
-        self.add_parameter("App::PropertyLength", "wingwall drop", "wingwall", "Height of drop from culvert edge to end of wingwall")
+        self.add_property("App::PropertyLength", "Start Station", "Starting station for the cell").Start_Station = 0.00
+        self.add_property("App::PropertyLength", "End Station", "Ending station for the cell").End_Station = 0.00
+        self.add_property("App::PropertyLength", "Length", "Length of cell along baseline").Length = 0.00
+        self.add_property("App::PropertyLink", "Base Feature", "Base feature object").Base_Feature = None
+        self.add_property("App::PropertyLink", "Sketch", "Sketch object").Sketch = None
+        self.add_property("App::PropertyInteger", "Edge", "Edge name").Edge = 0
 
     def __getstate__(self):
         return self.Type
@@ -72,18 +173,164 @@ class Parameters():
         if state:
             self.Type = state
 
-    def onDocumentRestored(self, fp):
-        self.Object = fp
+    def add_property(self, prop_type, prop_name, prop_desc):
 
-    def add_parameter(self, kind, name, category, description):
+        return self.Object.addProperty(prop_type, prop_name, OBJECT_TYPE, QT_TRANSLATE_NOOP("App::Property", prop_desc))
 
-        return self.Object.addProperty(kind, name, category, QT_TRANSLATE_NOOP("App::Property", description))
+    def onChanged(self, obj, prop):
 
-class _ViewProviderParameters:
+        if prop == "Start_Station":
+
+            #get the starting station and convert from feet to mm
+            start_pos = obj.getPropertyByName(prop)
+
+            start_pos.Value /= 12.0
+            start_pos.Value *= 25.4
+
+            print("start_pos = " + str(start_pos.Value))
+        #if prop == "Bearing":
+            #setAlignmentBearing(self.Object.Proxy, self.Object.Group[0])
+        #    Gui.updateGui()
+
+        if not hasattr(self, "Object"):
+            self.Object = obj
+
+    def execute(self, fpy):
+        pass
+
+        #unit_y = App.Vector(0.0, 1.0, 0.0)
+
+        #geo = self.Object.Group[0]
+
+        #edge = geo.Points[1].sub(geo.Points[0])
+        #self.Object.Bearing = 180.0 * unit_y.getAngle(edge) / math.pi
+
+        sketch = self.Object.Sketch
+
+        baseEdge = self.Object.Base_Feature.Shape
+        baseEdge = baseEdge.Edges[self.Object.Edge]
+
+        sketch.Placement = baseEdge.Vertexes[0].Placement
+
+        self.doSweep()
+
+        Gui.updateGui()
+
+    def doSweep(self):
+        """
+        Sweep the sketch along the baseline
+        """
+
+        sweep = App.ActiveDocument.addObject('Part::Sweep', 'Sweep')
+        sweep.Sections = [self.Object.Sketch]
+        sweep.Spine = (self.Object.Base_Feature, ["Edge" + str(self.Object.Edge)])
+        sweep.Solid = False
+        sweep.Frenet = False
+
+        return None
+
+    def _compVtx(self, lt_vtx, rt_vtx):
+
+        match = True
+
+        if match:
+            match = match and lt_vtx.X == rt_vtx.X
+
+        if match:
+            match = match and lt_vtx.Y == rt_vtx.Y
+
+        if match:
+            match = match and lt_vtx.Z == rt_vtx.Z
+
+        return match
+
+    def setBaseFeature(self, base_feature, edge):
+        """
+        Sets the baseline for the element model
+        """
+
+        if self.addObject(base_feature) is None:
+            return None
+
+        self.Object.Base_Feature = base_feature
+
+        #if an edge is specified, get the distance offset
+        #to set the starting station
+        if not edge is None:
+
+            dist = 0.0
+            count = 0
+
+            for el in base_feature.Shape.Edges:
+
+                if self._compVtx(el.Vertexes[0], edge.Vertexes[0]):
+                    if self._compVtx(el.Vertexes[1], edge.Vertexes[1]):
+                        break
+
+                dist += el.Length
+                count += 1
+
+            self.Object.Start_Station.Value = dist
+            self.Object.Length = edge.Length
+            self.Object.Edge = count
+
+        return base_feature
+
+    def setSketch(self, sketch):
+        """
+        Sets the sketch for the element model
+        """
+
+        if self.Object.Base_Feature is None:
+            return None
+
+        if self.addObject(sketch) is None:
+            return None
+
+        self.Object.Sketch = sketch
+
+        return sketch
+
+    def addObject(self, child):
+
+        print("adding" + str(child))
+
+        #add the new object to the current group
+        if hasattr(self, "Object"):
+            grp = self.Object.Group
+
+            if not child in grp:
+                grp.append(child)
+                self.Object.Group = grp
+                return child
+
+        return None
+
+        #if type(child).__name__ == "FeaturePython":
+        #    if not "Shape" in dir(child):
+        #        return
+
+        #if type(child).__name__ == "SketchObject":
+        #    child = child.Geometry[0].toShape()
+
+        #child.setEditorMode("Alignment_Geometry", 0)
+
+        #child.addProperty("App::PropertyLength", "Vertices", "Alignment", "Vertex count of geometry: ").Vertices = len(child.Vertexes)
+
+    def removeObject(self, child):
+
+        if hasattr(self, "Object"):
+            grp = self.Object.Group
+
+            if child in grp:
+                grp.remove(child)
+                self.Object.Group = grp
+
+class _ViewProviderCell:
 
     def __init__(self, obj):
         """
-        Initialize the box culvert view provider
+        Initialize the view provider
         """
         obj.Proxy = self
 
@@ -98,6 +345,13 @@ class _ViewProviderParameters:
         View provider scene graph initialization
         """
         self.Object = obj.Object
+
+    def claimChildren(self):
+
+        if hasattr(self, "Object"):
+            if self.Object:
+                return self.Object.Group
+        return []
 
     def updateData(self, fp, prop):
         """
@@ -131,8 +385,9 @@ class _ViewProviderParameters:
 
     def getIcon(self):
         return """
+
 /* XPM */
-static char * new_alignment_xpm[] = {
+static char * new_cell_xpm[] = {
 "64 64 213 2",
 "  	c None",
 ". 	c #000000",
@@ -412,3 +667,5 @@ static char * new_alignment_xpm[] = {
 "                                                                                                                                ",
 "                                                                                                                                "};
 """
+if App.GuiUp:
+    Gui.addCommand(OBJECT_TYPE, _CommandCell())

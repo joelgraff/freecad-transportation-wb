@@ -40,6 +40,53 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
+def validate_selection():
+    """
+    Validates the selection and returns the needed elements
+    for use in the endwall construction
+    """
+
+    structure = Gui.Selection.getSelection()[0]
+    selected = Gui.Selection.getSelectionEx()[0]
+
+    if structure.TypeId != 'PartDesign::AdditivePipe':
+        print ("Invaild structure selected (requires PartDesign::AdditivePipe")
+        return None
+
+    if len(selected.SubElementNames) != 2:
+        print ("Invalid number of elements selected.  (select only two)")
+        return None
+
+    result = {}
+
+    result["structure"] = structure
+    result["edge_name"] = [x for x in selected.SubElementNames if 'Edge' in x][0]
+    result["face_name"] = [x for x in selected.SubElementNames if 'Face' in x][0]
+
+    if result["edge_name"] == [] or result["face_name"] == []:
+        print ("Invalid geometry selected (requires a face and and edge")
+        return None
+
+    for shape in selected.SubObjects:
+        if shape.Faces == []:
+            result["edge_object"] = shape
+        else:
+            result["face_object"] = shape
+
+    return result
+
+def vector_compare(vector_1, vector_2):
+
+    sub_vec = vector_1.sub(vector_2)
+
+    print("comparing ")
+    print(vector_1)
+    print("to")
+    print(vector_2)
+    print(sub_vec)
+    print(sub_vec.Length < 0.00001)
+    return sub_vec.Length < 0.00001
+
 class EndWall():
 
     def __init__(self, obj, parameters):
@@ -54,8 +101,8 @@ class EndWall():
         if App.GuiUp:
             _ViewProviderEndWall(obj.ViewObject)
 
-        parameters.add_parameter("App::PropertyFloat", "Wall Height", "Height of end wall").Wall_Height = 12.0
-        parameters.add_parameter("App::PropertyFloat", "Wall Thickness", "Length of wall along culvert").Wall_Thickness = 6.0
+        parameters.Proxy.add_parameter("App::PropertyFloat", "Wall Height", "Height of end wall").Wall_Height = 12.0
+        parameters.Proxy.add_parameter("App::PropertyFloat", "Wall Thickness", "Length of wall along culvert").Wall_Thickness = 6.0
 
         self._add_prop("App::PropertyString", "Library", "path to the sketch library")
         self._add_prop("App::PropertyPythonObject", "SweepBody", "Body defining the structure")
@@ -72,6 +119,9 @@ class EndWall():
         if state:
             self.Type = state
 
+    def onDocumentRestored(self, fp):
+        self.Object = fp
+
     def _add_prop(self, p_type, p_name, p_desc):
 
         return self.Object.addProperty(p_type, p_name, "EndWall", QT_TRANSLATE_NOOP("App::Property", p_desc))
@@ -80,20 +130,64 @@ class EndWall():
         self.Library = library_path
         self.SweepProfile = sketch_manager.load_sketch(library_path, sketch_name)
 
-    def orient_profile(self):
-        pos = self.SweepPath.Shape.Vertexes[0].Point
+    def orient_profile(self,geometry):
+        base_edge = geometry["edge_object"]
+        base_face = geometry["face_object"]
+
+        point_1 = base_edge.Vertexes[0].Point
+        point_2 = base_edge.Vertexes[1].Point
+
+        self.SweepPath = geometry["structure"]
+
+        path_index = -1
+        match_count = 0
+        target_edge = None
+
+        #determine the profile edge as an edge which shares one endpoint with the base edge
+        for edge in base_face.Edges:
+            for vertex in edge.Vertexes:
+                if (vector_compare(vertex.Point, point_1)) or (vector_compare(vertex.Point, point_2)):
+                    match_count += 1
+
+            if match_count == 1:
+                target_edge = edge
+                break
+
+        point_1 = target_edge.Vertexes[0].Point
+        point_2 = target_edge.Vertexes[1].Point
+
+        for i in range(0, len(self.SweepPath.Shape.Edges)):
+
+            match_count = 0
+
+            for vertex in self.SweepPath.Shape.Edges[i].Vertexes:
+
+                if (vector_compare(vertex.Point, point_1)) or (vector_compare(vertex.Point, point_2)):
+                    match_count += 1
+
+            if match_count == 2:
+                path_index = i
+                break
+
+        if path_index == -1:
+            print("Unable to find path for sweep")
+            return None
+
+        #center the profile on the midopint of the base edge
+        midpoint = (point_1 + point_2) / 2.0
+
         rot = App.Rotation(App.Vector(0,0,1), 0)
         center = App.Vector(0.0, 0.0, 0.0)
 
-        self.SweepProfile.Placement = App.Placement(pos, rot, center)
+        self.SweepProfile.Placement = App.Placement(midpoint, rot, center)
 
-        self.SweepProfile.Support = [(self.SweepPath, "Edge1")]
+        self.SweepProfile.Support = [(self.SweepPath, "Edge" + str(path_index + 1))]
         self.SweepProfile.MapMode = "NormalToEdge"
 
         App.ActiveDocument.recompute()
 
     def sweep_sketch(self, length):
-        self.Length = 10.0
+        self.Length = length
         self._do_sweep()
 
     def _do_sweep(self):

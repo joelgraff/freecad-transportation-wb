@@ -54,15 +54,11 @@ class BoxCulvert():
         if App.GuiUp:
             _ViewProviderBoxCulvert(obj.ViewObject)
 
-        obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", "Parameters")
-        
+        obj = App.ActiveDocument.addObject("App::FeaturePython", "Parameters")
+
         parameters = Parameters.Parameters(obj)
 
-        parameters.add_parameter("App::PropertyFloat", "Skew", "Skew of box culvert from roadway centerline").Skew = 15.0
-
         self.addObject(parameters.Object)
-
-        self._add_prop("App::PropertyString", "Library", "path to the sketch library")
 
         self._add_prop("App::PropertyPythonObject", "SweepBody", "Body defining the structure")
 
@@ -73,8 +69,6 @@ class BoxCulvert():
         self._add_prop("App::PropertyPythonObject", "SweepPath", "Sketch path")
 
         self._add_prop("App::PropertyPythonObject", "Solid", "Solid resulting from sketch sweep")
-
-        self._add_prop("App::PropertyLength", "Length", "Box culvert length")
 
     def __getstate__(self):
         return self.Type
