@@ -8,13 +8,13 @@ import os
 class NewAlignment():
 
     def GetResources(self):
-    
+
         icon_path = os.path.dirname(os.path.abspath(__file__))
 
         icon_path += "/icons/new_alignment.svg"
 
         return {'Pixmap'  : icon_path,
-                'Accel' : "Shift+N",
+                'Accel'   : "Shift+N",
                 'MenuText': "New Alignment",
                 'ToolTip' : "Create a new alignment and make it active",
                 'CmdType' : "ForEdit"}
@@ -40,7 +40,7 @@ class NewAlignment():
 
     def IsActive(self):
         return True
-    
+
     def _attach_handlers(self):
         Gui.ActiveDocument.ActiveView.addDraggable
     def _set_camera(self, height):
@@ -70,7 +70,7 @@ class NewAlignment():
             sketchName="Unnamed_Alignment",
             clientList=['Alignment'])
 
-        return fbs        
+        return fbs
 
     def _add_true_north(self):
 

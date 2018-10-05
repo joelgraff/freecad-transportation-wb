@@ -348,7 +348,7 @@ class TransportationWorkbench (Workbench):
         for t in self.toolbars:
             self.appendToolbar(t[0], t[1])
 
-        # create menues
+        # create menus
         menues = {}
         ml = []
         for _t in FreeCAD.tcmdsTransportation:

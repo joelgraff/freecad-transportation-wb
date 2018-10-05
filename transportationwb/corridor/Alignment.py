@@ -242,7 +242,7 @@ class _ViewProviderAlignment:
         """
         Handle individual property changes
         """
-        print ("Box culvert View proeprty " + prop + " changed")
+        print ("Box culvert View property " + prop + " changed")
         pass
 
     def getIcon(self):

@@ -52,7 +52,7 @@ def getComboView(mw):
 def ComboViewShowWidget(widget, tabMode=False):
 	'''create a tab widget inside the combo view'''
 
-	# stopp to default
+	# stop to default
 	if not tabMode:
 		widget.show()
 		return widget
@@ -137,7 +137,7 @@ def run_magic(p,c):
 
 
 def DockWidget(title=''):
-	'''create a dock widget in a gibes dock container window'''
+	'''create a dock widget in a given dock container window'''
 
 	t = QtGui.QLabel("my widget")
 	w = MikiDockWidget(t, "transport WB")
@@ -257,7 +257,7 @@ def VerticalGroup(title=''):
 	w.setTitle("vertical layout group")
 	layout = QtGui.QVBoxLayout()
 	layout.setAlignment(QtCore.Qt.AlignLeft)
-#	label = QtGui.QLabel("HUWAS2")   
+#	label = QtGui.QLabel("HUWAS2")
 #	layout.addWidget(label)
 #	verticalSpacer = QtGui.QSpacerItem(10, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
 #	layout.addItem(verticalSpacer)
@@ -327,12 +327,12 @@ class Miki(object):
 
 	def __init__(self):
 		## objects of huhu
-		self.objects = [] 
+		self.objects = []
 		## the widget of the generated Qt sctructure
 		self.widget = None
-		## the ids of the input/output sub-widgets 
+		## the ids of the input/output sub-widgets
 		self.ids = {}
-		
+
 		##\cond
 		self.anchors = {}
 		self.indents = []
@@ -568,7 +568,7 @@ class Miki(object):
 							print ("nicht implementierter typ  Ayy")
 							print ([v,cn])
 							print (l)
-							ex='' 
+							ex=''
 							print ("nicht implementierter typ")
 
 						exec(ex)
@@ -883,7 +883,7 @@ class MikiDockWidget(QtGui.QDockWidget):
 
 
 def getMainWindowByName(name):
-	'''returns a main window of a given Title, 
+	'''returns a main window of a given Title,
 	if there is no such main window an new main window is created'''
 
 	if name == 'FreeCAD':
@@ -997,7 +997,7 @@ def createMikiGui(layout, app):
 	appi.root = miki
 
 	rca = miki.run(layout)
-	
+
 	return rca
 
 
@@ -1144,7 +1144,7 @@ VerticalLayoutTab:
 			QtGui.QPushButton:
 		QtGui.QPushButton:
 	VerticalGroup:
-	setSpacer: 
+	setSpacer:
 	'''
 
 

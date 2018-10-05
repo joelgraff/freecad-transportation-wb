@@ -1,5 +1,5 @@
 '''simulation of traffic
-swept pathes, traffic flow, traffic simulator etc. 
+swept paths, traffic flow, traffic simulator etc. 
 '''
 
 import transportationwb
