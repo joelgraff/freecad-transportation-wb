@@ -21,7 +21,7 @@ class Curve1():
         icon_path += "/icons/one_center_curve.svg"
 
         return {'Pixmap'  : icon_path,
-                'Accel' : "Shift+1",
+                'Accel'   : "Shift+1",
                 'MenuText': "One-Center Curve",
                 'ToolTip' : "Add a one-center curve",
                 'CmdType' : "For Edit"}
@@ -46,7 +46,7 @@ class Curve1():
 
         #swap back tangents if they were swapped in the arc computation
         if result[1] != 0:
-   
+
             x = back_tangents[0]
             back_tangents[0] = back_tangents[1]
             back_tangents[1] = x
@@ -129,7 +129,7 @@ class Curve1():
             return selection
 
         self._notify_error("")
-        
+
         return None
 
     def _notify_error(self, error_type):
@@ -146,4 +146,4 @@ class Curve1():
 
         QtGui.QMessageBox.critical(None, title, message)
 
-Gui.addCommand('Curve1',Curve1()) 
+Gui.addCommand('Curve1',Curve1())

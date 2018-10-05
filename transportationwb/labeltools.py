@@ -127,7 +127,7 @@ def createLabel(obj, ref, ctext):
 
 def createLabels(f, e, v):
     '''creates labels for faces, edges,vertexes of selected objects
-    the flags f,e,v indicate which componentes should be labeled'''
+    the flags f,e,v indicate which components should be labeled'''
 
     for obj in Gui.Selection.getSelection():
 

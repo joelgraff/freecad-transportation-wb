@@ -137,7 +137,7 @@ def _compare_vectors(lhs, rhs):
     """
     Compares the length of two vectors.  If the length
     is less than 0.00001 (1 * 10^-5), they are equivalent.
-    Retruns:
+    Returns:
     0 - equivalent
     -1 - lhs < rhs
     1 - lhs > rhs

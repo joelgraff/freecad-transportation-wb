@@ -18,7 +18,7 @@ class BackTangent():
         Icon resources.
         """
         return {'Pixmap'  : 'My_Command_Icon',
-                'Accel' : "Shift+B",
+                'Accel'   : "Shift+B",
                 'MenuText': "Back Tangent",
                 'ToolTip' : "Add a back tangent",
                 'CmdType' : "ForEdit"}
@@ -87,7 +87,7 @@ class BackTangent():
 
         QtGui.QMessageBox.critical(None, title, message)
 
-        
+
         #validate the selection, returning if invalid
         #selected_geometry = self._getSelection()
 

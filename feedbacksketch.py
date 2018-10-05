@@ -240,7 +240,7 @@ class FeedbackSketch(FeaturePython):
                     try:
                         changed[gets]
                         #if valwar == val_cgi:
-                        if debug: print ("stopp change")
+                        if debug: print ("stop change")
                         changed[gets]=2
                     except:
                         changed[gets]=0
@@ -676,4 +676,3 @@ def run_createFBS_with_three_Clients():
     fbs.activeClientA=True
     fbs.activeClientB=True
     fbs.activeClientC=True
-
