@@ -47,7 +47,7 @@ def get_body():
     body = Gui.Selection.getSelection()[0].getParentGeoFeatureGroup()
 
     if body.TypeId != 'PartDesign::Body':
-        print("invalid object heirarchy.  Body not found.")
+        print("invalid object hierarchy.  Body not found.")
         return None
 
     return body

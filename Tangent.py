@@ -27,7 +27,7 @@ class Tangent():
         icon_path += "/icons/tangent.svg"
 
         return {'Pixmap'  : icon_path,
-                'Accel' : "Shift+T",
+                'Accel'   : "Shift+T",
                 'MenuText': "Tangent",
                 'ToolTip' : "Add a tangent",
                 'CmdType' : "ForEdit"}
@@ -44,7 +44,7 @@ class Tangent():
 
         #validate, ensuring no inappropriate constraints
         selection = self._validate_selection()
-        
+
         #result from an invalid selection
         if selection == None:
             return
@@ -89,7 +89,7 @@ class Tangent():
 
     def _replace_curve_constraints(self, index, constraints):
         """
-        Replaces tangent constraints on attached curves with 
+        Replaces tangent constraints on attached curves with
         coincident-to-object constraints
 
         Arguments:
@@ -204,7 +204,7 @@ class Tangent():
             print (constraint)
 
             self.sketch.addConstraint(constraint)
-            
+
             App.ActiveDocument.recompute()
 
         return
@@ -237,7 +237,7 @@ class Tangent():
 
         Returns:
 
-        list of geometry / endoint pairs
+        list of geometry / endpoint pairs
         """
 
         attached = []
@@ -317,12 +317,12 @@ class Tangent():
                         continue
                     else:
                         is_reversed = (direction != result)
-                
+
                     if not is_reversed:
                         end_point = [index, i]
                         end_points.append(end_point)
                         break
-                
+
                 if len(end_points) == 2:
                     break
 
@@ -458,7 +458,7 @@ class Tangent():
 
         elif error_type == "Invalid_Attached_Geometry":
             message = "Attached elements are not curves."
-            
+
         QtGui.QMessageBox.critical(None, title, message)
 
         return

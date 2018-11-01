@@ -50,7 +50,7 @@ def validate_selection():
     selected = Gui.Selection.getSelectionEx()[0]
 
     if structure.TypeId != 'PartDesign::AdditivePipe':
-        print ("Invaild structure selected (requires PartDesign::AdditivePipe")
+        print ("Invalid structure selected (requires PartDesign::AdditivePipe")
         return None
 
     if len(selected.SubElementNames) != 2:

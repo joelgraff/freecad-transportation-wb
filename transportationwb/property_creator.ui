@@ -111,7 +111,7 @@
        </sizepolicy>
       </property>
       <property name="text">
-       <string>Deafult Value</string>
+       <string>Default Value</string>
       </property>
       <property name="textFormat">
        <enum>Qt::PlainText</enum>

@@ -24,7 +24,7 @@
 #************************************************************************
 
 """
-Cell feature generates a 3D cell, consiting of a sketch swept along a baseline
+Cell feature generates a 3D cell, consisting of a sketch swept along a baseline
 """
 __title__ = "Cell.py"
 __author__ = "Joel Graff"

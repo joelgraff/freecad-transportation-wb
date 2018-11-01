@@ -21,8 +21,8 @@ from PySide import QtCore
 from say import sayexc
 
 '''
-# kofig sketcher 
-# see 
+# kofig sketcher
+# see
 hGrpsk = App.ParamGet("User parameter:BaseApp/Preferences/Mod/Sketcher/General")
 
 hGrpsk.GetBool("BSplineDegreeVisible")
@@ -127,7 +127,7 @@ def clearReportView(name):
 
 
 class BezierSketch(FeaturePython):
-	'''Sketch Object with Python for Bezier Curve''' 
+	'''Sketch Object with Python for Bezier Curve'''
 
 	##\cond
 	def __init__(self, obj, icon='/home/thomas/.FreeCAD/Mod/freecad-nurbs/icons/draw.svg'):
@@ -146,10 +146,10 @@ class BezierSketch(FeaturePython):
 		obj.addProperty("App::PropertyLink",'aSketch', )
 		obj.addProperty("App::PropertyLink",'bSketch', )
 		ViewProvider(obj.ViewObject)
-		
+
 		obj.aTangential=True
 		obj.bTangential=True
-		
+
 	##\endcond
 
 
@@ -204,9 +204,9 @@ class BezierSketch(FeaturePython):
 				if obj.bSketch <>None:
 
 					if obj.bTangential:
-						
+
 						obj.setDriving(63,True)
-						
+
 						#obj.setDatum('Barc',(180+obj.bSketch.getDatum('Aarc').Value)*np.pi/180)
 						vn=(-obj.bSketch.getDatum('Aarc').Value)*np.pi/180+np.pi*0.5
 
@@ -315,10 +315,12 @@ class BezierSketch(FeaturePython):
 
 
 def combineSketches():
-	'''creates a BsplineCurve which is the combination of a xy bspline curve A and a xz bspline curve B.
-	both curves must have the same count of poles  and the correspondig poles must have the same x coordinate. The projections of the resulting curve and the A curve to xy plane are the same.
+	'''
+	Creates a BsplineCurve which is the combination of a xy bspline curve A and a xz bspline curve B.
+	Both curves must have the same count of poles and the corresponding poles must have the same x coordinate.
+	The projections of the resulting curve and the A curve to xy plane are the same.
 	The projections of the resulting curve and the B curve to xz plane are the same too.
-	the method works only for simple BSpline curves.
+	The method works only for simple BSpline curves.
 	'''
 
 	[ac,bc]=Gui.Selection.getSelection()
@@ -355,11 +357,11 @@ def createbezier(sk):
 
 
 	sk.addGeometry(Part.Circle(pts[0],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Radius',0,10.000000)) 
+	sk.addConstraint(Sketcher.Constraint('Radius',0,10.000000))
 
 	for i in range(1,7):
 		sk.addGeometry(Part.Circle(pts[i],App.Vector(0,0,1),10),True)
-		sk.addConstraint(Sketcher.Constraint('Equal',0,i)) 
+		sk.addConstraint(Sketcher.Constraint('Equal',0,i))
 
 	sk.addGeometry(Part.BSplineCurve(pts,None,None,False,3,None,False),False)
 
@@ -378,38 +380,38 @@ def createbezier(sk):
 	App.ActiveDocument.recompute()
 
 	sk.addGeometry(Part.LineSegment(pts[2],pts[4]),True)
-	sk.addConstraint(Sketcher.Constraint('Coincident',13,1,2,3)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',13,2,4,3)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',13,1,2,3))
+	sk.addConstraint(Sketcher.Constraint('Coincident',13,2,4,3))
 	App.ActiveDocument.recompute()
-	sk.addConstraint(Sketcher.Constraint('PointOnObject',3,3,13)) 
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',3,3,13))
 
 	sk.addGeometry(Part.LineSegment(pts[-1],pts[-2]),True)
 
-	sk.addConstraint(Sketcher.Constraint('Coincident',14,1,6,3)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',14,2,5,3)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',14,1,6,3))
+	sk.addConstraint(Sketcher.Constraint('Coincident',14,2,5,3))
 	App.ActiveDocument.recompute()
 
 	sk.addGeometry(Part.LineSegment(pts[0],pts[1]),True)
 
-	sk.addConstraint(Sketcher.Constraint('Coincident',15,1,0,3)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',15,2,1,3)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',15,1,0,3))
+	sk.addConstraint(Sketcher.Constraint('Coincident',15,2,1,3))
 	App.ActiveDocument.recompute()
 
-	sk.addConstraint(Sketcher.Constraint('DistanceX',0,3,0)) 
-	sk.addConstraint(Sketcher.Constraint('DistanceY',0,3,0)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceX',0,3,0))
+	sk.addConstraint(Sketcher.Constraint('DistanceY',0,3,0))
 	App.ActiveDocument.recompute()
 	sk.renameConstraint(26, u'Ax')
 	App.ActiveDocument.recompute()
 	sk.renameConstraint(27, u'Ay')
-	sk.addConstraint(Sketcher.Constraint('DistanceX',6,3,600)) 
-	sk.addConstraint(Sketcher.Constraint('DistanceY',6,3,000)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceX',6,3,600))
+	sk.addConstraint(Sketcher.Constraint('DistanceY',6,3,000))
 	App.ActiveDocument.recompute()
 	sk.renameConstraint(28, u'Bx')
 	sk.renameConstraint(29, u'By')
 
-	sk.addConstraint(Sketcher.Constraint('Angle',15,2,-1,2,0.5*np.pi)) 
+	sk.addConstraint(Sketcher.Constraint('Angle',15,2,-1,2,0.5*np.pi))
 	sk.renameConstraint(30, u'Aarc')
-	sk.addConstraint(Sketcher.Constraint('Angle',14,2,-1,2,-0.5*np.pi)) 
+	sk.addConstraint(Sketcher.Constraint('Angle',14,2,-1,2,-0.5*np.pi))
 	sk.renameConstraint(31, u'Barc')
 	App.activeDocument().recompute()
 	for i in range(26,32):
@@ -418,9 +420,9 @@ def createbezier(sk):
 	for i in range(32):
 		sk.toggleVirtualSpace(i)
 
-	sk.addConstraint(Sketcher.Constraint('Symmetric',2,3,4,3,3,3)) 
+	sk.addConstraint(Sketcher.Constraint('Symmetric',2,3,4,3,3,3))
 	cc=sk.addGeometry(Part.Circle(App.Vector(600.,0.0,0),App.Vector(0,0,1),20.),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',cc,3,6,3)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',cc,3,6,3))
 
 	App.ActiveDocument.recompute()
 
@@ -439,11 +441,11 @@ def createsimplebezier(sk):
 	pts=pts2
 
 	sk.addGeometry(Part.Circle(pts[0],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Radius',0,10.000000)) 
+	sk.addConstraint(Sketcher.Constraint('Radius',0,10.000000))
 
 	for i in range(1,4):
 		sk.addGeometry(Part.Circle(pts[i],App.Vector(0,0,1),10),True)
-		sk.addConstraint(Sketcher.Constraint('Equal',0,i)) 
+		sk.addConstraint(Sketcher.Constraint('Equal',0,i))
 
 	bc=sk.addGeometry(Part.BSplineCurve(pts,None,None,False,3,None,False),False)
 
@@ -460,32 +462,32 @@ def createsimplebezier(sk):
 
 	l=sk.addGeometry(Part.LineSegment(pts[-1],pts[-2]),True)
 
-	sk.addConstraint(Sketcher.Constraint('Coincident',l,1,3,3)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',l,2,2,3)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',l,1,3,3))
+	sk.addConstraint(Sketcher.Constraint('Coincident',l,2,2,3))
 	App.ActiveDocument.recompute()
 
 	l2=sk.addGeometry(Part.LineSegment(pts[0],pts[1]),True)
 
-	sk.addConstraint(Sketcher.Constraint('Coincident',l2,1,0,3)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',l2,2,1,3)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',l2,1,0,3))
+	sk.addConstraint(Sketcher.Constraint('Coincident',l2,2,1,3))
 	App.ActiveDocument.recompute()
 
-	sk.addConstraint(Sketcher.Constraint('DistanceX',0,3,0)) 
-	sk.addConstraint(Sketcher.Constraint('DistanceY',0,3,0)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceX',0,3,0))
+	sk.addConstraint(Sketcher.Constraint('DistanceY',0,3,0))
 	App.ActiveDocument.recompute()
-	
+
 	sk.renameConstraint(14, u'Ax')
 	App.ActiveDocument.recompute()
 	sk.renameConstraint(15, u'Ay')
-	sk.addConstraint(Sketcher.Constraint('DistanceX',3,3,600)) 
-	sk.addConstraint(Sketcher.Constraint('DistanceY',3,3,0)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceX',3,3,600))
+	sk.addConstraint(Sketcher.Constraint('DistanceY',3,3,0))
 	App.ActiveDocument.recompute()
 	sk.renameConstraint(16, u'Bx')
 	sk.renameConstraint(17, u'By')
 
-	sk.addConstraint(Sketcher.Constraint('Angle',l2,2,-1,2,0.5*np.pi)) 
+	sk.addConstraint(Sketcher.Constraint('Angle',l2,2,-1,2,0.5*np.pi))
 	sk.renameConstraint(18, u'Aarc')
-	sk.addConstraint(Sketcher.Constraint('Angle',l,2,-1,2,-0.5*np.pi)) 
+	sk.addConstraint(Sketcher.Constraint('Angle',l,2,-1,2,-0.5*np.pi))
 	sk.renameConstraint(19, u'Barc')
 	App.activeDocument().recompute()
 
@@ -496,7 +498,7 @@ def createsimplebezier(sk):
 		sk.toggleVirtualSpace(i)
 
 	cc=sk.addGeometry(Part.Circle(App.Vector(600.000000,0.000000,0),App.Vector(0,0,1),20.),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',cc,3,3,3)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',cc,3,3,3))
 
 
 
@@ -523,41 +525,41 @@ def ArcSplineSketch(sk):
 	App.ActiveDocument.recompute()
 	sk.addGeometry(Part.LineSegment(pts[0],pts[1]),False)
 	sk.addGeometry(Part.LineSegment(pts[1],pts[2]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',0,2,1,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',0,2,1,1))
 	App.ActiveDocument.recompute()
 	sk.addGeometry(Part.LineSegment(pts[2],pts[3]),False)
 	# top
-	sk.addConstraint(Sketcher.Constraint('Coincident',1,2,2,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',1,2,2,1))
 	App.ActiveDocument.recompute()
 
 	sk.addGeometry(Part.LineSegment(pts[3],pts[4]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',2,2,3,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',2,2,3,1))
 	App.ActiveDocument.recompute()
 	sk.addGeometry(Part.LineSegment(pts[4],pts[5]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',3,2,4,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',3,2,4,1))
 	App.ActiveDocument.recompute()
 	App.ActiveDocument.recompute()
 	sk.addGeometry(Part.LineSegment(pts[5],pts[0]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',4,2,5,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',4,2,5,1))
 
-	sk.addConstraint(Sketcher.Constraint('Coincident',5,2,0,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',5,2,0,1))
 	App.ActiveDocument.recompute()
 
 
 	#breite
 
-	sk.addConstraint(Sketcher.Constraint('Perpendicular',5,0)) 
+	sk.addConstraint(Sketcher.Constraint('Perpendicular',5,0))
 	App.ActiveDocument.recompute()
-	sk.addConstraint(Sketcher.Constraint('Perpendicular',4,3)) 
+	sk.addConstraint(Sketcher.Constraint('Perpendicular',4,3))
 	App.ActiveDocument.recompute()
 
-	sk.addConstraint(Sketcher.Constraint('Equal',5,4)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',5,4))
 	App.ActiveDocument.recompute()
-	sk.addConstraint(Sketcher.Constraint('Equal',0,3)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',0,3))
 	App.ActiveDocument.recompute()
 	App.ActiveDocument.recompute()
-	sk.addConstraint(Sketcher.Constraint('PointOnObject',1,2,0)) 
-	sk.addConstraint(Sketcher.Constraint('PointOnObject',1,2,3)) 
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',1,2,0))
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',1,2,3))
 
 	App.ActiveDocument.recompute()
 	App.ActiveDocument.recompute()
@@ -566,17 +568,17 @@ def ArcSplineSketch(sk):
 
 
 	sk.addGeometry(Part.Circle(pts[0],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Coincident',6,3,0,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',6,3,0,1))
 	sk.addGeometry(Part.Circle(pts[1],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Radius',6,10.000000)) 
-	sk.addConstraint(Sketcher.Constraint('Equal',6,7)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',7,3,0,2)) 
+	sk.addConstraint(Sketcher.Constraint('Radius',6,10.000000))
+	sk.addConstraint(Sketcher.Constraint('Equal',6,7))
+	sk.addConstraint(Sketcher.Constraint('Coincident',7,3,0,2))
 	sk.addGeometry(Part.Circle(pts[3],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Equal',6,8)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',8,3,2,2)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',6,8))
+	sk.addConstraint(Sketcher.Constraint('Coincident',8,3,2,2))
 	sk.addGeometry(Part.Circle(pts[4],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Equal',6,9)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',9,3,3,2)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',6,9))
+	sk.addConstraint(Sketcher.Constraint('Coincident',9,3,3,2))
 	sk.addGeometry(Part.BSplineCurve([pts[0],pts[1],pts[3],pts[4]],None,None,False,3,None,False),False)
 
 	conList = []
@@ -590,14 +592,14 @@ def ArcSplineSketch(sk):
 	App.ActiveDocument.recompute()
 
 
-	sk.addConstraint(Sketcher.Constraint('DistanceX',0,1,pts[0].x)) 
-	sk.addConstraint(Sketcher.Constraint('DistanceY',0,1,pts[0].y)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceX',0,1,pts[0].x))
+	sk.addConstraint(Sketcher.Constraint('DistanceY',0,1,pts[0].y))
 	App.ActiveDocument.recompute()
-	sk.addConstraint(Sketcher.Constraint('DistanceX',3,2,pts[4].x)) 
-	sk.addConstraint(Sketcher.Constraint('DistanceY',3,2,pts[4].y)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceX',3,2,pts[4].x))
+	sk.addConstraint(Sketcher.Constraint('DistanceY',3,2,pts[4].y))
 	App.ActiveDocument.recompute()
 
-	sk.addConstraint(Sketcher.Constraint('Angle',-1,1,0,1,0.25*np.pi)) 
+	sk.addConstraint(Sketcher.Constraint('Angle',-1,1,0,1,0.25*np.pi))
 
 	App.ActiveDocument.recompute()
 
@@ -612,43 +614,43 @@ def ArcSplineSketch(sk):
 	App.ActiveDocument.recompute()
 	sk.addGeometry(Part.LineSegment(pts[0],pts[1]),False)
 	sk.addGeometry(Part.LineSegment(pts[1],pts[2]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+0,2,gc+1,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+0,2,gc+1,1))
 	App.ActiveDocument.recompute()
 	sk.addGeometry(Part.LineSegment(pts[2],pts[3]),False)
 	# top
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+1,2,gc+2,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+1,2,gc+2,1))
 	App.ActiveDocument.recompute()
 
 
 	sk.addGeometry(Part.LineSegment(pts[3],pts[4]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+2,2,gc+3,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+2,2,gc+3,1))
 	App.ActiveDocument.recompute()
 	sk.addGeometry(Part.LineSegment(pts[4],pts[5]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+3,2,gc+4,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+3,2,gc+4,1))
 	App.ActiveDocument.recompute()
 	App.ActiveDocument.recompute()
 	sk.addGeometry(Part.LineSegment(pts[5],pts[0]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+4,2,gc+5,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+4,2,gc+5,1))
 
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+5,2,gc+0,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+5,2,gc+0,1))
 	App.ActiveDocument.recompute()
 
 
 	#breite
 
-	sk.addConstraint(Sketcher.Constraint('Perpendicular',gc+5,gc+0)) 
+	sk.addConstraint(Sketcher.Constraint('Perpendicular',gc+5,gc+0))
 	App.ActiveDocument.recompute()
-	sk.addConstraint(Sketcher.Constraint('Perpendicular',gc+4,gc+3)) 
+	sk.addConstraint(Sketcher.Constraint('Perpendicular',gc+4,gc+3))
 	App.ActiveDocument.recompute()
 
 
-	sk.addConstraint(Sketcher.Constraint('Equal',gc+5,gc+4)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+5,gc+4))
 	App.ActiveDocument.recompute()
-	sk.addConstraint(Sketcher.Constraint('Equal',gc+0,gc+3)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+0,gc+3))
 	App.ActiveDocument.recompute()
 	App.ActiveDocument.recompute()
-	sk.addConstraint(Sketcher.Constraint('PointOnObject',gc+1,2,gc+0)) 
-	sk.addConstraint(Sketcher.Constraint('PointOnObject',gc+1,2,gc+3)) 
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',gc+1,2,gc+0))
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',gc+1,2,gc+3))
 
 	App.ActiveDocument.recompute()
 	App.ActiveDocument.recompute()
@@ -657,22 +659,22 @@ def ArcSplineSketch(sk):
 
 	sk.addGeometry(Part.Circle(pts[0],App.Vector(0,0,1),10),True)
 
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+6,3,gc+0,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+6,3,gc+0,1))
 	sk.addGeometry(Part.Circle(pts[1],App.Vector(0,0,1),10),True)
-#	sk.addConstraint(Sketcher.Constraint('Radius',gc+6,10.000000)) 
-	sk.addConstraint(Sketcher.Constraint('Equal',6,gc+6)) 
+#	sk.addConstraint(Sketcher.Constraint('Radius',gc+6,10.000000))
+	sk.addConstraint(Sketcher.Constraint('Equal',6,gc+6))
 
-	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+7)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+7,3,gc+0,2)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+7))
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+7,3,gc+0,2))
 	sk.addGeometry(Part.Circle(pts[3],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+8)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+8,3,gc+2,2)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+8))
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+8,3,gc+2,2))
 	sk.addGeometry(Part.Circle(pts[4],App.Vector(0,0,1),10),True)
-	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+9)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',gc+9,3,gc+3,2)) 
+	sk.addConstraint(Sketcher.Constraint('Equal',gc+6,gc+9))
+	sk.addConstraint(Sketcher.Constraint('Coincident',gc+9,3,gc+3,2))
 	sk.addGeometry(Part.BSplineCurve([pts[0],pts[1],pts[3],pts[4]],None,None,False,3,None,False),False)
 
-	
+
 	conList = []
 	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',gc+6,3,gc+10,0))
 	conList.append(Sketcher.Constraint('InternalAlignment:Sketcher::BSplineControlPoint',gc+7,3,gc+10,1))
@@ -684,24 +686,24 @@ def ArcSplineSketch(sk):
 	App.ActiveDocument.recompute()
 
 
-	sk.addConstraint(Sketcher.Constraint('PointOnObject',16,2,3)) 
-	sk.addConstraint(Sketcher.Constraint('PointOnObject',15,2,3)) 
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',16,2,3))
+	sk.addConstraint(Sketcher.Constraint('PointOnObject',15,2,3))
 
 
 	la=sk.addGeometry(Part.LineSegment(pts[0],pts[1]),False)
-	sk.addConstraint(Sketcher.Constraint('Coincident',la,1,3,2)) 
-	sk.addConstraint(Sketcher.Constraint('Coincident',la,2,gc+4,1)) 
+	sk.addConstraint(Sketcher.Constraint('Coincident',la,1,3,2))
+	sk.addConstraint(Sketcher.Constraint('Coincident',la,2,gc+4,1))
 
 
-	sk.addConstraint(Sketcher.Constraint('DistanceX',gc+0,1,pts[0].x)) 
-	sk.addConstraint(Sketcher.Constraint('DistanceY',gc+0,1,pts[0].y)) 
+	sk.addConstraint(Sketcher.Constraint('DistanceX',gc+0,1,pts[0].x))
+	sk.addConstraint(Sketcher.Constraint('DistanceY',gc+0,1,pts[0].y))
 	App.ActiveDocument.recompute()
-#	sk.addConstraint(Sketcher.Constraint('DistanceX',3,2,pts[4].x)) 
-#	sk.addConstraint(Sketcher.Constraint('DistanceY',3,2,pts[4].y)) 
+#	sk.addConstraint(Sketcher.Constraint('DistanceX',3,2,pts[4].x))
+#	sk.addConstraint(Sketcher.Constraint('DistanceY',3,2,pts[4].y))
 #	App.ActiveDocument.recompute()
 
 	for i in [1,2,3,4,5,14,15,16,17,18]:
-		sk.toggleConstruction(i) 
+		sk.toggleConstruction(i)
 		pass
 	App.ActiveDocument.recompute()
 
@@ -715,12 +717,12 @@ def ArcSplineSketch(sk):
 	App.ActiveDocument.recompute()
 #	App.ActiveDocument.recompute()
 
-	sk.toggleDriving(29) 
-	sk.toggleDriving(28) 
+	sk.toggleDriving(29)
+	sk.toggleDriving(28)
 
-#	aa=sk.addConstraint(Sketcher.Constraint('Angle',13,-0.5*np.pi)) 
+#	aa=sk.addConstraint(Sketcher.Constraint('Angle',13,-0.5*np.pi))
 
-	aa=sk.addConstraint(Sketcher.Constraint('Angle',14,2,-1,2, -0.56)) 
+	aa=sk.addConstraint(Sketcher.Constraint('Angle',14,2,-1,2, -0.56))
 	sk.renameConstraint(63, u'Barc')
 
 #--------------
