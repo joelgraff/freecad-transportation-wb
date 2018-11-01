@@ -59,25 +59,25 @@ class _CommandCell:
     def Activated(self):
         pass
 
-def getSelectedEdge(obj_list):
+#def getSelectedEdge(obj_list):
 
-    if len(obj_list) == 0:
-        return None
+#    if len(obj_list) == 0:
+#        return None
 
-    if len(obj_list) > 1:
-        print("No more than one edge may be selected")
-        return None
+#    if len(obj_list) > 1:
+#        print("No more than one edge may be selected")
+#        return None
 
-    print("detecting edge...")
-    if type(obj_list[0]).__name__ != "Edge":
-        print("Invalid geometry type selected")
-        return None
+#    print("detecting edge...")
+#    if type(obj_list[0]).__name__ != "Edge":
+#        print("Invalid geometry type selected")
+#        return None
 
-    if obj_list[0].Length == 0.0:
-        print("Zero-length edge selected")
-        return None
+#    if obj_list[0].Length == 0.0:
+#        print("Zero-length edge selected")
+#        return None
 
-    return obj_list[0]
+#    return obj_list[0]
 
 def createCell():
     """
@@ -91,43 +91,17 @@ def createCell():
     sketch = None
     edge = None
 
-    if len(sel) != 2:
-        print("Only two objects (a Sketch and a Shape) may be selected")
+    if len(sel) != 1:
+        print("Only a sketch may be selected")
         return None
 
-    el1_type = type(sel[0]).__name__
-    el2_type = type(sel[1]).__name__
+    el_type = type(sel[0]).__name__
 
-    if el1_type == "Feature":
-        if el2_type != "SketchObject":
-            print ("Sketch not selected")
-            return None
-
-        base_feature = sel[0]
-        sketch = sel[1]
-
-    elif el1_type == "SketchObject":
-        if el2_type != "Feature":
-            print("Shape not selected")
-            return None
-
-        base_feature = sel[1]
-        sketch = sel[0]
-    else:
-        print("Invalid objects selected")
+    if el_type != "SketchObject":
+        print ("Sketch not selected")
         return None
 
-    for x in selex:
-        if x.HasSubObjects:
-            edge = getSelectedEdge(x.SubObjects)
-
-    if base_feature is None:
-        print("no base feature selected")
-        return
-
-    if sketch is None:
-        print("no sketch selected")
-        return
+    sketch = sel[0]
 
     obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", OBJECT_TYPE)
 
@@ -137,12 +111,8 @@ def createCell():
 
     _ViewProviderCell(obj.ViewObject)
 
-    if cel.setBaseFeature(base_feature, edge) is None:
-        print ("Unable to set base feature")
-        return None
-
     if cel.setSketch(sketch) is None:
-        print ("Unable to set sketch")
+        print("Unable to set sketch")
         return None
 
     App.ActiveDocument.recompute()
@@ -179,18 +149,22 @@ class _Cell():
 
     def onChanged(self, obj, prop):
 
+        #lambda for feet to millimeter conversions
+        ft_mm = lambda _x: (_x / 12.0) * 25.4
+
+        prop_obj = obj.getPropertyByName(prop)
+
         if prop == "Start_Station":
+            pass
+            #rebuild cell path
+            #rebuild sweep(ft_mm(prop_obj.Value), ft_mm(obj.getPropertyByName("End_Station").Value))
 
-            #get the starting station and convert from feet to mm
-            start_pos = obj.getPropertyByName(prop)
+        elif prop == "End_Station":
+            pass
+            #rebuild cell path
+            #rebuild sweep(ft_mm(obj.getPropertyByName("Start_Station").Value), ft_mm(prop_obj.Value))
 
-            start_pos.Value /= 12.0
-            start_pos.Value *= 25.4
-
-            print("start_pos = " + str(start_pos.Value))
-        #if prop == "Bearing":
-            #setAlignmentBearing(self.Object.Proxy, self.Object.Group[0])
-        #    Gui.updateGui()
+        Gui.updateGui()
 
         if not hasattr(self, "Object"):
             self.Object = obj
