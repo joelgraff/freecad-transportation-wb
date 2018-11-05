@@ -1,28 +1,30 @@
 # -*- coding: utf-8 -*-
-/**************************************************************************
- *                                                                        *
- *  Copyright (c) 2018 Joel Graff <monograff76@gmail.com>                 *
- *                                                                        *
- *  This program is free software; you can redistribute it and/or modify  *
- *  it under the terms of the GNU Lesser General Public License (LGPL)    *
- *  as published by the Free Software Foundation; either version 2 of     *
- *  the License, or (at your option) any later version.                   *
- *  for detail see the LICENCE text file.                                 *
- *                                                                        *
- *  This program is distributed in the hope that it will be useful,       *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *  GNU Library General Public License for more details.                  *
- *                                                                        *
- *  You should have received a copy of the GNU Library General Public     *
- *  License along with this program; if not, write to the Free Software   *
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
- *  USA                                                                   *
- *                                                                        *
- **************************************************************************/
+#************************************************************************
+#*                                                                      *
+#*   Copyright (c) 2018                                                 *
+#*   Joel Graff                                                         *
+#*   <monograff76@gmail.com>                                            *
+#*                                                                      *
+#*  This program is free software; you can redistribute it and/or modify*
+#*  it under the terms of the GNU Lesser General Public License (LGPL)  *
+#*  as published by the Free Software Foundation; either version 2 of   *
+#*  the License, or (at your option) any later version.                 *
+#*  for detail see the LICENCE text file.                               *
+#*                                                                      *
+#*  This program is distributed in the hope that it will be useful,     *
+#*  but WITHOUT ANY WARRANTY; without even the implied warranty of      *
+#*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       *
+#*  GNU Library General Public License for more details.                *
+#*                                                                      *
+#*  You should have received a copy of the GNU Library General Public   *
+#*  License along with this program; if not, write to the Free Software *
+#*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307*
+#*  USA                                                                 *
+#*                                                                      *
+#************************************************************************
 
 """
-Cell feature generates a 3D cell, consisting of a sketch swept along a baseline
+Cell feature generates a 3D cell, consiting of a sketch swept along a baseline
 """
 __title__ = "Cell.py"
 __author__ = "Joel Graff"
@@ -137,7 +139,7 @@ class _CellPath():
 
             if start_pt <= 0.0:
                 start_pt = 0.0
-
+            
             if end_pt <= 0.0:
                 end_pt = edge.Length
 
@@ -174,7 +176,7 @@ class _CellPath():
         '''
         Returns a list of point sublists which describe the final sweep path
         stations - list of starting and ending stations
-        geometry - list of geometry elements which form a continuous path and
+        geometry - list of geometry elements which form a continuous path and 
                    whose list order and vertices are sorted from beginning to end
         '''
 
@@ -233,7 +235,7 @@ class _CellPath():
     def _copy_sketch(doc, sketch, target_name, empty_copy = False):
         '''
         Copy sketch as a new SketchObjectPython
-        doc - document object which receives the sketch
+        doc - document object which recieves the sketch
         sketch - the sketch object to copy
         target_name - string representing the name of the new sketch
         empty_copy - True = create an empty sketch (only placement is duplicated)
@@ -241,7 +243,7 @@ class _CellPath():
         '''
         doc = App.ActiveDocument
 
-        target = doc.addObject('Sketcher::SketchObject', target_name)
+        target = doc.addObject('Sketcher::SketchObject', target_name)	
 
         #_ViewProvider(target.ViewObject)
 
@@ -312,7 +314,7 @@ class _CellPath():
     @staticmethod
     def _sort_edges(edges):
         '''
-        Sort a continuous path of edges
+        Sort a continuous path of edges 
         '''
 
         path_shapes = []
@@ -464,7 +466,7 @@ class _ViewProviderCell:
 
     def __getstate__(self):
         return None
-
+    
     def __setstate__(self, state):
         return None
 
@@ -503,7 +505,7 @@ class _ViewProviderCell:
         """
         Cleanup for when the object is deleted
         """
-
+        
         body = self.findBodyOf(viewprovider.Object)
         body.removeObject(viewprovider.Object)
         self.Object.Document.removeObject(self.Object.Name)
