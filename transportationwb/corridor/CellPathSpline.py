@@ -41,16 +41,16 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def createCellPath(body_geometry, sweep_template, sweep_path):
+def createCellPath(body_geometry, sweep_template, source_path):
     """
     Creates a cell path object and adds to it the objects in the list
     """
 
-    if sweep_path is None:
+    if source_path is None:
         print("Missing base feature")
         return
 
-    if sweep_path is None:
+    if source_path is None:
         print("Missing body object")
 
     obj = App.ActiveDocument.addObject("PartDesign::FeaturePython", OBJECT_TYPE)
@@ -63,7 +63,7 @@ def createCellPath(body_geometry, sweep_template, sweep_path):
 
     _ViewProviderCell(obj.ViewObject)
 
-    cellpath.Object.SweepPath = sweep_path
+    cellpath.Object.SourcePath = source_path
     cellpath.Object.SweepTemplate = sweep_template
 
     App.ActiveDocument.recompute()
@@ -85,12 +85,16 @@ class _CellPath():
 
         self.add_property("App::PropertyLength", "StartStation", "Starting station for the cell").StartStation = 0.00
         self.add_property("App::PropertyLength", "EndStation", "Ending station for the cell").EndStation = 0.00
-        self.add_property("App::PropertyLength", "Length", "Length of sweep path").Length = 0.00
+        self.add_property("App::PropertyLength", "Length", "Length of sweep path").Length = 7.00
         obj.setEditorMode("Length", 1)
 
-        self.add_property("App::PropertyLink", "SweepPath", "Sketch containing spline sweep path").SweepPath = None
+        self.add_property("App::PropertyLink", "SourcePath", "Source spline for sweep").SourcePath = None
+        self.add_property("App::PropertyLink", "SweepPath", "Spline sweep path").SweepPath = None
         self.add_property("Part::PropertyGeometryList", "PathGeometry", "Path geometry shape").PathGeometry = []
         self.add_property("App::PropertyLink", "SweepTemplate", "Sketch containing sweep template").SweepTemplate = None
+        self.add_property("App::PropertyLink", "Sweep", "Sweep of template along profile").Sweep = None
+
+        self.add_property("App::PropertyLength", "Resolution", "Resolution of the sweep").Resolution = 0.0
 
         self.init = True
 
@@ -127,7 +131,7 @@ class _CellPath():
         return True
 
     @staticmethod
-    def _discretize_edge(edge, start_pt = 0.0, end_pt = 0.0):
+    def _discretize_edge(edge, start_pt = 0.0, end_pt = 0.0, number = 3):
         '''
         Discretizes an edge, returning two points for a line and three points for an arc
         '''
@@ -143,7 +147,7 @@ class _CellPath():
             if end_pt <= 0.0:
                 end_pt = edge.Length
 
-        if isinstance(edge.Curve, Part.Circle):
+        if type(edge.Curve) in [Part.Circle, Part.BSplineCurve]:
 
             if segmentize:
                 points = edge.discretize(3)
@@ -152,10 +156,11 @@ class _CellPath():
                 start_prm = edge.Curve.parameterAtDistance(start_pt, edge.FirstParameter)
                 end_prm = edge.Curve.parameterAtDistance(end_pt, edge.FirstParameter)
 
-                print ("\nstart: ", start_pt, ", ", start_prm)
-                print ("\nend: ", end_pt, ", ", end_prm, "\n")
+                print("\nstart: ", start_pt, ", ", start_prm)
+                print("\nend: ", end_pt, ", ", end_prm, "\n")
+                print("Number = ", number, "; Start = ", start_prm, "; End = ", end_prm)
 
-                points.extend(edge.discretize(Number = 3, First = start_prm, Last = end_prm))
+                points.extend(edge.discretize(Number=number, First=start_prm, Last=end_prm))
 
         elif isinstance(edge.Curve, Part.Line):
 
@@ -163,7 +168,7 @@ class _CellPath():
                 points = [edge.Vertexes[0].Point, edge.Vertexes[1].Point]
 
             else:
-                tmp = edge.discretize(Distance = end_pt - start_pt)
+                tmp = edge.discretize(Distance=(end_pt - start_pt))
                 points = [tmp[0], tmp[1]]
 
         else:
@@ -182,9 +187,15 @@ class _CellPath():
         '''
         length = stations[1] - stations[0]
 
+        #if no resolution is defined, provide a minimum
+        if resolution == 0.0:
+            resolution = length / 3.0
+
         point_count = math.ceil(length / resolution)
 
-        return spline.Shape.discretize(point_count)
+        pts = _CellPath._discretize_edge(number=point_count, start_pt=stations[0], end_pt=stations[1], edge=spline)
+
+        return pts
 
     @staticmethod
     def _copy_sketch(doc, sketch, target_name, empty_copy = False):
@@ -219,42 +230,13 @@ class _CellPath():
         return target
 
     @staticmethod
-    def _sort_edges(edges):
-        '''
-        Sort a continuous path of edges
-        '''
-
-        path_shapes = []
-
-        for path_edge in edges:
-            path_shapes.append(path_edge.toShape())
-
-        result = Part.sortEdges(path_shapes)[0]
-
-        #if the first sorted edge is not the same as the first drawn edge,
-        #reverse the sorted list
-        if not path_shapes[0].Vertexes[0] in result[0].Vertexes:
-
-            for _x in range(0, len(edges)):
-                edges[_x].reverse()
-
-            path_shapes = []
-
-            for path_edge in edges:
-                path_shapes.append(path_edge.toShape())
-
-            result = Part.sortEdges(path_shapes)[0]
-
-        return result
-
-    @staticmethod
     def _build_sweep(body, template, path):
         '''
         Sweep the provided template along the provided path
         '''
 
         template.MapMode = "NormalToEdge"
-        template.Support = path, "Edge1"
+        template.Support = (path, ["Edge1"])
 
         add_pipe = body.getObject("Sweep")
 
@@ -264,8 +246,10 @@ class _CellPath():
         add_pipe = body.newObject("PartDesign::AdditivePipe", "Sweep")
 
         add_pipe.Profile = template
-        add_pipe.Spine = path
-        add_pipe.recompute()
+        add_pipe.Spine = (path, ['Edge1'])
+        add_pipe.Sections = template
+
+        return add_pipe
 
     @staticmethod
     def _build_sweep_spline(points):
@@ -273,9 +257,28 @@ class _CellPath():
         Build a spline for the sweep path based on the passed points
         '''
 
-        spline = None
+        obj_type = "BSpline"
 
-        return spline
+        pt_count = len(points)
+
+        if pt_count < 2:
+            return None
+
+        elif len(points) == 2: 
+            obj_type = "Line"
+
+        obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", obj_type)
+
+        Draft._BSpline(obj)
+
+        obj.Closed = False
+        obj.Points = points
+        obj.Support = None
+        obj.Label = "SweepPath"
+
+        Draft._ViewProviderWire(obj.ViewObject)
+
+        return obj
 
     def onChanged(self, obj, prop):
 
@@ -286,7 +289,22 @@ class _CellPath():
         if not hasattr(self, "Object"):
             self.Object = obj
 
-        #Gui.updateGui()
+        doRebuild = prop in ["Resolution", "EndStation", "StartStation"]
+
+        if prop=="Resolution":
+
+            #change the length so it doesn't skip the next execution loop
+            self.Object.Length.Value = self.Object.Length.Value + 1.0
+
+        if doRebuild:
+
+            if not self.Object.Sweep is None:
+                App.ActiveDocument.removeObject(self.Object.Sweep.Name)
+
+            if not self.Object.SweepPath is None:
+                App.ActiveDocument.removeObject(self.Object.SweepPath.Name)
+
+        return
 
     def execute(self, fpy):
 
@@ -294,7 +312,7 @@ class _CellPath():
 
         if self.set_path_length():
 
-            print ("length changed to: ", self.Object.Length)
+            print("length changed to: ", self.Object.Length)
 
             if self.Object.Length == 0.0:
                 return
@@ -309,7 +327,7 @@ class _CellPath():
 
             #retrieve the edge points along the ordered path which represents the path segment
             #within the station range
-            points = self._get_edge_points(stations, self.Object.SweepPath, resolution)
+            points = self._get_edge_points(stations, self.Object.SourcePath.Shape, self.Object.Resolution.Value)
 
             print ("stations:\n", stations)
             print("\nfinal edges:\n", points)
@@ -321,18 +339,19 @@ class _CellPath():
 
             #prepare the sweep path sketch for the new path
             #sweep_path = self._build_path_sketch()
-            sweep_path = self._build_sweep_spline(points)
+            spline = self._build_sweep_spline(points)
 
-            #convert the points of the path to the sketch's coordinate system
-            #points = self._convert_points(points, sweep_path)
+            if spline is None:
+                return
 
-            #generate the new sweep path in the empty sketch
-            #self._build_path(sweep_path, points)
+            self.Object.InList[0].addObject(spline)
 
             #sweep the sketch template along the newly-created path
-            self._build_sweep(self.Object.InList[0], self.Object.SweepTemplate, sweep_path)
+            self.Object.Sweep = self._build_sweep(self.Object.InList[0], self.Object.SweepTemplate, spline)
 
-            return
+            self.Object.SweepPath = spline
+
+        return
 
     def addObject(self, child):
 
