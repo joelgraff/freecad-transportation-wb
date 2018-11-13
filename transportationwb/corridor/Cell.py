@@ -1,25 +1,25 @@
 # -*- coding: utf-8 -*-
-/**************************************************************************
- *                                                                        *
- *  Copyright (c) 2018 Joel Graff <monograff76@gmail.com>                 *
- *                                                                        *
- *  This program is free software; you can redistribute it and/or modify  *
- *  it under the terms of the GNU Lesser General Public License (LGPL)    *
- *  as published by the Free Software Foundation; either version 2 of     *
- *  the License, or (at your option) any later version.                   *
- *  for detail see the LICENCE text file.                                 *
- *                                                                        *
- *  This program is distributed in the hope that it will be useful,       *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *  GNU Library General Public License for more details.                  *
- *                                                                        *
- *  You should have received a copy of the GNU Library General Public     *
- *  License along with this program; if not, write to the Free Software   *
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
- *  USA                                                                   *
- *                                                                        *
- **************************************************************************/
+# **************************************************************************
+# *                                                                        *
+# *  Copyright (c) 2018 Joel Graff <monograff76@gmail.com>                 *
+# *                                                                        *
+# *  This program is free software; you can redistribute it and/or modify  *
+# *  it under the terms of the GNU Lesser General Public License (LGPL)    *
+# *  as published by the Free Software Foundation; either version 2 of     *
+# *  the License, or (at your option) any later version.                   *
+# *  for detail see the LICENCE text file.                                 *
+# *                                                                        *
+# *  This program is distributed in the hope that it will be useful,       *
+# *  but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+# *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+# *  GNU Library General Public License for more details.                  *
+# *                                                                        *
+# *  You should have received a copy of the GNU Library General Public     *
+# *  License along with this program; if not, write to the Free Software   *
+# *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
+# *  USA                                                                   *
+# *                                                                        *
+# **************************************************************************
 
 """
 Cell feature generates a 3D cell, consisting of a sketch swept along a baseline
@@ -30,7 +30,9 @@ __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
 import Draft
+import Part
 import transportationwb
+import math
 
 OBJECT_TYPE = "Cell"
 
@@ -57,61 +59,54 @@ class _CommandCell:
     def Activated(self):
         pass
 
-#def getSelectedEdge(obj_list):
-
-#    if len(obj_list) == 0:
-#        return None
-
-#    if len(obj_list) > 1:
-#        print("No more than one edge may be selected")
-#        return None
-
-#    print("detecting edge...")
-#    if type(obj_list[0]).__name__ != "Edge":
-#        print("Invalid geometry type selected")
-#        return None
-
-#    if obj_list[0].Length == 0.0:
-#        print("Zero-length edge selected")
-#        return None
-
-#    return obj_list[0]
-
 def createCell():
     """
-    Creates a cell object and adds to it the objects in the list
+    Creates the cell object structure and
+    builds the initial cell
     """
 
     sel = Gui.Selection.getSelection()
     selex = Gui.Selection.getSelectionEx()
 
-    base_feature = None
-    sketch = None
-    edge = None
-
-    if len(sel) != 1:
-        print("Only a sketch may be selected")
+    if len(sel) != 2:
+        print("A source path and sweep template must be selected")
         return None
 
-    el_type = type(sel[0]).__name__
-
-    if el_type != "SketchObject":
-        print ("Sketch not selected")
+    if len(selex) == 0:
+        print("The source path edge must be selected")
         return None
 
-    sketch = sel[0]
+    src_path = selex[0].Object
+    path_edge = selex[0].SubElementNames[0]
+    sweep_template = None
 
-    obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", OBJECT_TYPE)
-
-    obj.Label = translate("Transportation", OBJECT_TYPE)
-
-    cel = _Cell(obj)
-
-    _ViewProviderCell(obj.ViewObject)
-
-    if cel.setSketch(sketch) is None:
-        print("Unable to set sketch")
+    for obj in sel:
+        if type(obj).__name__ == 'SketchObject':
+            if obj.Label != src_path.Label:
+                sweep_template = obj
+    
+    if sweep_template is None:
+        print("No valid template sketch selected")
         return None
+
+    fpo = App.ActiveDocument.addObject("PartDesign::FeaturePython", OBJECT_TYPE)
+
+    cel = _Cell(fpo)
+
+    _ViewProviderCell(fpo.ViewObject)
+
+    #create the body object and add this FPO as a child
+    cel.createBody("New Cell")
+
+    #set initial property links
+    cel.setPath(src_path)
+    cel.setTemplate(sweep_template)
+    cel.Object.Source_Edge = path_edge
+
+    #generate the sweep path
+    #cel.buildSweepPath()
+
+    #perform the sweep
 
     App.ActiveDocument.recompute()
 
@@ -127,12 +122,17 @@ class _Cell():
         self.Type = OBJECT_TYPE
         self.Object = obj
 
-        self.add_property("App::PropertyLength", "Start Station", "Starting station for the cell").Start_Station = 0.00
-        self.add_property("App::PropertyLength", "End Station", "Ending station for the cell").End_Station = 0.00
-        self.add_property("App::PropertyLength", "Length", "Length of cell along baseline").Length = 0.00
-        self.add_property("App::PropertyLink", "Base Feature", "Base feature object").Base_Feature = None
-        self.add_property("App::PropertyLink", "Sketch", "Sketch object").Sketch = None
-        self.add_property("App::PropertyInteger", "Edge", "Edge name").Edge = 0
+        self.add_property("App::PropertyLength", "Start_Station", "Starting station for the cell", "Parameters").Start_Station = 0.00
+        self.add_property("App::PropertyLength", "End_Station", "Ending station for the cell", "Parameters").End_Station = 0.00
+        self.add_property("App::PropertyLength", "Resolution", "Resolution of sweep paths", "Parameters").Resolution = 0.00
+        self.add_property("App::PropertyLength", "Length", "Length of cell along baseline", "Parameters", True).Length = 0.00
+        self.add_property("App::PropertyLink", "Source_Path", "Source object for sweep path", "Links", True).Source_Path = None
+        self.add_property("App::PropertyString", "Source_Edge", "Edge name", "Links", True).Source_Edge = ""
+        self.add_property("App::PropertyLink", "Sweep_Path", "Sweep path for the cell sweep", "Links", True).Sweep_Path = None
+        self.add_property("App::PropertyLink", "Template", "Template geometry for the sweep", "Links", True).Template = None
+        self.add_property("App::PropertyLink", "Sweep", "Sweep geometry", "Links", True).Sweep = None
+
+        self.init = True
 
     def __getstate__(self):
         return self.Type
@@ -141,153 +141,259 @@ class _Cell():
         if state:
             self.Type = state
 
-    def add_property(self, prop_type, prop_name, prop_desc):
+    @staticmethod
+    def _copy_sketch(doc, sketch, target_name, empty_copy = False):
+        '''
+        Copy sketch as a new SketchObjectPython
+        doc - document object which receives the sketch
+        sketch - the sketch object to copy
+        target_name - string representing the name of the new sketch
+        empty_copy - 
+            True = create an empty sketch (only placement is duplicated)
+            False = create a full copy of the original sketch
+        '''
+        doc = App.ActiveDocument
 
-        return self.Object.addProperty(prop_type, prop_name, OBJECT_TYPE, QT_TRANSLATE_NOOP("App::Property", prop_desc))
+        target = doc.addObject('Sketcher::SketchObject', target_name)
+
+        #_ViewProvider(target.ViewObject)
+
+        if not empty_copy:
+
+            for geo in sketch.Geometry:
+                index = target.addGeometry(geo)
+                target.setConstruction(index, geo.Construction)
+
+            for constraint in sketch.Constraints:
+                target.addConstraint(constraint)
+
+        target.Placement = sketch.Placement
+
+        target.solve()
+        target.recompute()
+
+        return target
+
+    def _update_length(self):
+        '''
+        Sets the length of the cell path based on the starting and ending station properties
+        '''
+
+        new_length = self.Object.End_Station - self.Object.Start_Station
+
+        if new_length < 0.0:
+            new_length = 0.0
+
+        print("New length: ", new_length)
+
+        if self.Object.Length == new_length:
+            return False
+
+        self.Object.Length = new_length
+
+        return True
+
+    def _delete_objects(self):
+        '''
+        Deletes existing cell objects in preparation for a rebuild
+        '''
+
+        sweep_obj = self.Object.Sweep
+        path_obj = self.Object.Sweep_Path
+
+        if not sweep_obj is None:
+            App.ActiveDocument.removeObject(sweep_obj.Name)
+
+        if not path_obj is None:
+            App.ActiveDocument.removeObject(path_obj.Name)
+
+        return
+
+    @staticmethod
+    def _discretize_edge(edge, start_pt = 0.0, end_pt = 0.0, number = 3):
+        '''
+        Discretizes an edge, returning two points for a line and three points for an arc
+        '''
+
+        segmentize = start_pt <= 0.0 and end_pt <= 0.0
+        points = []
+
+        if not segmentize:
+
+            if start_pt <= 0.0:
+                start_pt = 0.0
+
+            if end_pt <= 0.0:
+                end_pt = edge.Length
+
+        if type(edge.Curve) in [Part.Circle, Part.BSplineCurve]:
+
+            if segmentize:
+                points = edge.discretize(3)
+
+            else:
+                start_prm = edge.Curve.parameterAtDistance(start_pt, edge.FirstParameter)
+                end_prm = edge.Curve.parameterAtDistance(end_pt, edge.FirstParameter)
+
+                print("\nstart: ", start_pt, ", ", start_prm)
+                print("\nend: ", end_pt, ", ", end_prm, "\n")
+                print("Number = ", number, "; Start = ", start_prm, "; End = ", end_prm)
+
+                points.extend(edge.discretize(Number=number, First=start_prm, Last=end_prm))
+
+        elif isinstance(edge.Curve, Part.Line):
+
+            if segmentize:
+                points = [edge.Vertexes[0].Point, edge.Vertexes[1].Point]
+
+            else:
+                tmp = edge.discretize(Distance=(end_pt - start_pt))
+                points = [tmp[0], tmp[1]]
+
+        else:
+            print ("Invalid edge type for discretization")
+
+        return points
+
+    @staticmethod
+    def _get_edge_points(stations, spline, resolution):
+        '''
+        USED
+        Returns a list of point sublists which describe the final sweep path
+        stations - list of starting and ending stations
+        geometry - list of geometry elements which form a continuous path and
+                   whose list order and vertices are sorted from beginning to end
+        '''
+        length = stations[1] - stations[0]
+
+        #if no resolution is defined, provide a minimum
+        if resolution == 0.0:
+            resolution = length / 3.0
+
+        point_count = math.ceil(length / resolution)
+
+        pts = _Cell._discretize_edge(number=point_count, start_pt=stations[0], end_pt=stations[1], edge=spline)
+
+        return pts
+
+    @staticmethod
+    def _build_sweep(body, template, path):
+        '''
+        Sweep the provided template along the provided path
+        '''
+
+        template.MapMode = "NormalToEdge"
+        template.Support = (path, ["Edge1"])
+
+        add_pipe = body.getObject("Sweep")
+
+        if not add_pipe is None:
+            body.removeObject(add_pipe)
+
+        add_pipe = body.newObject("PartDesign::AdditivePipe", "Sweep")
+
+        add_pipe.Profile = template
+        add_pipe.Spine = (path, ['Edge1'])
+        add_pipe.Sections = template
+
+        return add_pipe
+
+    @staticmethod
+    def _build_sweep_spline(points):
+        '''
+        Build a spline for the sweep path based on the passed points
+        '''
+
+        obj_type = "BSpline"
+
+        pt_count = len(points)
+
+        if pt_count < 2:
+            return None
+
+        elif len(points) == 2: 
+            obj_type = "Line"
+
+        obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", obj_type)
+
+        Draft._BSpline(obj)
+
+        obj.Closed = False
+        obj.Points = points
+        obj.Support = None
+        obj.Label = "SweepPath"
+
+        Draft._ViewProviderWire(obj.ViewObject)
+
+        return obj
+
+    def add_property(self, prop_type, prop_name, prop_desc, group_name=OBJECT_TYPE, isReadOnly=False):
+
+        prop = self.Object.addProperty(prop_type, prop_name, group_name, QT_TRANSLATE_NOOP("App::Property", prop_desc))
+
+        if isReadOnly:
+            prop.setEditorMode(prop_name, 1)
+
+        return prop
+
+    def createBody(self, cell_name):
+
+        body = App.ActiveDocument.addObject("PartDesign::Body", cell_name)
+
+        body.addObject(self.Object)
+
+        Gui.activeView().setActiveObject('pdbody', body)
+
+    def setPath(self, source_path):
+
+        self.Object.Source_Path = source_path
+    
+    def setTemplate(self, template):
+
+        cpy_temp = self._copy_sketch(App.ActiveDocument, template, "Template")
+
+        self.Object.Template = cpy_temp
+        self.Object.InList[0].addObject(cpy_temp)
 
     def onChanged(self, obj, prop):
 
-        #lambda for feet to millimeter conversions
-        ft_mm = lambda _x: (_x / 12.0) * 25.4
-
-        prop_obj = obj.getPropertyByName(prop)
-
-        if prop == "Start_Station":
-            pass
-            #rebuild cell path
-            #rebuild sweep(ft_mm(prop_obj.Value), ft_mm(obj.getPropertyByName("End_Station").Value))
-
-        elif prop == "End_Station":
-            pass
-            #rebuild cell path
-            #rebuild sweep(ft_mm(obj.getPropertyByName("Start_Station").Value), ft_mm(prop_obj.Value))
-
-        Gui.updateGui()
+        #dodge onChanged calls during initialization
+        if not hasattr(self, 'init'):
+            return
 
         if not hasattr(self, "Object"):
             self.Object = obj
 
+        if prop=="Resolution":
+
+            #change the length so it doesn't skip the next execution loop
+            self.Object.Length.Value = self.Object.Length.Value + 1.0
+
     def execute(self, fpy):
-        pass
+        print("Executing...")
 
-        #unit_y = App.Vector(0.0, 1.0, 0.0)
+        if not self._update_length():
+            return
 
-        #geo = self.Object.Group[0]
+        stations = [self.Object.Start_Station.Value, self.Object.End_Station.Value]
 
-        #edge = geo.Points[1].sub(geo.Points[0])
-        #self.Object.Bearing = 180.0 * unit_y.getAngle(edge) / math.pi
+        self._delete_objects()
 
-        sketch = self.Object.Sketch
+        points = self._get_edge_points(stations,
+        self.Object.Source_Path.Shape,
+        self.Object.Resolution.Value)
 
-        baseEdge = self.Object.Base_Feature.Shape
-        baseEdge = baseEdge.Edges[self.Object.Edge]
+        spline = self._build_sweep_spline(points)
 
-        sketch.Placement = baseEdge.Vertexes[0].Placement
+        if spline is None:
+            return
 
-        self.doSweep()
+        self.Object.InList[0].addObject(spline)
+        self.Object.Sweep_Path = spline
 
-        Gui.updateGui()
+        self.Object.Sweep = self._build_sweep(self.Object.InList[0], self.Object.Template, spline)
 
-    def doSweep(self):
-        """
-        Sweep the sketch along the baseline
-        """
-
-        sweep = App.ActiveDocument.addObject('Part::Sweep', 'Sweep')
-        sweep.Sections = [self.Object.Sketch]
-        sweep.Spine = (self.Object.Base_Feature, ["Edge" + str(self.Object.Edge)])
-        sweep.Solid = False
-        sweep.Frenet = False
-
-        return None
-
-    def _compVtx(self, lt_vtx, rt_vtx):
-
-        match = True
-
-        if match:
-            match = match and lt_vtx.X == rt_vtx.X
-
-        if match:
-            match = match and lt_vtx.Y == rt_vtx.Y
-
-        if match:
-            match = match and lt_vtx.Z == rt_vtx.Z
-
-        return match
-
-    def setBaseFeature(self, base_feature, edge):
-        """
-        Sets the baseline for the element model
-        """
-
-        if self.addObject(base_feature) is None:
-            return None
-
-        self.Object.Base_Feature = base_feature
-
-        #if an edge is specified, get the distance offset
-        #to set the starting station
-        if not edge is None:
-
-            dist = 0.0
-            count = 0
-
-            for el in base_feature.Shape.Edges:
-
-                if self._compVtx(el.Vertexes[0], edge.Vertexes[0]):
-                    if self._compVtx(el.Vertexes[1], edge.Vertexes[1]):
-                        break
-
-                dist += el.Length
-                count += 1
-
-            self.Object.Start_Station.Value = dist
-            self.Object.Length = edge.Length
-            self.Object.Edge = count
-
-        return base_feature
-
-    def setSketch(self, sketch):
-        """
-        Sets the sketch for the element model
-        """
-
-        if self.Object.Base_Feature is None:
-            return None
-
-        if self.addObject(sketch) is None:
-            return None
-
-        self.Object.Sketch = sketch
-
-        return sketch
-
-    def addObject(self, child):
-
-        print("adding" + str(child))
-
-        #add the new object to the current group
-        if hasattr(self, "Object"):
-            grp = self.Object.Group
-
-            if not child in grp:
-                grp.append(child)
-                self.Object.Group = grp
-                return child
-
-        return None
-
-        #if type(child).__name__ == "FeaturePython":
-        #    if not "Shape" in dir(child):
-        #        return
-
-        #if type(child).__name__ == "SketchObject":
-        #    child = child.Geometry[0].toShape()
-
-        #child.setEditorMode("Alignment_Geometry", 0)
-
-        #child.addProperty("App::PropertyLength", "Vertices", "Alignment", "Vertex count of geometry: ").Vertices = len(child.Vertexes)
+        return
 
     def removeObject(self, child):
 
@@ -320,9 +426,9 @@ class _ViewProviderCell:
 
     def claimChildren(self):
 
-        if hasattr(self, "Object"):
-            if self.Object:
-                return self.Object.Group
+        #if hasattr(self, "Object"):
+        #    if self.Object:
+        #        return self.Object.Group
         return []
 
     def updateData(self, fp, prop):
