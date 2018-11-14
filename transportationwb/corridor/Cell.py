@@ -81,7 +81,7 @@ def createCell():
     sweep_template = None
 
     for obj in sel:
-        if type(obj).__name__ == 'SketchObject':
+        if type(obj.Object).__name__ == 'SketchObject':
             if obj.Label != src_path.Label:
                 sweep_template = obj
     
