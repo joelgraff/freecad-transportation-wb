@@ -33,6 +33,7 @@ import Draft
 import Part
 import transportationwb
 import math
+import transportationwb.corridor.qt_dialog as qtd
 
 OBJECT_TYPE = "Cell"
 
@@ -59,58 +60,69 @@ class _CommandCell:
     def Activated(self):
         pass
 
-def createCell():
-    """
+def destroyCell(cell_name):
+    '''
+    Destroys the specified cell
+    '''
+
+    cel = App.ActiveDocument.getObject(cell_name)
+
+    if cel is None:
+        return
+
+    for obj in cel.Group:
+        App.ActiveDocument.removeObject(obj.Name)
+
+    App.ActiveDocument.removeObject(cell_name)
+
+    App.ActiveDocument.recompute()
+
+def createCell(cell_name, template_name, src_obj_name, src_edge_name):
+    '''
     Creates the cell object structure and
     builds the initial cell
-    """
+    '''
 
-    sel = Gui.Selection.getSelection()
-    selex = Gui.Selection.getSelectionEx()
+    print (cell_name, template_name, src_obj_name, src_edge_name)
 
-    if len(sel) != 2:
-        print("A source path and sweep template must be selected")
-        return None
+    template = App.ActiveDocument.getObject(template_name)
+    sweep_object = App.ActiveDocument.getObject(src_obj_name)
 
-    if len(selex) == 0:
-        print("The source path edge must be selected")
-        return None
-
-    src_path = selex[0].Object
-    path_edge = selex[0].SubElementNames[0]
-    sweep_template = None
-
-    for obj in sel:
-        if type(obj.Object).__name__ == 'SketchObject':
-            if obj.Label != src_path.Label:
-                sweep_template = obj
-    
-    if sweep_template is None:
+    if template is None:
         print("No valid template sketch selected")
         return None
 
-    fpo = App.ActiveDocument.addObject("PartDesign::FeaturePython", OBJECT_TYPE)
+    if sweep_object is None:
+        print("No valid sweep object selected")
+        return None
+
+    fpo = App.ActiveDocument.addObject("PartDesign::FeaturePython", OBJECT_TYPE + "_Parameters")
 
     cel = _Cell(fpo)
 
     _ViewProviderCell(fpo.ViewObject)
 
     #create the body object and add this FPO as a child
-    cel.createBody("New Cell")
+    body = cel.createBody(cell_name)
 
     #set initial property links
-    cel.setPath(src_path)
-    cel.setTemplate(sweep_template)
-    cel.Object.Source_Edge = path_edge
+    cel.setPath(sweep_object)
+    cel.setTemplate(template)
+    cel.Object.Source_Edge = src_edge_name
 
-    #generate the sweep path
-    #cel.buildSweepPath()
-
-    #perform the sweep
-
+    body.recompute()
     App.ActiveDocument.recompute()
 
-    return cel
+    return body
+
+def showSweepPicker():
+    '''
+    Displays the non-modal dialog for cell creation
+    '''
+
+    picker = qtd.SweepPicker(App.ActiveDocument)
+    picker.createCallback = createCell
+    picker.destroyCallback = destroyCell
 
 class _Cell():
 
@@ -119,7 +131,7 @@ class _Cell():
         Default Constructor
         """
         obj.Proxy = self
-        self.Type = OBJECT_TYPE
+        self.Type = OBJECT_TYPE + "_Parameters"
         self.Object = obj
 
         self.add_property("App::PropertyLength", "Start_Station", "Starting station for the cell", "Parameters").Start_Station = 0.00
@@ -184,8 +196,6 @@ class _Cell():
         if new_length < 0.0:
             new_length = 0.0
 
-        print("New length: ", new_length)
-
         if self.Object.Length == new_length:
             return False
 
@@ -234,10 +244,6 @@ class _Cell():
             else:
                 start_prm = edge.Curve.parameterAtDistance(start_pt, edge.FirstParameter)
                 end_prm = edge.Curve.parameterAtDistance(end_pt, edge.FirstParameter)
-
-                print("\nstart: ", start_pt, ", ", start_prm)
-                print("\nend: ", end_pt, ", ", end_prm, "\n")
-                print("Number = ", number, "; Start = ", start_prm, "; End = ", end_prm)
 
                 points.extend(edge.discretize(Number=number, First=start_prm, Last=end_prm))
 
@@ -344,9 +350,12 @@ class _Cell():
 
         Gui.activeView().setActiveObject('pdbody', body)
 
+        return body
+
     def setPath(self, source_path):
 
         self.Object.Source_Path = source_path
+        self.Object.End_Station = source_path.Shape.Length
     
     def setTemplate(self, template):
 
