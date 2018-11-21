@@ -1,6 +1,7 @@
 from PySide import QtGui, QtCore
 import FreeCAD as App
 import FreeCADGui as Gui
+import Part
 
 userCancelled = "Cancelled"
 userOk = "OK"
@@ -17,9 +18,14 @@ class SweepPicker(QtGui.QMainWindow):
             if self.dialog is None:
                 return
 
-            self.dialog.edge_object = obj
-            self.dialog.edge_name = sub
+            if isinstance(App.ActiveDocument.getObject(obj).Shape.getElement(sub), Part.Face):
+                Gui.Selection.clearSelection
+                return
+
             self.dialog.lbl_edge.setText(obj+'.'+sub)
+
+            edge = App.ActiveDocument.getObject(obj)
+            self.dialog.setEnd(edge.Shape.getElement(sub).Length)
             self.dialog.updateSweep()
             self.dialog.parent.recompute()
 
@@ -28,11 +34,8 @@ class SweepPicker(QtGui.QMainWindow):
         self.parent = parent
         self.createCallback = None
         self.destroyCallback = None
-        self.cell_name = "Cell"
-        self.edge_object = ""
-        self.edge_name = ""
-        self.selected_sketch = ""
-
+        self.hasUpdated = False
+        self.current_name = "Cell"
         self.initUI()
 
     def _get_sketch_list(self):
@@ -41,48 +44,62 @@ class SweepPicker(QtGui.QMainWindow):
 
         for obj in App.ActiveDocument.Objects:
             if type(obj).__name__=='SketchObject':
-                result.append(obj.Label)
+                result.append(obj.Label + " (" + obj.Name + ")")
 
         return result
 
     def updateSweep(self):
 
-        self.destroyCallback(self.cell_name)
+        if self.hasUpdated:
+            self.destroyCallback(self.current_name)
 
-        result = self.createCallback(self.cell_name, self.selected_sketch, self.edge_object, self.edge_name)
+        edge_names = self.lbl_edge.text().split('.')
+
+        while len(edge_names) < 2:
+            edge_names.append('')
+
+        self.current_name = self.txt_name.text()
+        sketch_names = self.cbo_sketch.currentText().split(' (')
+
+        sketch_name = sketch_names[0]
+        if len(sketch_names) == 2:
+            sketch_name = sketch_names[1].split(')')[0]
+
+        names = {
+            "cell": self.current_name,
+            "sketch": sketch_name,
+            "edge_obj": edge_names[0],
+            "edge": edge_names[1]
+        }
+
+        data = {
+            "start": float(self.spb_start_sta.text()),
+            "end": float(self.spb_end_sta.text()),
+            "resolution": float(self.spb_resolution.text())
+        }
+
+        result = self.createCallback(names, data)
 
         if result is None:
             return
 
-        self.name_text.setText(result.Name)
+        elif not self.hasUpdated:
+            self.hasUpdated = True
+
+        self.current_name = result.Name
+        self.txt_name.setText(result.Name)
         self.parent.recompute()
 
     def onCancel(self):
-        self.destroyCallback(self.cell_name)
+        self.destroyCallback(self.txt_name.text())
         self.close()
 
     def onOk(self):
         self.result = userOk
         self.close()
 
-        #self.updateSweep()
-
-    def onSketchPopup(self, selected_text):
-        self.selected_sketch = selected_text
+    def onWidgetUpdate(self, val = None):
         self.updateSweep()
-
-    def onLineEditDone(self):
-        self.cell_name = self.name_text.text()
-        self.updateSweep()
-
-    def onStarStaChange(self, value):
-        pass
-    
-    def onEndStaChange(self, value):
-        pass
-
-    def onResolutionChange(self, value):
-        pass
 
     def closeEvent(self, event):
 
@@ -90,13 +107,16 @@ class SweepPicker(QtGui.QMainWindow):
         Gui.Selection.removeObserver(self.observer)
 
         if self.result == userCancelled:
-            self.destroyCallback(self.cell_name)
+            self.destroyCallback(self.txt_name.text())
+
+    def setEnd(self, value):
+        self.spb_end_sta.setText(str(value))
 
     def initUI(self):
 
         # create our window
         # define window		xLoc,yLoc,xDim,yDim
-        self.setGeometry(250, 250, 270, 185)
+        self.setGeometry(250, 250, 270, 310)
         self.setWindowTitle("Our Example Nonmodal Program Window")
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.setMouseTracking(True)
@@ -107,22 +127,21 @@ class SweepPicker(QtGui.QMainWindow):
         self.name_label = QtGui.QLabel("Cell Name:", self)
         self.name_label.move(20, 20)
 
-        self.name_text = QtGui.QLineEdit(self.cell_name, self)
-        self.name_text.setFixedWidth(100)
-        self.name_text.move(150, 20)
-        self.name_text.editingFinished.connect(self.onLineEditDone)
+        self.txt_name = QtGui.QLineEdit("Cell", self)
+        self.txt_name.setFixedWidth(100)
+        self.txt_name.move(150, 20)
+        self.txt_name.editingFinished.connect(self.onWidgetUpdate)
 
         #create template sketch picker widgets
         self.label1 = QtGui.QLabel("Template sketch:", self)
         self.label1.move(20, 60)
 
         sketch_list = self._get_sketch_list()
-        self.selected_sketch = sketch_list[0]
 
-        self.sketch_popup = QtGui.QComboBox(self)
-        self.sketch_popup.addItems(sketch_list)
-        self.sketch_popup.activated[str].connect(self.onSketchPopup)
-        self.sketch_popup.move(150, 60)
+        self.cbo_sketch = QtGui.QComboBox(self)
+        self.cbo_sketch.addItems(sketch_list)
+        self.cbo_sketch.activated[str].connect(self.onWidgetUpdate)
+        self.cbo_sketch.move(150, 60)
 
         #create sweep edge picker widgets
         self.label2 = QtGui.QLabel("Sweep edge:", self)
@@ -133,51 +152,49 @@ class SweepPicker(QtGui.QMainWindow):
         self.lbl_edge.setFixedWidth(280)
         self.lbl_edge.move(150, 100)
 
-        #create spinners for start / end stations and resolution
+        #create line edits for start / end stations and resolution
         self.lbl_start_sta = QtGui.QLabel("Start station", self)
-        self.lbl_start_sta = QtGui.QLabel.move(20, 140)
+        self.lbl_start_sta.move(20, 140)
 
-        self.spb_start_sta = QtGui.QSpinBox(self)
-        self.spb_start_sta.value = 0.00
+        self.spb_start_sta = QtGui.QLineEdit(self)
+        self.spb_start_sta.setText("0.00")
         self.spb_start_sta.move(150, 140)
-        self.spb_start_sta.activated[int].connect(self.onStartStaChange)
+        self.spb_start_sta.editingFinished.connect(self.onWidgetUpdate)
 
         self.lbl_end_sta = QtGui.QLabel("End station", self)
-        self.lbl_end_sta = QtGui.QLabel.move(20, 180)
+        self.lbl_end_sta.move(20, 180)
         
-        self.spb_end_sta = QtGui.QSpinBox(self)
-        self.spb_end_sta.value = 0.00
+        self.spb_end_sta = QtGui.QLineEdit(self)
+        self.spb_end_sta.setText("0.00")
         self.spb_end_sta.move(150, 180)
-        self.spb_end_sta.activated[int].connect(self.onEndStaChange)
+        self.spb_end_sta.editingFinished.connect(self.onWidgetUpdate)
 
         self.lbl_resolution = QtGui.QLabel("Resolution", self)
-        self.lbl_resolution = QtGui.QLabel.move(20, 220)
+        self.lbl_resolution.move(20, 220)
         
-        self.spb_resolution = QtGui.QSpinBox(self)
-        self.spb_resolution.value = 0.00
+        self.spb_resolution = QtGui.QLineEdit(self)
+        self.spb_resolution.setText("0.00")
         self.spb_resolution.move(150, 220)
-        self.spb_resolution.activated[int].connect(self.onResolutionChange)
+        self.spb_resolution.editingFinished.connect(self.onWidgetUpdate)
 
         #cancel button
         self.cancelButton = QtGui.QPushButton('Cancel', self)
         self.cancelButton.clicked.connect(self.onCancel)
         self.cancelButton.setAutoDefault(True)
         self.cancelButton.setFixedWidth(60)
-        self.cancelButton.move(120, 140)
+        self.cancelButton.move(120, 270)
 
         #ok button
         self.okButton = QtGui.QPushButton('Ok', self)
         self.okButton.clicked.connect(self.onOk)
         self.okButton.setFixedWidth(60)
-        self.okButton.move(190, 140)
+        self.okButton.move(190, 270)
 
         self.observer = self.SelectionObserver()
         self.observer.dialog = self
 
         Gui.Selection.addObserver(self.observer)
 
-        print(self.lbl_edge.text())
-        print(self.observer.dialog.lbl_edge.text())
         self.show()
 
     def setObject(self, obj):

@@ -77,16 +77,14 @@ def destroyCell(cell_name):
 
     App.ActiveDocument.recompute()
 
-def createCell(cell_name, template_name, src_obj_name, src_edge_name):
+def createCell(names, data):
     '''
     Creates the cell object structure and
     builds the initial cell
     '''
 
-    print (cell_name, template_name, src_obj_name, src_edge_name)
-
-    template = App.ActiveDocument.getObject(template_name)
-    sweep_object = App.ActiveDocument.getObject(src_obj_name)
+    template = App.ActiveDocument.getObject(names["sketch"])
+    sweep_object = App.ActiveDocument.getObject(names["edge_obj"])
 
     if template is None:
         print("No valid template sketch selected")
@@ -96,20 +94,25 @@ def createCell(cell_name, template_name, src_obj_name, src_edge_name):
         print("No valid sweep object selected")
         return None
 
-    fpo = App.ActiveDocument.addObject("PartDesign::FeaturePython", OBJECT_TYPE + "_Parameters")
+    fpo = App.ActiveDocument.addObject("PartDesign::FeaturePython", names["cell"] + "_Parameters")
 
     cel = _Cell(fpo)
 
     _ViewProviderCell(fpo.ViewObject)
 
     #create the body object and add this FPO as a child
-    body = cel.createBody(cell_name)
+    body = cel.createBody(names["cell"])
 
     #set initial property links
     cel.setPath(sweep_object)
     cel.setTemplate(template)
-    cel.Object.Source_Edge = src_edge_name
+    cel.Object.Source_Edge = names["edge"]
 
+    cel.Object.Start_Station = data["start"]
+    cel.Object.End_Station = data["end"]
+    cel.Object.Resolution = data["resolution"]
+
+    print(data["start"], data["end"], data["resolution"])
     body.recompute()
     App.ActiveDocument.recompute()
 
@@ -236,18 +239,8 @@ class _Cell():
             if end_pt <= 0.0:
                 end_pt = edge.Length
 
-        if type(edge.Curve) in [Part.Circle, Part.BSplineCurve]:
 
-            if segmentize:
-                points = edge.discretize(3)
-
-            else:
-                start_prm = edge.Curve.parameterAtDistance(start_pt, edge.FirstParameter)
-                end_prm = edge.Curve.parameterAtDistance(end_pt, edge.FirstParameter)
-
-                points.extend(edge.discretize(Number=number, First=start_prm, Last=end_prm))
-
-        elif isinstance(edge.Curve, Part.Line):
+        if isinstance(edge.Curve, Part.Line):
 
             if segmentize:
                 points = [edge.Vertexes[0].Point, edge.Vertexes[1].Point]
@@ -257,7 +250,18 @@ class _Cell():
                 points = [tmp[0], tmp[1]]
 
         else:
-            print ("Invalid edge type for discretization")
+
+            if segmentize:
+                points = edge.discretize(3)
+
+            else:
+                start_prm = edge.Curve.parameterAtDistance(start_pt, edge.FirstParameter)
+                end_prm = edge.Curve.parameterAtDistance(end_pt, edge.FirstParameter)
+
+                print("number: ", number)
+                print("start: ", start_prm)
+                print("end: ", end_prm)
+                points.extend(edge.discretize(Number=int(number), First=start_prm, Last=end_prm))
 
         return points
 
@@ -389,8 +393,8 @@ class _Cell():
         self._delete_objects()
 
         points = self._get_edge_points(stations,
-        self.Object.Source_Path.Shape,
-        self.Object.Resolution.Value)
+        self.Object.Source_Path.Shape.getElement(self.Object.Source_Edge),
+        float(self.Object.Resolution.Value))
 
         spline = self._build_sweep_spline(points)
 
