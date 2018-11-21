@@ -22,15 +22,16 @@
 # **************************************************************************
 
 """
-Manages algignment metadata
+Generates / manages a transportation project document
 """
-__title__ = "Meta.py"
+__title__ = "Project.py"
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
 import Draft
 import Part
+import transportationwb
 import transportationwb.corridor.alignment.meta as meta
 
 if App.Gui:
@@ -38,10 +39,20 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
+def create_alignments_group(doc):
+    '''
+    Create the Alignments group
+    '''
 
+    obj = doc.addObject("App::DocumentObjectGroup", "Alignments")
 
-def createAlignment(alignment_name):
-    """
-    Creates an alignment object
-    """
+    return obj
 
+def createProject(project_name):
+    '''
+    Create a new project with default groups
+    '''
+    doc = App.newDocument(project_name)
+    App.setActiveDocument(doc.Name)
+
+    create_alignments_group(doc)
