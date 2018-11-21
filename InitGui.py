@@ -267,19 +267,20 @@ if FreeCAD.GuiUp:
     terrain += [
         c3b(["Terrain"], onselection1, 'geodesic_lines', 'create something', '/../icons/draw.svg')]
 
-    drainage = [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_1_cell_box')]
-    drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'draft_ends')]
-    drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_headwall')]
-    drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_toewall')]
-    drainage += [c3b(["Drainage"], always, "drainage.Parameters", "add parameter")]
+    #drainage = [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_1_cell_box')]
+    #drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'draft_ends')]
+    #drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_headwall')]
+    #drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_toewall')]
+    #drainage += [c3b(["Drainage"], always, "drainage.Parameters", "add parameter")]
 
-    corridor = [c3b(["Corridor"], always, 'corridor.Alignment', 'create_alignment')]
-    corridor += [c3b(["Corridor"], always, 'corridor.Cell', 'createCell')]
+    #corridor = [c3b(["Corridor"], always, 'corridor.Alignment', 'create_alignment')]
+    #corridor += [c3b(["Corridor"], always, 'corridor.Cell', 'createCell')]
 
 
-    toolbars = [['Simulation', toolbar], ['Terrain', terrain],
-               ['Drainage Structure', drainage],
-               ['Corridor', corridor],
+    toolbars = [['Simulation', toolbar], 
+               ['Terrain', terrain],
+               #['Drainage Structure', drainage],
+               #['Corridor', corridor],
                ['Tests', ['My_Transprtation_Tests', 'Doku']]]
 
     c3b(["Demos"], always, 'miki_g', 'test Dialog MainWindow')
@@ -318,29 +319,26 @@ class TransportationWorkbench (Workbench):
     def __init__(self, toolbars, version):
 
         self.policies_ist = ["Edit..."]
-        self.general_fn_list = ["NewAlignment"]
+        self.general_fn_list = ["NewProject"]
         self.alignment_fn_list = ["Tangent", "Curve1"]
-        self.data_source = ["Data Source"]
-        #, "Curve2", "Curve3", "CurveSpiral"]
 
         self.toolbars = toolbars
         self.version = version
 
     def Initialize(self):
 
-        import NewAlignment
-        import Tangent
-        import Curve1
+        import NewProject
+        import transportationwb.corridor.alignment.AddAlignment
+        #import Tangent
+        #import Curve1
         # import Curve2, Curve3, CurveSpiral
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
 
         self.appendToolbar("Transportation", self.general_fn_list)
-        self.appendToolbar("Transportation alignment", self.alignment_fn_list)
-        self.appendToolbar("Data Source", self.data_source)
+        #self.appendToolbar("Transportation alignment", self.alignment_fn_list)
         self.appendMenu("Transportation", self.general_fn_list)
-        # self.appendMenu(["Transportation", "Policies"], self.policies_list)
 #-------------------
 
         # create toolbars
@@ -348,24 +346,28 @@ class TransportationWorkbench (Workbench):
             self.appendToolbar(t[0], t[1])
 
         # create menus
-        menues = {}
+        menus = {}
         ml = []
+
         for _t in FreeCAD.tcmdsTransportation:
             c = _t[0]
             a = _t[1]
             try:
-                menues[tuple(c)].append(a)
+                menus[tuple(c)].append(a)
 
             except:
-                menues[tuple(c)] = [a]
+                menus[tuple(c)] = [a]
                 ml.append(tuple(c))
 
         for m in ml:
-            self.appendMenu(list(m), menues[m])
+            self.appendMenu(list(m), menus[m])
 
         cmds = ['Part_Cone', 'Part_Cylinder', 'Draft_Move', 'Draft_Rotate', 'Draft_Point', 'Draft_ToggleGrid']
         cmds += ['Nurbs_LightOn', 'Nurbs_LightOff']
         self.appendToolbar("My Helpers", cmds)
+
+        #create context menus for alignments
+        self.alignment_menu = ['AddAlignment']
 
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(
@@ -377,7 +379,7 @@ class TransportationWorkbench (Workbench):
 #-------------------
     def ContextMenu(self, recipient):
         # "recipient" will be either "view" or "tree"
-        self.appendContextMenu("My commands", self.list)
+        self.appendContextMenu('', self.alignment_menu)
 
     def GetClassName(self):
         # this function is mandatory if this is a full python workbench
@@ -508,16 +510,6 @@ static char * workbench_xpm[] = {
 "[. c #E5DFD1",
 "}. c #C7C7C5",
 "|. c #2B2822",
-        cmds= ['ZebraTool','ParametricComb','Nurbs_DraftBSpline Editor',
-        'Nurbs_Create Shoe','Nurbs_Create Sole','Nurbs_Sole Change Model',
-        'Nurbs_scanbackbonecut','Nurbs_createsketchspline','Nurbs_Curves to Face', 'Nurbs_facedraw',
-        'Nurbs_createcloverleaf',
-        'Part_Cone', 'Part_Cylinder','Draft_Move','Draft_Rotate','Draft_Point','Draft_ToggleGrid',
-        'My_Test2','Nurbs_toggleSketch','Sketcher_NewSketch','Nurbs_facedraws','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
-
-        cmds2=['Nurbs_facedraw','Nurbs_patcha','Nurbs_patchb','Nurbs_folda']
-
-        cmds3=['Nurbs_CreateWorkspace','Nurbs_CreateWSLink','Nurbs_ViewsQV','Nurbs_Views2H','Nurbs_DarkRoom','Nurbs_LightOn','Nurbs_LightOff']
 "1. c #151514",
 "2. c #B5B8B1",
 "3. c #C9CDC4",
