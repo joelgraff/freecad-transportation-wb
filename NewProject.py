@@ -1,6 +1,7 @@
 import FreeCAD as App
 import FreeCADGui as Gui
 import os
+from PySide import QtGui, QtCore
 
 class NewProject():
 
@@ -36,9 +37,26 @@ class NewProject():
 
     def _create_document(self):
 
-        App.newDocument("Unnamed Project")
-        App.setActiveDocument("Unnamed_Project")
-        App.ActiveDocument = App.getDocument("Unnamed_Project")
-        Gui.ActiveDocument = Gui.getDocument("Unnamed_Project")
+        '''
+        Create a new project with default groups
+        '''
+        dlg = QtGui.QInputDialog()
+        dlg.setWindowTitle("New Proejct")
+        dlg.setLabelText('Enter project name:')
+        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
+        dlg.exec_()
+
+        if dlg.result() == False:
+            return
+
+        project_name = dlg.textValue()
+
+        if project_name =='':
+            return
+
+        App.newDocument(project_name)
+        App.setActiveDocument(project_name)
+        App.ActiveDocument = App.getDocument(project_name)
+        Gui.ActiveDocument = Gui.getDocument(project_name)
 
 Gui.addCommand('NewProject',NewProject())

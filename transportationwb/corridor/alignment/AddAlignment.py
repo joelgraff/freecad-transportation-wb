@@ -75,8 +75,8 @@ class AddAlignment():
         """
 
         dlg = QtGui.QInputDialog()
-        dlg.setWindowTitle("New Proejct")
-        dlg.setLabelText('Enter project name:')
+        dlg.setWindowTitle("New Alignment")
+        dlg.setLabelText('Enter alignment name:')
         dlg.setWindowModality(QtCore.Qt.ApplicationModal)
         dlg.exec_()
 

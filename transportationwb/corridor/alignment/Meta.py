@@ -54,6 +54,8 @@ def createMeta(meta_name):
 
 class _Meta():
 
+    OBJECT_TYPE = "Meta"
+
     def __init__(self, obj):
         """
         Default Constructor
@@ -62,18 +64,23 @@ class _Meta():
         self.Type = "Meta"
         self.Object = obj
 
-        #self.add_property("App::PropertyLength", "StartStation", "Starting station for the cell").StartStation = 0.00
-        #self.add_property("App::PropertyLength", "EndStation", "Ending station for the cell").EndStation = 0.00
-        #self.add_property("App::PropertyLength", "Length", "Length of baseline").Length = 0.00
-        #obj.setEditorMode("Length", 1)
+        self.add_property("App::PropertyLength", "StartStation", "Starting station for the cell", "General").StartStation = 0.00
+        self.add_property("App::PropertyLength", "EndStation", "Ending station for the cell", "General").EndStation = 0.00
+        self.add_property("App::PropertyLength", "Length", "Length of baseline", "General", True).Length = 0.00
 
-        #self.add_property("App::PropertyVectorList", "StationEquations", "Sketch containing sweep path").StationEquations = []
-        #self.add_property("Part::PropertyGeometryList", "PathGeometry", "Path geometry shape").PathGeometry = []
-        #self.add_property("App::PropertyLink", "SweepTemplate", "Sketch containing sweep template").SweepTemplate = None
+        self.add_property("Part::PropertyGeometryList", "PathGeometry", "Path geometry shape", "Geometry").PathGeometry = []
+        self.add_property("App::PropertyLink", "SweepTemplate", "Sketch containing sweep template", "Geometry").SweepTemplate = None
 
         self.init = True
 
-        #self.Object.StationEquations = [App.Vector(133115.8, 1000.0, 0.0), App.Vector(2500.48, 148036.76, 0.0)]
+    def add_property(self, prop_type, prop_name, prop_desc, group_name=OBJECT_TYPE, isReadOnly=False):
+
+        prop = self.Object.addProperty(prop_type, prop_name, group_name, QT_TRANSLATE_NOOP("App::Property", prop_desc))
+
+        if isReadOnly:
+            prop.setEditorMode(prop_name, 1)
+
+        return prop        
 
     def __getstate__(self):
         return self.Type
