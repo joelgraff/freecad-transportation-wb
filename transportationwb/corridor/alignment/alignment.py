@@ -31,7 +31,7 @@ __url__ = "https://www.freecadweb.org"
 import FreeCAD as App
 import Draft
 import Part
-import transportationwb.corridor.alignment.meta as meta
+import transportationwb.corridor.alignment.Meta as meta
 
 if App.Gui:
     import FreeCADGui as Gui

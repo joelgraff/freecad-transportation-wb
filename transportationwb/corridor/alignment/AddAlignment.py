@@ -28,7 +28,7 @@ from PySide import QtGui
 from PySide import QtCore
 import transportationwb as twb
 import transportationwb.corridor.alignment.alignment as alignment
-import transportationwb.corridor.alignment.meta as meta
+import transportationwb.corridor.alignment.Meta as meta
 
 class AddAlignment():
 
@@ -57,7 +57,7 @@ class AddAlignment():
         parent = App.ActiveDocument.getObject("Alignments")
 
         if parent is None:
-            parent = App.ActiveDocument.addObject("App::DocumentObjectGroup", 'Alignments')
+            parent = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", 'Alignments')
 
         obj = parent.newObject("App::DocumentObjectGroup", alignment_name)
 
@@ -65,10 +65,7 @@ class AddAlignment():
         obj.newObject("App::DocumentObjectGroup", "Vertical Curves")
         meta_obj = meta.createMeta(alignment_name + "metadata")
 
-        App.ActiveDocument.recompute()
-
-        print (obj.Name)
-        obj.addObject(meta_obj)
+        obj.addObject(meta_obj.Object)
 
         return obj
 

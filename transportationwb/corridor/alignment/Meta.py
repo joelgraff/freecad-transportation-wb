@@ -46,14 +46,13 @@ def createMeta(meta_name):
     obj = App.ActiveDocument.addObject("App::FeaturePython", "Meta")
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
-
-    meta = Meta(obj)
-    ViewProviderMeta(meta.ViewObject)
-    App.ActiveDocument.recompute()
+    meta = _Meta(obj)
+    
+    _ViewProviderMeta(obj.ViewObject)
 
     return meta
 
-class _Meta:
+class _Meta():
 
     def __init__(self, obj):
         """
@@ -88,11 +87,54 @@ class _Meta:
         pass
 
 class _ViewProviderMeta:
+
     def __init__(self, obj):
+        """
+        Initialize the box culvert view provider
+        """
         obj.Proxy = self
 
     def __getstate__(self):
         return None
 
-    def __setstate__(self,state):
-        return None         
+    def __setstate__(self, state):
+        return None
+
+    def attach(self, obj):
+        """
+        View provider scene graph initialization
+        """
+        self.Object = obj.Object
+
+    def updateData(self, fp, prop):
+        """
+        Property update handler
+        """
+        pass
+
+    def getDisplayMode(self, obj):
+        """
+        Valid display modes
+        """
+        return ["Wireframe"]
+
+    def getDefaultDisplayMode(self):
+        """
+        Return default display mode
+        """
+        return "Wireframe"
+
+    def setDisplayMode(self, mode):
+        """
+        Set mode - wireframe only
+        """
+        return "Wireframe"
+
+    def onChanged(self, vp, prop):
+        """
+        Handle individual property changes
+        """
+        pass
+
+    def getIcon(self):
+        return ""
