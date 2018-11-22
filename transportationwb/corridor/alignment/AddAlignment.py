@@ -57,7 +57,7 @@ class AddAlignment():
         parent = App.ActiveDocument.getObject("Alignments")
 
         if parent is None:
-            parent = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", 'Alignments')
+            parent = App.ActiveDocument.addObject("App::DocumentObjectGroup", 'Alignments')
 
         obj = parent.newObject("App::DocumentObjectGroup", alignment_name)
 
