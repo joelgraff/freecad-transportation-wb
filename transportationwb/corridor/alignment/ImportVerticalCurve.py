@@ -24,11 +24,11 @@
 import FreeCAD as App
 import FreeCADGui as Gui
 import os
-from PySide import QtGui, QtCore
-import transportationwb as twb
-from transportationwb.corridor.alignment import alignment, Meta
+from PySide import QtGui
+from PySide import QtCore
+from transportationwb.corridor.alignment import alignment
 
-class AddAlignment():
+class ImportVerticalCurve():
 
     def __init__(self):
         pass
@@ -43,45 +43,22 @@ class AddAlignment():
         icon_path += "../../../icons/new_alignment.svg"
 
         return {'Pixmap'  : icon_path,
-                'Accel'   : "Shift+A",
-                'MenuText': "New Alignment",
-                'ToolTip' : "Add a new alignment",
+                'Accel'   : "Shift+V",
+                'MenuText': "Import Vertical Alignment",
+                'ToolTip' : "Import a Vertical Alignment from JSON",
                 'CmdType' : "ForEdit"}
-
-    def createAlignmentGroup(self, alignment_name):
-
-        parent = App.ActiveDocument.getObject("Alignments")
-
-        if parent is None:
-            parent = App.ActiveDocument.addObject("App::DocumentObjectGroup", 'Alignments')
-
-        obj = parent.newObject("App::DocumentObjectGroup", alignment_name)
-
-        obj.newObject("App::DocumentObjectGroup", "Horizontal Curves")
-        obj.newObject("App::DocumentObjectGroup", "Vertical Curves")
-        meta_obj = Meta.createMeta(alignment_name + "metadata")
-
-        obj.addObject(meta_obj.Object)
-
-        return obj
 
     def Activated(self):
         """
         Executes the tangent construction.
         """
 
-        dlg = QtGui.QInputDialog()
-        dlg.setWindowTitle("New Alignment")
-        dlg.setLabelText('Enter alignment name:')
-        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
-        dlg.exec_()
+        dlg = QtGui.QFileDialog()
+        options = dlg.Options()
+        options |= dlg.DontUseNativeDialog
+        fileName, _ = dlg.getOpenFileName(dlg,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
 
-        if dlg.result() == False:
-            return
+        if fileName:
+            print(fileName)
 
-        if dlg.textValue() == '':
-            return
-
-        grp = self.createAlignmentGroup(dlg.textValue())
-
-Gui.addCommand('AddAlignment', AddAlignment())
+Gui.addCommand('ImportVerticalCurve', ImportVerticalCurve())

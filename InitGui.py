@@ -320,7 +320,7 @@ class TransportationWorkbench (Workbench):
 
         self.policies_ist = ["Edit..."]
         self.general_fn_list = ["NewProject"]
-        self.alignment_fn_list = ["Tangent", "Curve1"]
+        self.alignment_fn_list = ["AddAlignment", "ImportVerticalCurve"]
 
         self.toolbars = toolbars
         self.version = version
@@ -329,15 +329,13 @@ class TransportationWorkbench (Workbench):
 
         import NewProject
         import transportationwb.corridor.alignment.AddAlignment
-        #import Tangent
-        #import Curve1
-        # import Curve2, Curve3, CurveSpiral
+        import transportationwb.corridor.alignment.ImportVerticalCurve
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
 
         self.appendToolbar("Transportation", self.general_fn_list)
-        #self.appendToolbar("Transportation alignment", self.alignment_fn_list)
+        self.appendToolbar("Transportation alignment", self.alignment_fn_list)
         self.appendMenu("Transportation", self.general_fn_list)
 #-------------------
 
@@ -367,7 +365,7 @@ class TransportationWorkbench (Workbench):
         self.appendToolbar("My Helpers", cmds)
 
         #create context menus for alignments
-        self.alignment_menu = ['AddAlignment']
+        self.alignment_menu = ['AddAlignment','ImportVerticalCurve']
 
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(
