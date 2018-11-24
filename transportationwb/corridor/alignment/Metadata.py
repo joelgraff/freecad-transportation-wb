@@ -21,10 +21,11 @@
 # *                                                                        *
 # **************************************************************************
 
-"""
-Manages algignment metadata
-"""
-__title__ = "Meta.py"
+'''
+Manages alignment metadata
+'''
+
+__title__ = "Metadata.py"
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
@@ -38,49 +39,61 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def createMeta(meta_name):
-    """
-    Creates an alignment metadata object
-    """
+def createMetadata(name):
+    '''
+    Creates an alignment parameter object
+    '''
 
-    obj = App.ActiveDocument.addObject("App::FeaturePython", "Meta")
+    obj = App.ActiveDocument.addObject("App::FeaturePython", "Metadata")
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
-    meta = _Meta(obj)
+    vc = _Metadata(obj)
     
-    _ViewProviderMeta(obj.ViewObject)
+    _ViewProviderMetadata(obj.ViewObject)
 
-    return meta
+    return vc
 
-class _Meta():
-
-    OBJECT_TYPE = "Meta"
+class _Metadata():
 
     def __init__(self, obj):
         """
         Default Constructor
         """
+
         obj.Proxy = self
-        self.Type = "Meta"
+        self.Type = 'Metadata'
         self.Object = obj
 
-        self.add_property("App::PropertyLength", "StartStation", "Starting station for the cell", "General").StartStation = 0.00
-        self.add_property("App::PropertyLength", "EndStation", "Ending station for the cell", "General").EndStation = 0.00
-        self.add_property("App::PropertyLength", "Length", "Length of baseline", "General", True).Length = 0.00
+        self._add_property('Length', 'General.Start_Station', 'Starting station for the cell', 0.00)
+        self._add_property('Length', 'General.End_Station', 'Ending station for the cell', 0.00)
+        self._add_property('Length', 'General.Length', 'Length of baseline', 0.00, True)
 
-        self.add_property("Part::PropertyGeometryList", "PathGeometry", "Path geometry shape", "Geometry").PathGeometry = []
-        self.add_property("App::PropertyLink", "SweepTemplate", "Sketch containing sweep template", "Geometry").SweepTemplate = None
+        self.init = True      
 
-        self.init = True
+    def _add_property(self, p_type, name, desc, default_value=None, isReadOnly=False):
+        '''
+        Build properties
+        '''
 
-    def add_property(self, prop_type, prop_name, prop_desc, group_name=OBJECT_TYPE, isReadOnly=False):
+        tple = name.split('.')
 
-        prop = self.Object.addProperty(prop_type, prop_name, group_name, QT_TRANSLATE_NOOP("App::Property", prop_desc))
+        if p_type == 'Length':
+            p_type = 'App::PropertyLength'
+
+        elif p_type == 'PropertyLink':
+            p_type = 'App::PropertyLink'
+
+        self.Object.addProperty(p_type, tple[1], tple[0], QT_TRANSLATE_NOOP("App::Property", desc))
+        prop = self.Object.getPropertyByName(tple[1])
+        print(tple[1])
+        print(prop)
+
+        prop = default_value
 
         if isReadOnly:
-            prop.setEditorMode(prop_name, 1)
+            self.Object.setEditorMode(tple[1], 1)
 
-        return prop        
+        return prop              
 
     def __getstate__(self):
         return self.Type
@@ -93,11 +106,11 @@ class _Meta():
 
         pass
 
-class _ViewProviderMeta:
+class _ViewProviderMetadata:
 
     def __init__(self, obj):
         """
-        Initialize the box culvert view provider
+        Initialize the view provider
         """
         obj.Proxy = self
 

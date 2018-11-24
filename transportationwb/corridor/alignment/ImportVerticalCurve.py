@@ -24,9 +24,10 @@
 import FreeCAD as App
 import FreeCADGui as Gui
 import os
+import json
 from PySide import QtGui
 from PySide import QtCore
-from transportationwb.corridor.alignment import alignment
+from transportationwb.corridor.alignment import VerticalCurve
 
 class ImportVerticalCurve():
 
@@ -48,17 +49,52 @@ class ImportVerticalCurve():
                 'ToolTip' : "Import a Vertical Alignment from JSON",
                 'CmdType' : "ForEdit"}
 
+    def getFile(self):
+        '''
+        Displays the file browser dialog to pick the JSON file
+        '''
+        dlg = QtGui.QFileDialog()
+        options = dlg.Options()
+        options |= dlg.DontUseNativeDialog
+        file_name, _ = dlg.getOpenFileName(dlg,"QFileDialog.getOpenFileName()", "","All Files (*);;JSON Files (*.json)", options=options)
+
+        return file_name
+
+    def build_alignment(self, group, data):
+        '''
+        Build the curve objects describing the alignemtn
+        '''
+
+        for vc_data in data:
+
+            vc_obj = VerticalCurve.createVerticalCurve(vc_data)
+
+        pass
+
     def Activated(self):
         """
         Executes the tangent construction.
         """
 
-        dlg = QtGui.QFileDialog()
-        options = dlg.Options()
-        options |= dlg.DontUseNativeDialog
-        fileName, _ = dlg.getOpenFileName(dlg,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
+        file_name = self.getFile()
 
-        if fileName:
-            print(fileName)
+        if file_name == "":
+            return
+
+        print(file_name)
+        
+        parent = App.Activedocument.getObject('Alignments')
+
+        if parent is None:
+            parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
+
+        group = App.ActiveDocument.getObject('VerticalCurves')
+
+        if group is None:
+            group = parent.newObject("App::DocumentObjectGroup", "Vertical Curves")
+
+        data = json.load(file_name)
+
+        self.build_alignment(group, data)
 
 Gui.addCommand('ImportVerticalCurve', ImportVerticalCurve())

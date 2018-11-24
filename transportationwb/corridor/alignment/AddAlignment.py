@@ -26,7 +26,7 @@ import FreeCADGui as Gui
 import os
 from PySide import QtGui, QtCore
 import transportationwb as twb
-from transportationwb.corridor.alignment import alignment, Meta
+from transportationwb.corridor.alignment import alignment, Metadata, VerticalCurve
 
 class AddAlignment():
 
@@ -57,12 +57,10 @@ class AddAlignment():
 
         obj = parent.newObject("App::DocumentObjectGroup", alignment_name)
 
-        obj.newObject("App::DocumentObjectGroup", "Horizontal Curves")
-        obj.newObject("App::DocumentObjectGroup", "Vertical Curves")
-        meta_obj = Meta.createMeta(alignment_name + "metadata")
+        meta_obj = Metadata.createMetadata(alignment_name + "metadata")
 
+        App.ActiveDocument.recompute()
         obj.addObject(meta_obj.Object)
-
         return obj
 
     def Activated(self):
