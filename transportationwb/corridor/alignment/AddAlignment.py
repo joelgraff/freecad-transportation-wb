@@ -26,7 +26,7 @@ import FreeCADGui as Gui
 import os
 from PySide import QtGui, QtCore
 import transportationwb as twb
-from transportationwb.corridor.alignment import alignment, Metadata, VerticalCurve
+from transportationwb.corridor.alignment import Metadata, VerticalCurve
 
 class AddAlignment():
 

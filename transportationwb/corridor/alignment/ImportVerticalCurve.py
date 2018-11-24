@@ -65,7 +65,7 @@ class ImportVerticalCurve():
         Build the curve objects describing the alignemtn
         '''
 
-        for vc_data in data:
+        for vc_data in data['geometry']:
 
             vc_obj = VerticalCurve.createVerticalCurve(vc_data)
 
@@ -83,7 +83,7 @@ class ImportVerticalCurve():
 
         print(file_name)
         
-        parent = App.Activedocument.getObject('Alignments')
+        parent = App.ActiveDocument.getObject('Alignments')
 
         if parent is None:
             parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
@@ -93,7 +93,10 @@ class ImportVerticalCurve():
         if group is None:
             group = parent.newObject("App::DocumentObjectGroup", "Vertical Curves")
 
-        data = json.load(file_name)
+        data = None
+
+        with open(file_name, 'r') as json_data:
+            data = json.load(json_data)
 
         self.build_alignment(group, data)
 

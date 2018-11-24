@@ -39,7 +39,7 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def createVerticalCurve(data) #pi_station, pi_elevation, g1, g2, length):
+def createVerticalCurve(data): #pi_station, pi_elevation, g1, g2, length):
     '''
     Creates a vertical curve alignment object
 
@@ -55,7 +55,12 @@ def createVerticalCurve(data) #pi_station, pi_elevation, g1, g2, length):
     #obj.Label = translate("Transportation", OBJECT_TYPE)
     vc = _VerticalCurve(obj)
     
-    vc.Object.
+    obj.Length = data['length']
+    obj.PI_Station = data['pi']
+    obj.PI_Elevation = data['elevation']
+    obj.Grade_In = data['g1']
+    obj.Grade_Out = data['g2']
+
     _ViewProviderVerticalCurve(obj.ViewObject)
 
     return vc
@@ -79,9 +84,12 @@ class _VerticalCurve():
         self._add_property('Length', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
         self._add_property('Length', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
         self._add_property('Length', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)        
-        self._add_property('Length', 'General.Length', 'Length of the vertical curve', 0.00, True)
+        self._add_property('Length', 'General.Length', 'Length of the vertical curve', 0.00)
+        self._add_property('Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
+        self._add_property('Float', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
+        self._add_property('Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
 
-        self.init = True      
+        self.doRecalc = False
 
     def _add_property(self, p_type, name, desc, default_value=None, isReadOnly=False):
         '''
@@ -93,13 +101,18 @@ class _VerticalCurve():
         if p_type == 'Length':
             p_type = 'App::PropertyLength'
 
+        elif p_type == 'Float':
+            p_type = 'App::PropertyFloat'
+
+        elif p_type == 'Bool':
+            p_type = 'App::PropertyBool'
+
         elif p_type == 'PropertyLink':
             p_type = 'App::PropertyLink'
 
         self.Object.addProperty(p_type, tple[1], tple[0], QT_TRANSLATE_NOOP("App::Property", desc))
+
         prop = self.Object.getPropertyByName(tple[1])
-        print(tple[1])
-        print(prop)
 
         prop = default_value
 
@@ -115,9 +128,22 @@ class _VerticalCurve():
         if state:
             self.Type = state
 
+    def _recalcCurve(self):
+
+        half_length = self.Object.Length / 2.0
+
+        self.Object.PC_Station = self.Object.PI_Station - half_length
+        self.Object.PT_Station = self.Object.PI_Station + half_length
+
+        self.Object.PC_Elevation = self.Object.PI_Elevation - self.Object.Grade_In * half_length
+        self.Object.PT_Elevation = self.Object.PI_Elevation + self.Object.Grade_Out * half_length
+
+        self.Object.A = abs(self.Object.Grade_In - self.Object.Grade_Out)
+        self.Object.K = self.Object.Length / self.Object.A
+
     def execute(self, fpy):
 
-        pass
+        self._recalcCurve()
 
 class _ViewProviderVerticalCurve:
 
