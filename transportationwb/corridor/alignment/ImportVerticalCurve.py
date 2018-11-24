@@ -67,7 +67,7 @@ class ImportVerticalCurve():
 
         for vc_data in data['geometry']:
 
-            vc_obj = VerticalCurve.createVerticalCurve(vc_data)
+            vc_obj = VerticalCurve.createVerticalCurve(vc_data, data['alignment']['units'])
 
         pass
 

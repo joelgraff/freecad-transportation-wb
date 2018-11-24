@@ -39,7 +39,7 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def createVerticalCurve(data): #pi_station, pi_elevation, g1, g2, length):
+def createVerticalCurve(data, units):
     '''
     Creates a vertical curve alignment object
 
@@ -54,13 +54,18 @@ def createVerticalCurve(data): #pi_station, pi_elevation, g1, g2, length):
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
     vc = _VerticalCurve(obj)
-    
-    obj.Length = data['length']
-    obj.PI_Station = data['pi']
-    obj.PI_Elevation = data['elevation']
-    obj.Grade_In = data['g1']
-    obj.Grade_Out = data['g2']
 
+    conv = 1000.0
+
+    if units in ['english', 'british']:
+        conv = 25.4 * 12.0
+    
+    obj.Length = float(data['length']) * conv
+    obj.PI_Station = float(data['pi'])
+    obj.PI_Elevation = float(data['elevation']) * conv
+    obj.Grade_In = float(data['g1'])
+    obj.Grade_Out = float(data['g2'])
+ 
     _ViewProviderVerticalCurve(obj.ViewObject)
 
     return vc
@@ -128,7 +133,7 @@ class _VerticalCurve():
         if state:
             self.Type = state
 
-    def _recalcCurve(self):
+    def _recalc_curve(self):
 
         half_length = self.Object.Length / 2.0
 
@@ -143,7 +148,7 @@ class _VerticalCurve():
 
     def execute(self, fpy):
 
-        self._recalcCurve()
+        self._recalc_curve()
 
 class _ViewProviderVerticalCurve:
 
