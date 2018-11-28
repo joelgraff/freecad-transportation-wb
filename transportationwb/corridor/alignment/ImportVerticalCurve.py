@@ -27,7 +27,7 @@ import os
 import json
 from PySide import QtGui
 from PySide import QtCore
-from transportationwb.corridor.alignment import VerticalCurve
+from transportationwb.corridor.alignment import VerticalCurve, Metadata
 
 class ImportVerticalCurve():
 
@@ -68,36 +68,68 @@ class ImportVerticalCurve():
         for vc_data in data['geometry']:
 
             vc_obj = VerticalCurve.createVerticalCurve(vc_data, data['alignment']['units'])
+            group.addObject(vc_obj.Object)
 
         pass
 
-    def Activated(self):
-        """
-        Executes the tangent construction.
-        """
+    def validate_heirarchy(self, _id):
+        '''
+        Validates the alignment heirarchy, adding missing groups
+        '''
 
-        file_name = self.getFile()
+        grand_parent = App.ActiveDocument.getObject('Alignments')
 
-        if file_name == "":
-            return
+        if grand_parent is None:
+            grand_parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
 
-        print(file_name)
-        
-        parent = App.ActiveDocument.getObject('Alignments')
+        parent = grand_parent.newObject('App::DocumentObjectGroup', _id)
 
         if parent is None:
-            parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
+            parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', _id)
 
         group = App.ActiveDocument.getObject('VerticalCurves')
 
         if group is None:
             group = parent.newObject("App::DocumentObjectGroup", "Vertical Curves")
 
+        return group
+
+    def Activated(self):
+        '''
+        Executes the tangent construction.
+        '''
+
+        file_name = self.getFile()
+
+        if file_name == '':
+            return
+
         data = None
 
         with open(file_name, 'r') as json_data:
             data = json.load(json_data)
 
+        _id = data['alignment']['id']
+
+        group = self.validate_heirarchy(_id)
+
         self.build_alignment(group, data)
+
+        parent = group.InList[0]
+
+        meta = parent.getObject(_id + '_metadata')
+
+        if meta is None:
+            meta = Metadata.createMetadata(_id)
+            parent.addObject(meta.Object)
+
+        _x = data['alignment']['units']
+
+        if _x.lower() in  ['english', 'british']:
+            _x = _x[0].upper() + _x[1:].lower()
+            meta.Object.Units = _x
+
+        meta.Object.Name = _id
+        meta.add_station_equations(data['alignment']['st_eq'])
 
 Gui.addCommand('ImportVerticalCurve', ImportVerticalCurve())

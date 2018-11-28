@@ -60,12 +60,17 @@ def createVerticalCurve(data, units):
     if units in ['english', 'british']:
         conv = 25.4 * 12.0
     
-    obj.Length = float(data['length']) * conv
-    obj.PI_Station = float(data['pi'])
-    obj.PI_Elevation = float(data['elevation']) * conv
+    lngth = float(data['length'])
+
     obj.Grade_In = float(data['g1'])
     obj.Grade_Out = float(data['g2'])
- 
+    obj.A = abs(obj.Grade_In - obj.Grade_Out)
+    obj.K = lngth / obj.A
+
+    obj.Length = lngth * conv
+    obj.PI_Station = float(data['pi'])
+    obj.PI_Elevation = float(data['elevation']) * conv
+
     _ViewProviderVerticalCurve(obj.ViewObject)
 
     return vc
@@ -82,13 +87,13 @@ class _VerticalCurve():
         self.Object = obj
 
         self._add_property('Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
-        self._add_property('Length', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
+        self._add_property('Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
         self._add_property('Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
-        self._add_property('Length', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
+        self._add_property('Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
         self._add_property('Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
-        self._add_property('Length', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
-        self._add_property('Length', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
-        self._add_property('Length', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)        
+        self._add_property('Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
+        self._add_property('Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
+        self._add_property('Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)        
         self._add_property('Length', 'General.Length', 'Length of the vertical curve', 0.00)
         self._add_property('Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
         self._add_property('Float', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
@@ -98,10 +103,25 @@ class _VerticalCurve():
 
     def _add_property(self, p_type, name, desc, default_value=None, isReadOnly=False):
         '''
-        Build properties from a dictionary
+        Build FPO properties
+
+        p_type - the Property type, either using the formal type definition ('App::Propertyxxx') or shortended version
+        name - the Property name.  Groups are defined here in 'Group.Name' format.  
+               If group is omitted (no '.' in the string), the entire string is used as the name and the default group is
+               the object type name
+        desc - tooltip description
+        default_value - default property value
+        isReadOnly - sets the property as read-only
         '''
 
         tple = name.split('.')
+
+        p_name = tple[0]
+        p_group = self.Type
+
+        if len(tple) == 2:
+            p_name = tple[1]
+            p_group = tple[0]
 
         if p_type == 'Length':
             p_type = 'App::PropertyLength'
@@ -115,11 +135,21 @@ class _VerticalCurve():
         elif p_type == 'PropertyLink':
             p_type = 'App::PropertyLink'
 
-        self.Object.addProperty(p_type, tple[1], tple[0], QT_TRANSLATE_NOOP("App::Property", desc))
+        elif p_type == 'Distance':
+            p_type = 'App::PropertyDistance'
+
+        else:
+            print ('Invalid property type specified: ', p_type)
+            return None
+
+        self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
 
         prop = self.Object.getPropertyByName(tple[1])
 
-        prop = default_value
+        if p_type in ['App::PropertyFloat','App::PropertyBool']:
+            prop = default_value
+        else:
+            prop.Value = default_value
 
         if isReadOnly:
             self.Object.setEditorMode(tple[1], 1)
@@ -135,16 +165,23 @@ class _VerticalCurve():
 
     def _recalc_curve(self):
 
-        half_length = self.Object.Length / 2.0
 
-        self.Object.PC_Station = self.Object.PI_Station - half_length
-        self.Object.PT_Station = self.Object.PI_Station + half_length
+        pi = self.Object.PI_Station.Value
+        elev = self.Object.PI_Elevation.Value
+        g1 = self.Object.Grade_In
+        g2 = self.Object.Grade_Out
+        lngth = self.Object.Length.Value
 
-        self.Object.PC_Elevation = self.Object.PI_Elevation - self.Object.Grade_In * half_length
-        self.Object.PT_Elevation = self.Object.PI_Elevation + self.Object.Grade_Out * half_length
+        half_length = lngth / 2.0
 
-        self.Object.A = abs(self.Object.Grade_In - self.Object.Grade_Out)
-        self.Object.K = self.Object.Length / self.Object.A
+        self.Object.PC_Station = pi - half_length
+        self.Object.PT_Station = pi + half_length
+
+        self.Object.PC_Elevation = elev - g1 * half_length
+        self.Object.PT_Elevation = elev + g2 * half_length
+
+        self.Object.A = abs(g1 - g2)
+        self.Object.K = lngth / self.Object.A
 
     def execute(self, fpy):
 

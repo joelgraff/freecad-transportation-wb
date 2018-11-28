@@ -44,7 +44,7 @@ def createMetadata(name):
     Creates an alignment parameter object
     '''
 
-    obj = App.ActiveDocument.addObject("App::FeaturePython", "Metadata")
+    obj = App.ActiveDocument.addObject("App::FeaturePython", name + "_metadata")
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
     vc = _Metadata(obj)
@@ -63,37 +63,81 @@ class _Metadata():
         obj.Proxy = self
         self.Type = 'Metadata'
         self.Object = obj
-
+        self._add_property('String', 'General.Name', 'Alignment name', "alignment")
+        self._add_property('', 'General.Units', 'Base units of alignment', 'English', False, ['English', 'Metric'])
         self._add_property('Length', 'General.Start_Station', 'Starting station for the cell', 0.00)
         self._add_property('Length', 'General.End_Station', 'Ending station for the cell', 0.00)
         self._add_property('Length', 'General.Length', 'Length of baseline', 0.00, True)
 
-        self.init = True      
+        self.init = True
 
-    def _add_property(self, p_type, name, desc, default_value=None, isReadOnly=False):
+    def add_station_equation(self, sta_eqs):
         '''
-        Build properties
+        Adds station equations to the object.  Checks to ensure each equation hasn't already been added.
+
+        sta_eqs - list of station equation tuples
+        '''
+
+        _x = 1
+
+        for st_eq in sta_eqs:
+            _y = str(_x)
+            self._add_property('FloatList', 'Station Equations.Equation ' + _y, 'Start / end tuple for station equation ' + _y, "st_eq1", st_eq)
+
+    def _add_property(self, p_type, name, desc, default=None, isReadOnly=False, p_list=[]):
+        '''
+        Build FPO properties
+
+        p_type - the Property type, either using the formal type definition ('App::Propertyxxx') or shortended version
+        name - the Property name.  Groups are defined here in 'Group.Name' format.  
+               If group is omitted (no '.' in the string), the entire string is used as the name and the default group is
+               the object type name
+        desc - tooltip description
+        default_value - default property value
+        isReadOnly - sets the property as read-only
+        p_list - the list of possible selections (for Enumeration types only)
         '''
 
         tple = name.split('.')
 
-        if p_type == 'Length':
+        p_name = tple[0]
+        p_group = self.Type
+
+        if len(tple) == 2:
+            p_name = tple[1]
+            p_group = tple[0]
+
+        if p_list:
+            p_type = 'App::PropertyEnumeration'
+
+        elif p_type == 'Length':
             p_type = 'App::PropertyLength'
 
-        elif p_type == 'PropertyLink':
-            p_type = 'App::PropertyLink'
+        elif p_type == 'String':
+            p_type = 'App::PropertyString'
 
-        self.Object.addProperty(p_type, tple[1], tple[0], QT_TRANSLATE_NOOP("App::Property", desc))
-        prop = self.Object.getPropertyByName(tple[1])
-        print(tple[1])
-        print(prop)
+        elif p_type == 'Bool':
+            p_type = 'App::PropertyBool'
 
-        prop = default_value
+        elif p_type == 'FloatList':
+            p_type = 'App::PropertyFloatList'
+
+        else:
+            print ('Invalid property type specifed', p_type)
+            return
+
+        prop = self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
+
+        if p_list:
+            setattr(prop, p_name, p_list)
+
+        #set the default value (not a reassignment)
+        prop = default
 
         if isReadOnly:
-            self.Object.setEditorMode(tple[1], 1)
+            self.Object.setEditorMode(p_name, 1)
 
-        return prop              
+        return prop
 
     def __getstate__(self):
         return self.Type
