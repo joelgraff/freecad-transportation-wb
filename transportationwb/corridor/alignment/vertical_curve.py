@@ -43,8 +43,9 @@ def build_spline(elements):
 
 def convert_csv(path, infile, outfile):
 
-    data = {'alignment': {'st_eq': []}, 'geometry': []}
-
+    data_set = []
+    alignment = {}
+    geometry = []
     csv = open(path + '/' + infile, 'r')
 
     lines = csv.read().splitlines()
@@ -53,28 +54,43 @@ def convert_csv(path, infile, outfile):
 
     for line in lines:
 
-        print(line)
-        tokens = line.split(',')
+        tokens = list(filter(None, line.split(',')))
         count = len(tokens)
-
+        
+        #encountered id of new alignment.  Save existing data and reset
         if count == 1:
-            data['alignment']['id'] = tokens[0]
+
+            if alignment:
+                data_set.append({'alignment': alignment, 'geometry': geometry})
+                geometry = []
+
+            alignment = {'id': tokens[0], 'units': 'english', 'st_eq': [] }
 
         elif count == 2:
-            data['alignment']['st_eq'].append(tokens)
+            alignment['st_eq'].append(tokens)
+
+        elif count == 4:
+
+            geometry.append({
+                'pi': tokens[0],
+                'elevation': tokens[1],
+                'g1': tokens[2],
+                'g2': tokens[3]
+            })
 
         elif count == 5:
-            geo = {
+            geometry.append({
                 'pi': tokens[0],
                 'length': tokens[1],
                 'elevation': tokens[2],
                 'g1': tokens[3],
                 'g2': tokens[4]
-            }
-            data['geometry'].append(geo)
-    
+            })
+
+    data_set.append({'alignment': alignment, 'geometry': geometry})
+
     jsn = open(path + '/' + outfile, 'w')
-    json.dump(data, jsn)
+    json.dump(data_set, jsn)
     jsn.close()
 
-    return data
+    return data_set

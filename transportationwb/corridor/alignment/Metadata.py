@@ -80,12 +80,15 @@ class _Metadata():
 
         _x = 1
 
+        print(sta_eqs)
 
-        for st_eq in sta_eqs:
-            st_eq = [float(_x) for _x in st_eq]
-            print(st_eq)
+        st_eq_floats = [float(_s) for _s in sta_eqs]
+
+        for item in st_eq_floats:
+
             _y = str(_x)
-            self._add_property('FloatList', 'Station Equations.Equation_' + _y, 'Start / end tuple for station equation ' + _y, st_eq)
+            self._add_property('FloatList', 'Station Equations.Equation_' + _y, 'Start / end tuple for station equation ' + _y, item)
+            _x += 1
 
     def _add_property(self, p_type, name, desc, default=None, isReadOnly=False, p_list=[]):
         '''
@@ -129,19 +132,20 @@ class _Metadata():
             print ('Invalid property type specifed', p_type)
             return
 
-        prop = self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
+        self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
+        #prop = getattr(self.Object, p_name)
 
         if p_list:
-            setattr(prop, p_name, p_list)
+            setattr(self.Object, p_name, p_list)
 
-        print(default)
         #set the default value (not a reassignment)
-        #self.Object.getPropertyByName(p_name).setValue(default)
+        #print (dir(prop))
+        #prop.setValue(default)
 
         if isReadOnly:
             self.Object.setEditorMode(p_name, 1)
 
-        return prop
+        return
 
     def __getstate__(self):
         return self.Type

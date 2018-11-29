@@ -107,27 +107,38 @@ class ImportVerticalCurve():
         with open(file_name, 'r') as json_data:
             data = json.load(json_data)
 
-        _id = data['alignment']['id']
+        for vc in data:
 
-        group = self.validate_heirarchy(_id)
+            algn = vc['alignment']
+            _id = algn['id']
 
-        self.build_alignment(group, data)
+            group = self.validate_heirarchy(_id)
 
-        parent = group.InList[0]
+            self.build_alignment(group, vc)
 
-        meta = parent.getObject(_id + '_metadata')
+            parent = group.InList[0]
 
-        if meta is None:
-            meta = Metadata.createMetadata(_id)
-            parent.addObject(meta.Object)
+            meta = parent.getObject(_id + '_metadata')
 
-        _x = data['alignment']['units']
+            if meta is None:
+                meta = Metadata.createMetadata(_id)
+                parent.addObject(meta.Object)
 
-        if _x.lower() in  ['english', 'british']:
-            _x = _x[0].upper() + _x[1:].lower()
-            meta.Object.Units = _x
+            _x = algn['units']
 
-        meta.Object.Name = _id
-        meta.add_station_equations(data['alignment']['st_eq'])
+            if _x.lower() in  ['english', 'british']:
+                _x = _x[0].upper() + _x[1:].lower()
+                meta.Object.Units = _x
+
+            meta.Object.Name = _id
+
+            st_eqs = algn.get('st_eq')
+
+            print("st_eq_len: ", len(st_eqs))
+            for _i in st_eqs:
+                print("item: ", _i)
+
+            if st_eqs:
+                meta.add_station_equations(st_eqs)
 
 Gui.addCommand('ImportVerticalCurve', ImportVerticalCurve())
