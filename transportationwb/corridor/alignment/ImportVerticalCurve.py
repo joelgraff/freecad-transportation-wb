@@ -70,8 +70,6 @@ class ImportVerticalCurve():
             vc_obj = VerticalCurve.createVerticalCurve(vc_data, data['alignment']['units'])
             group.addObject(vc_obj.Object)
 
-        pass
-
     def validate_heirarchy(self, _id):
         '''
         Validates the alignment heirarchy, adding missing groups

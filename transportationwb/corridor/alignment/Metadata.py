@@ -71,7 +71,7 @@ class _Metadata():
 
         self.init = True
 
-    def add_station_equation(self, sta_eqs):
+    def add_station_equations(self, sta_eqs):
         '''
         Adds station equations to the object.  Checks to ensure each equation hasn't already been added.
 
@@ -80,9 +80,12 @@ class _Metadata():
 
         _x = 1
 
+
         for st_eq in sta_eqs:
+            st_eq = [float(_x) for _x in st_eq]
+            print(st_eq)
             _y = str(_x)
-            self._add_property('FloatList', 'Station Equations.Equation ' + _y, 'Start / end tuple for station equation ' + _y, "st_eq1", st_eq)
+            self._add_property('FloatList', 'Station Equations.Equation_' + _y, 'Start / end tuple for station equation ' + _y, st_eq)
 
     def _add_property(self, p_type, name, desc, default=None, isReadOnly=False, p_list=[]):
         '''
@@ -131,8 +134,9 @@ class _Metadata():
         if p_list:
             setattr(prop, p_name, p_list)
 
+        print(default)
         #set the default value (not a reassignment)
-        prop = default
+        #self.Object.getPropertyByName(p_name).setValue(default)
 
         if isReadOnly:
             self.Object.setEditorMode(p_name, 1)
