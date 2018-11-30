@@ -27,9 +27,9 @@ import os
 import json
 from PySide import QtGui
 from PySide import QtCore
-from transportationwb.corridor.alignment import VerticalCurve, Metadata
+from transportationwb.corridor.alignment import HorizontalCurve, Metadata
 
-class ImportVerticalCurve():
+class ImportHorizontalCurve():
 
     def __init__(self):
         pass
@@ -45,8 +45,8 @@ class ImportVerticalCurve():
 
         return {'Pixmap'  : icon_path,
                 'Accel'   : "Shift+V",
-                'MenuText': "Import Vertical Alignment",
-                'ToolTip' : "Import a Vertical Alignment from JSON",
+                'MenuText': "Import Horizontal Alignment",
+                'ToolTip' : "Import a Horizontal Alignment from JSON",
                 'CmdType' : "ForEdit"}
 
     def getFile(self):
@@ -68,7 +68,7 @@ class ImportVerticalCurve():
 
         for vc_data in data['geometry']:
 
-            vc_obj = VerticalCurve.createVerticalCurve(vc_data, data['alignment']['units'])
+            vc_obj = HorizontalCurve.createHorizontalCurve(vc_data, data['alignment']['units'])
             group.addObject(vc_obj.Object)
 
     def validate_heirarchy(self, _id, _units):
@@ -86,10 +86,10 @@ class ImportVerticalCurve():
         if parent is None:
             parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', _id)
 
-        group = App.ActiveDocument.getObject('VerticalCurves')
+        group = App.ActiveDocument.getObject('HorizontalCurves')
 
         if group is None:
-            group = parent.newObject("App::DocumentObjectGroup", "Vertical Curves")
+            group = parent.newObject("App::DocumentObjectGroup", "Horizontal Curves")
 
         meta = parent.getObject(_id + '_metadata')
 
@@ -136,4 +136,4 @@ class ImportVerticalCurve():
 
         self.build_alignment(group, data)
 
-Gui.addCommand('ImportVerticalCurve', ImportVerticalCurve())
+Gui.addCommand('ImportHorizontalCurve', ImportHorizontalCurve())

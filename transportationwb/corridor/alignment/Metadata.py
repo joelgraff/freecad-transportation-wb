@@ -39,19 +39,22 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def createMetadata(name):
+def createMetadata(name, units):
     '''
     Creates an alignment parameter object
     '''
 
     obj = App.ActiveDocument.addObject("App::FeaturePython", name + "_metadata")
 
-    #obj.Label = translate("Transportation", OBJECT_TYPE)
-    vc = _Metadata(obj)
+    obj.Label = translate("Transportation", name + '_metadata')
+
+    meta = _Metadata(obj)
+
+    meta.Object.Units = units
     
     _ViewProviderMetadata(obj.ViewObject)
 
-    return vc
+    return meta
 
 class _Metadata():
 
@@ -63,7 +66,6 @@ class _Metadata():
         obj.Proxy = self
         self.Type = 'Metadata'
         self.Object = obj
-        self._add_property('String', 'General.Name', 'Alignment name', "alignment")
         self._add_property('', 'General.Units', 'Base units of alignment', 'English', False, ['English', 'Metric'])
         self._add_property('Length', 'General.Start_Station', 'Starting station for the cell', 0.00)
         self._add_property('Length', 'General.End_Station', 'Ending station for the cell', 0.00)
@@ -78,16 +80,23 @@ class _Metadata():
         sta_eqs - list of station equation tuples
         '''
 
+        if not sta_eqs:
+            return
+
         _x = 1
 
         print(sta_eqs)
 
-        st_eq_floats = [float(_s) for _s in sta_eqs]
+        st_eq_floats = []
 
-        for item in st_eq_floats:
+        for st_eq in sta_eqs:
+            st_eq_floats.append([float(_s) for _s in st_eq])
+
+        for st_eq in st_eq_floats:
 
             _y = str(_x)
-            self._add_property('FloatList', 'Station Equations.Equation_' + _y, 'Start / end tuple for station equation ' + _y, item)
+            print ("adding item: ", st_eq)
+            self._add_property('FloatList', 'Station Equations.Equation_' + _y, 'Start / end tuple for station equation ' + _y, st_eq)
             _x += 1
 
     def _add_property(self, p_type, name, desc, default=None, isReadOnly=False, p_list=[]):
@@ -133,14 +142,11 @@ class _Metadata():
             return
 
         self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
-        #prop = getattr(self.Object, p_name)
 
         if p_list:
             setattr(self.Object, p_name, p_list)
-
-        #set the default value (not a reassignment)
-        #print (dir(prop))
-        #prop.setValue(default)
+        else:
+            setattr(self.Object, p_name, default)
 
         if isReadOnly:
             self.Object.setEditorMode(p_name, 1)
