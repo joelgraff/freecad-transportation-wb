@@ -42,7 +42,60 @@ def build_vertical_spline(elements):
     return spline
 
 def convert_horizontal_csv(path, infile, outfile):
-    pass
+    data_set = []
+    meta = {}
+    geometry = []
+    csv = open(path + '/' + infile, 'r')
+
+    lines = csv.read().splitlines()
+
+    csv.close()
+
+    for line in lines:
+
+        tokens = list(filter(None, line.split(',')))
+        count = len(tokens)
+
+        if teokns[0] == 'id':
+
+            if meta:
+                data_set.append({'meta': meta, 'geometry': geometry})
+                geometry = []
+
+            meta = {'id': tokens[1], 'units': 'engilish', 'st_eq': []}
+
+        elif tokens[0] == 'sta_eq':
+
+            meta['st_eq'].append([tokens[1], tokens[2])
+
+        elif tokens[0] == 'limits':
+
+            meta['start'] = tokens[1]
+            meta['end'] = tokens[2]
+
+        elif count < 6:
+
+            geometry.append({
+                'tangent': tokens[0]
+            })
+
+        else
+
+            geometry.append({
+                'length': tokens[0],
+                'direction': tokens[1],
+                'degrees': tokens[3],
+                'minutes': tokens[4],
+                'seconds': tokens[5]
+            })
+
+    data_set.append({'meta': meta, 'geometry': geometry})
+
+    jsn = open(path + '/' + outfile, 'w')
+    json.dump(data_set, jsn)
+    jsn.close()
+
+    return data_set
 
 def convert_vertical_csv(path, infile, outfile):
 
@@ -64,7 +117,7 @@ def convert_vertical_csv(path, infile, outfile):
         if count == 1:
 
             if alignment:
-                data_set.append({'alignment': alignment, 'geometry': geometry})
+                data_set.append({'meta': alignment, 'geometry': geometry})
                 geometry = []
 
             alignment = {'id': tokens[0], 'units': 'english', 'st_eq': [] }
