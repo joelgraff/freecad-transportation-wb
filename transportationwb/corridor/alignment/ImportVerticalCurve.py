@@ -68,7 +68,7 @@ class ImportVerticalCurve():
 
         for vc_data in data['geometry']:
 
-            vc_obj = VerticalCurve.createVerticalCurve(vc_data, data['alignment']['units'])
+            vc_obj = VerticalCurve.createVerticalCurve(vc_data, data['meta']['units'])
             group.addObject(vc_obj.Object)
 
     def validate_heirarchy(self, _id, _units):
@@ -86,12 +86,12 @@ class ImportVerticalCurve():
         if parent is None:
             parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', _id)
 
-        group = App.ActiveDocument.getObject('VerticalCurves')
+        group = App.ActiveDocument.getObject('Vertical_' + _id)
 
         if group is None:
-            group = parent.newObject("App::DocumentObjectGroup", "Vertical Curves")
+            group = parent.newObject("App::DocumentObjectGroup", 'Vertical_' + _id)
 
-        meta = parent.getObject(_id + '_metadata')
+        meta = parent.getObject('metadata_' + _id)
 
         if meta is None:
             meta = Metadata.createMetadata(_id, _units)
@@ -118,22 +118,24 @@ class ImportVerticalCurve():
         with open(file_name, 'r') as json_data:
             data = json.load(json_data)
 
-        _id = data['alignment']['id']
-        _units = data['alignment']['units']
+        for alignment in data:
 
-        if _units.lower() in  ['english', 'british']:
-            _units = _units[0].upper() + _units[1:].lower()
-        else:
-            print("Invalid units specified in json")
-            return
+            _id = alignment['meta']['id']
+            _units = alignment['meta']['units']
 
-        [group, meta] = self.validate_heirarchy(_id, _units)
+            if _units.lower() in  ['english', 'british']:
+                _units = _units[0].upper() + _units[1:].lower()
+            else:
+                print("Invalid units specified in json")
+                return
 
-        if group is None:
-            return
+            [group, meta] = self.validate_heirarchy(_id, _units)
 
-        meta.add_station_equations(data['alignment'].get('st_eq'))
+            if group is None:
+                return
 
-        self.build_alignment(group, data)
+            meta.add_station_equations(alignment['meta'].get('st_eq'))
+
+            self.build_alignment(group, alignment)
 
 Gui.addCommand('ImportVerticalCurve', ImportVerticalCurve())

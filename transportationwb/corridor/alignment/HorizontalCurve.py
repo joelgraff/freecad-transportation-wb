@@ -22,10 +22,10 @@
 # **************************************************************************
 
 '''
-Manages vertical curve data
+Manages Horizontal curve data
 '''
 
-__title__ = "VerticalCurve.py"
+__title__ = "HorizontalCurve.py"
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
@@ -39,21 +39,21 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
-def createVerticalCurve(data, units):
+def createHorizontalCurve(data, units):
     '''
-    Creates a vertical curve alignment object
+    Creates a Horizontal curve alignment object
 
     data - dictionary containg:
     'pi' - the station of the point of intersection
     'elev' - the elevation of the point of intersection
     'g1' / 'g2' - the incoming and outoign grades between VPC / VPI and VPI / VPT
-    'length' - the length of the vertical curve
+    'length' - the length of the Horizontal curve
     '''
 
-    obj = App.ActiveDocument.addObject("App::FeaturePython", "VerticalCurve")
+    obj = App.ActiveDocument.addObject("App::FeaturePython", "HorizontalCurve")
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
-    vc = _VerticalCurve(obj)
+    vc = _HorizontalCurve(obj)
 
     conv = 1000.0
 
@@ -71,11 +71,11 @@ def createVerticalCurve(data, units):
     obj.PI_Station = float(data['pi'])
     obj.PI_Elevation = float(data['elevation']) * conv
 
-    _ViewProviderVerticalCurve(obj.ViewObject)
+    _ViewProviderHorizontalCurve(obj.ViewObject)
 
     return vc
 
-class _VerticalCurve():
+class _HorizontalCurve():
 
     def __init__(self, obj):
         """
@@ -83,18 +83,18 @@ class _VerticalCurve():
         """
 
         obj.Proxy = self
-        self.Type = 'VerticalCurve'
+        self.Type = 'HorizontalCurve'
         self.Object = obj
 
-        self._add_property('Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
-        self._add_property('Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
-        self._add_property('Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
-        self._add_property('Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
-        self._add_property('Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
-        self._add_property('Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
+        self._add_property('Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
+        self._add_property('Distance', 'General.PC_Elevation', 'Elevtaion of the Horizontal Point of Curvature', 0.00, True)
+        self._add_property('Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
+        self._add_property('Distance', 'General.PI_Elevation', 'Elevtaion of the Horizontal Point of Intersection', 0.00)
+        self._add_property('Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
+        self._add_property('Distance', 'General.PT_Elevation', 'Elevtaion of the Horizontal Point of Tangency', 0.00, True)
         self._add_property('Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
         self._add_property('Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)        
-        self._add_property('Length', 'General.Length', 'Length of the vertical curve', 0.00)
+        self._add_property('Length', 'General.Length', 'Length of the Horizontal curve', 0.00)
         self._add_property('Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
         self._add_property('Float', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
         self._add_property('Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
@@ -187,7 +187,7 @@ class _VerticalCurve():
 
         self._recalc_curve()
 
-class _ViewProviderVerticalCurve:
+class _ViewProviderHorizontalCurve:
 
     def __init__(self, obj):
         """
