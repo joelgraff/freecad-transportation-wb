@@ -87,17 +87,15 @@ class _HorizontalCurve():
         self.Object = obj
 
         self._add_property('Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
-        self._add_property('Distance', 'General.PC_Elevation', 'Elevtaion of the Horizontal Point of Curvature', 0.00, True)
         self._add_property('Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
-        self._add_property('Distance', 'General.PI_Elevation', 'Elevtaion of the Horizontal Point of Intersection', 0.00)
         self._add_property('Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
-        self._add_property('Distance', 'General.PT_Elevation', 'Elevtaion of the Horizontal Point of Tangency', 0.00, True)
-        self._add_property('Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
-        self._add_property('Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)        
-        self._add_property('Length', 'General.Length', 'Length of the Horizontal curve', 0.00)
-        self._add_property('Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
-        self._add_property('Float', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
-        self._add_property('Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
+        self._add_property('Float', 'General.Delta', 'Central angle of the curve', 0.00)
+        self._add_property('Float', 'General.Direciton', 'Curve direction', 0.00)
+        self._add_property('Float', 'General.Radius', 'Curve radius', 0.00)        
+        self._add_property('Length', 'General.Length', 'Curve length', 0.00)
+        self._add_property('Float', 'General.E', 'External distance', 0.00, True)
+        self._add_property('Float', 'General.T', 'Tangent length', 0.00, True)
+        self._add_property('float', 'General.D', 'Degree of Curvature', True, True)
 
         self.doRecalc = False
 

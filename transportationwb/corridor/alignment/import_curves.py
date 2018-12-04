@@ -41,6 +41,10 @@ def build_vertical_spline(elements):
 
     return spline
 
+def build_angle (deg, min, sec):
+
+    return float(deg) + (float(min) / 60.0) + (float(sec) / 60.0)
+
 def convert_horizontal_csv(path, infile, outfile):
     data_set = []
     meta = {}
@@ -50,44 +54,62 @@ def convert_horizontal_csv(path, infile, outfile):
     lines = csv.read().splitlines()
 
     csv.close()
+    
+    bearing = []
+    tangent = []
 
     for line in lines:
 
         tokens = list(filter(None, line.split(',')))
         count = len(tokens)
 
-        if teokns[0] == 'id':
+        if tokens[0] == 'id':
 
             if meta:
-                data_set.append({'meta': meta, 'geometry': geometry})
-                geometry = []
+                if bearing:
+                    meta['limits'].append(tangent[0] + tangent[1])
 
-            meta = {'id': tokens[1], 'units': 'engilish', 'st_eq': []}
+                data_set.append({'meta': meta, 'geometry': geometry})
+
+                geometry = []
+                bearing = []
+                tangent = []
+
+            meta = {'id': tokens[1], 'units': 'english', 'st_eq': [], 'location':[], 'limits':[], 'bearing':[]}
 
         elif tokens[0] == 'sta_eq':
 
-            meta['st_eq'].append([tokens[1], tokens[2])
+            meta['st_eq'].append([tokens[1:3]])
 
-        elif tokens[0] == 'limits':
+        elif tokens[0] == 'location':
 
-            meta['start'] = tokens[1]
-            meta['end'] = tokens[2]
+            meta['location'].append([tokens[1:4]])
 
-        elif count < 6:
+        elif tokens[2] in ['NE', 'NW', 'SE', 'SW']:
+            bearing = [float(tokens[3]), float(tokens[4]), float(tokens[5])]
+            tangent = [float(tokens[0]), float(tokens[1])]
 
+            if not meta['limits']:
+                meta['limits'].append(float(tokens[0]))
+                meta['bearing'].append(bearing)
+
+        elif tokens[2] in ['L', 'R']:
             geometry.append({
-                'tangent': tokens[0]
+                'PC_station': tokens[0],
+                'PC_bearing': bearing,
+                'direction': tokens[2],
+                'radius': tokens[1],
+                'central_angle': [float(tokens[3]), float(tokens[4]), float(tokens[5])]
             })
 
-        else
+            if not meta['limits']:
+                meta['limits'].append(float(tokens[0]))
 
-            geometry.append({
-                'length': tokens[0],
-                'direction': tokens[1],
-                'degrees': tokens[3],
-                'minutes': tokens[4],
-                'seconds': tokens[5]
-            })
+            bearing = []
+            tangent = []
+
+    if bearing:
+        meta['limits'].append(tangent[0] + tangent[1])
 
     data_set.append({'meta': meta, 'geometry': geometry})
 

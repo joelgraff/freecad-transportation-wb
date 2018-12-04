@@ -67,9 +67,11 @@ class _Metadata():
         self.Type = 'Metadata'
         self.Object = obj
         self._add_property('', 'General.Units', 'Base units of alignment', 'English', False, ['English', 'Metric'])
-        self._add_property('Length', 'General.Start_Station', 'Starting station for the cell', 0.00)
-        self._add_property('Length', 'General.End_Station', 'Ending station for the cell', 0.00)
+        self._add_property('Length', 'General.Start_Station', 'Starting station', 0.00)
+        self._add_property('Length', 'General.End_Station', 'Ending station', 0.00)
         self._add_property('Length', 'General.Length', 'Length of baseline', 0.00, True)
+        self._add_property('Float', 'General.Bearing', 'Initial bearing of alignment', 0.00)
+        self._add_property('String', 'General.Direction', 'Bearing direction', '')
 
         self.init = True
 
@@ -136,6 +138,9 @@ class _Metadata():
 
         elif p_type == 'FloatList':
             p_type = 'App::PropertyFloatList'
+
+        elif p_type == 'Float'"
+            p_type = 'App::PropertyFloat'
 
         else:
             print ('Invalid property type specifed', p_type)
