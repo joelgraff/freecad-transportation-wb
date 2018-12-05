@@ -43,14 +43,11 @@ def createHorizontalCurve(data, units):
     '''
     Creates a Horizontal curve alignment object
 
-    data - dictionary containg:
-    'pi' - the station of the point of intersection
-    'elev' - the elevation of the point of intersection
-    'g1' / 'g2' - the incoming and outoign grades between VPC / VPI and VPI / VPT
-    'length' - the length of the Horizontal curve
+    data - dictionary containing horizontal curve geometry
+    meta - dictionary containing hc metadata
     '''
 
-    obj = App.ActiveDocument.addObject("App::FeaturePython", "HorizontalCurve")
+    obj = App.ActiveDocument.addObject("App::FeaturePython", str(data['PC_station']))
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
     vc = _HorizontalCurve(obj)
@@ -60,16 +57,19 @@ def createHorizontalCurve(data, units):
     if units in ['english', 'british']:
         conv = 25.4 * 12.0
 
-    lngth = float(data.get('length', 0.0))
+    radius = float(data.get('radius', 0.0))
 
-    obj.Grade_In = float(data['g1'])
-    obj.Grade_Out = float(data['g2'])
-    obj.A = abs(obj.Grade_In - obj.Grade_Out)
-    obj.K = lngth / obj.A
+    obj.PC_Station = float(data['PC_station'])
+    obj.Delta = data['central_angle']
+    obj.Bearing = data['PC_bearing']
+    obj.Direction = data['direction']
+    obj.Radius = radius * conv
 
-    obj.Length = lngth * conv
-    obj.PI_Station = float(data['pi'])
-    obj.PI_Elevation = float(data['elevation']) * conv
+#    obj.A = abs(obj.Grade_In - obj.Grade_Out)
+#    obj.K = lngth / obj.A
+
+#    obj.PI_Station = float(data['pi'])
+#    obj.PI_Elevation = float(data['elevation']) * conv
 
     _ViewProviderHorizontalCurve(obj.ViewObject)
 
@@ -86,16 +86,17 @@ class _HorizontalCurve():
         self.Type = 'HorizontalCurve'
         self.Object = obj
 
+        self._add_property('FloatList', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
         self._add_property('Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
         self._add_property('Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
         self._add_property('Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
-        self._add_property('Float', 'General.Delta', 'Central angle of the curve', 0.00)
-        self._add_property('Float', 'General.Direciton', 'Curve direction', 0.00)
+        self._add_property('FloatList', 'General.Delta', 'Central angle of the curve', [])
+        self._add_property('String', 'General.Direction', 'Curve direction', '')
         self._add_property('Float', 'General.Radius', 'Curve radius', 0.00)        
         self._add_property('Length', 'General.Length', 'Curve length', 0.00)
         self._add_property('Float', 'General.E', 'External distance', 0.00, True)
         self._add_property('Float', 'General.T', 'Tangent length', 0.00, True)
-        self._add_property('float', 'General.D', 'Degree of Curvature', True, True)
+        self._add_property('Float', 'General.D', 'Degree of Curvature', True, True)
 
         self.doRecalc = False
 
@@ -136,23 +137,31 @@ class _HorizontalCurve():
         elif p_type == 'Distance':
             p_type = 'App::PropertyDistance'
 
+        elif p_type == 'FloatList':
+            p_type = 'App::PropertyFloatList'
+
+        elif p_type == 'String':
+            p_type = 'App::PropertyString'
+
         else:
-            print ('Invalid property type specified: ', p_type)
+            print('Invalid property type specified: ', p_type)
             return None
 
         self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
 
-        prop = self.Object.getPropertyByName(tple[1])
+        self.Object.getPropertyByName(tple[1])
 
-        if p_type in ['App::PropertyFloat','App::PropertyBool']:
-            prop = default_value
-        else:
-            prop.Value = default_value
+        setattr(self.Object, p_name, default_value)
+
+        #if p_type in ['App::PropertyFloat', 'App::PropertyBool']:
+        #    prop = default_value
+        #else:
+        #    prop.Value = default_value
 
         if isReadOnly:
             self.Object.setEditorMode(tple[1], 1)
 
-        return prop              
+        return
 
     def __getstate__(self):
         return self.Type

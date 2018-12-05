@@ -49,23 +49,23 @@ def convert_horizontal_csv(path, infile, outfile):
     data_set = []
     meta = {}
     geometry = []
+    bearing = []
+    tangent = []
+
     csv = open(path + '/' + infile, 'r')
 
     lines = csv.read().splitlines()
 
     csv.close()
-    
-    bearing = []
-    tangent = []
 
     for line in lines:
 
         tokens = list(filter(None, line.split(',')))
-        count = len(tokens)
 
         if tokens[0] == 'id':
 
             if meta:
+
                 if bearing:
                     meta['limits'].append(tangent[0] + tangent[1])
 
@@ -78,12 +78,10 @@ def convert_horizontal_csv(path, infile, outfile):
             meta = {'id': tokens[1], 'units': 'english', 'st_eq': [], 'location':[], 'limits':[], 'bearing':[]}
 
         elif tokens[0] == 'sta_eq':
-
-            meta['st_eq'].append([tokens[1:3]])
+            meta['st_eq'].append(tokens[1:3])
 
         elif tokens[0] == 'location':
-
-            meta['location'].append([tokens[1:4]])
+            meta['location'].extend(tokens[1:4])
 
         elif tokens[2] in ['NE', 'NW', 'SE', 'SW']:
             bearing = [float(tokens[3]), float(tokens[4]), float(tokens[5])]
@@ -91,12 +89,12 @@ def convert_horizontal_csv(path, infile, outfile):
 
             if not meta['limits']:
                 meta['limits'].append(float(tokens[0]))
-                meta['bearing'].append(bearing)
+                meta['bearing'].extend(bearing)
 
         elif tokens[2] in ['L', 'R']:
             geometry.append({
                 'PC_station': tokens[0],
-                'PC_bearing': bearing,
+                'bearing': bearing,
                 'direction': tokens[2],
                 'radius': tokens[1],
                 'central_angle': [float(tokens[3]), float(tokens[4]), float(tokens[5])]

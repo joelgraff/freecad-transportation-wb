@@ -96,6 +96,7 @@ class ImportVerticalCurve():
         if meta is None:
             meta = Metadata.createMetadata(_id, _units)
             parent.addObject(meta.Object)
+
         else:
             if meta.Object.Units != _units:
                 print("Unit mismatch")
@@ -134,7 +135,7 @@ class ImportVerticalCurve():
             if group is None:
                 return
 
-            meta.add_station_equations(alignment['meta'].get('st_eq'))
+            #meta.add_station_equations(alignment['meta'].get('st_eq'))
 
             self.build_alignment(group, alignment)
 

@@ -72,8 +72,77 @@ class _Metadata():
         self._add_property('Length', 'General.Length', 'Length of baseline', 0.00, True)
         self._add_property('Float', 'General.Bearing', 'Initial bearing of alignment', 0.00)
         self._add_property('String', 'General.Direction', 'Bearing direction', '')
+        self._add_property('String', 'Location.Alignment', 'Name of reference alignment', '',True)
+        self._add_property('Float', 'Location.Primary', 'Station position along reference alignment', 0.00)
+        self._add_property('Float', 'Location.Secondary', 'Station position along local alignment', 0.00)
 
         self.init = True
+
+    def set_reference_alignment(self, location):
+        '''
+        Sets the name and station position of the refrence alignment along which
+        this alignment is located.
+
+        location[0] - Name of reference alignment
+        location[1] - Station position along reference alignment
+        '''
+
+        if location == []:
+            return
+
+        if len(location) != 3:
+            print('Invalid location data: ', location)
+            return
+
+        self.Object.Alignment = location[2]
+        self.Object.Secondary = float(location[0])
+        self.Object.Primary = float(location[1])
+
+    def set_bearing(self, bearing):
+        '''
+        Sets the bearing data based on passed list of three floats
+        List must be in Degree-Minute-Second (DMS) format.
+        Bearing direction (N,S,E,W) is derived from DMS value
+
+        bearing[0:3] = [Degrees, Minutes, Seconds]
+        '''
+
+        if len(bearing) != 3:
+            print("Invalid bearing data: ", bearing)
+            return
+
+        dir_list = ['NE', 'SE', 'SW', 'NW']
+        dir_count = -1
+        deg = bearing[0]
+
+        while deg >= 0.0:
+            deg -= 90.0
+            dir_count += 1
+
+            if dir_count > 3:
+                dir_count = 0
+
+        if dir_count < 0:
+            print("Invalid bearing data: ", bearing)
+            return
+
+        self.Object.Bearing = deg + 90.0
+        self.Object.Direction = dir_list[dir_count]
+
+    def set_limits(self, limits):
+        '''
+        Sets the project limits based on passed float tuple
+
+        limits[0] - starting station
+        limits[1] - ending station
+        '''
+
+        if len(limits) != 2:
+            print("Invalid limits specified")
+            return
+
+        self.Object.Start_Station = limits[0]
+        self.Object.End_Station = limits[1]
 
     def add_station_equations(self, sta_eqs):
         '''
@@ -87,8 +156,6 @@ class _Metadata():
 
         _x = 1
 
-        print(sta_eqs)
-
         st_eq_floats = []
 
         for st_eq in sta_eqs:
@@ -97,7 +164,6 @@ class _Metadata():
         for st_eq in st_eq_floats:
 
             _y = str(_x)
-            print ("adding item: ", st_eq)
             self._add_property('FloatList', 'Station Equations.Equation_' + _y, 'Start / end tuple for station equation ' + _y, st_eq)
             _x += 1
 
@@ -139,7 +205,7 @@ class _Metadata():
         elif p_type == 'FloatList':
             p_type = 'App::PropertyFloatList'
 
-        elif p_type == 'Float'"
+        elif p_type == 'Float':
             p_type = 'App::PropertyFloat'
 
         else:

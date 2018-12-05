@@ -66,10 +66,34 @@ class ImportHorizontalCurve():
         Build the curve objects describing the alignemtn
         '''
 
+        curve_list = []
+        group_name = ''
+
         for vc_data in data['geometry']:
 
+            bearing = vc_data['bearing']
+
             vc_obj = HorizontalCurve.createHorizontalCurve(vc_data, data['meta']['units'])
-            group.addObject(vc_obj.Object)
+
+            #if we encounter a curve with no bearing, it's attached to a previous curve.
+            #so add it to a list
+            if bearing == []:
+                curve_list.append(vc_obj)
+
+            #otherwise, if the curve list is not empty, we have a compound curve
+            #that needs to be added.  Add it as a 2 or 3-center curve group and dump the list
+            elif not curve_list == []:
+                group_name = str(len(curve_list)) + " Center Curve " + str(curve_list[0].Object.PC_Station)
+                target_group = group.newObject('App::DocumentObjectGroup', group_name)
+
+                for curve in curve_list:
+                    target_group.addObject(curve.Object)
+
+                curve_list = []
+
+            #an empty curve list means it's a single-center curve to be added
+            if curve_list is None:
+                group.addObject(vc_obj.Object)
 
     def validate_heirarchy(self, _id, _units):
         '''
@@ -134,7 +158,10 @@ class ImportHorizontalCurve():
             if group is None:
                 return
 
+            meta.set_bearing(alignment['meta']['bearing'])
+            meta.set_limits(alignment['meta']['limits'])
             meta.add_station_equations(alignment['meta'].get('st_eq'))
+            meta.set_reference_alignment(alignment['meta'].get('location'))
 
             self.build_alignment(group, alignment)
 
