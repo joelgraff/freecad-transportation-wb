@@ -44,7 +44,7 @@ class ImportHorizontalCurve():
         icon_path += "../../../icons/new_alignment.svg"
 
         return {'Pixmap'  : icon_path,
-                'Accel'   : "Shift+V",
+                'Accel'   : "Shift+H",
                 'MenuText': "Import Horizontal Alignment",
                 'ToolTip' : "Import a Horizontal Alignment from JSON",
                 'CmdType' : "ForEdit"}
