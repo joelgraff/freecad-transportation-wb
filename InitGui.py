@@ -320,7 +320,9 @@ class TransportationWorkbench (Workbench):
 
         self.policies_ist = ["Edit..."]
         self.general_fn_list = ["NewProject"]
-        self.alignment_fn_list = ["AddAlignment", "ImportVerticalCurve", "ImportHorizontalCurve"]
+        self.alignment_fn_list = ["AddAlignment",
+            "ImportVerticalCurve", "ImportHorizontalCurve",
+            "GenerateHorizontalAlignment", "GenerateVerticalAlignment"]
 
         self.toolbars = toolbars
         self.version = version
