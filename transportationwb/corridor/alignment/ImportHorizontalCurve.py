@@ -67,33 +67,42 @@ class ImportHorizontalCurve():
         '''
 
         curve_list = []
-        group_name = ''
+        cur_curve = []
+        geo = data['geometry']
+        count = len(geo)
 
-        for vc_data in data['geometry']:
+        #iterate geometry, combining curves into 1, 2, and 3 center groups
+        for _x in range(0, count):
 
-            bearing = vc_data['bearing']
+            cur_curve.append(geo[_x])
 
-            vc_obj = HorizontalCurve.createHorizontalCurve(vc_data, data['meta']['units'])
+            #test the next cure in the list.  If it has no bearing, it's PC is attached to
+            #the current curve's PT.
+            #If the curve directions are the same, it's a multi-center curve.
+            if _x < count - 1:
+                next_curve = geo[_x+1]
 
-            #if we encounter a curve with no bearing, it's attached to a previous curve.
-            #so add it to a list
-            if bearing == []:
-                curve_list.append(vc_obj)
+                if next_curve['bearing'] == []:
+                    if next_curve['direction'] == geo[_x]['direction']:
+                        continue
 
-            #otherwise, if the curve list is not empty, we have a compound curve
-            #that needs to be added.  Add it as a 2 or 3-center curve group and dump the list
-            elif not curve_list == []:
-                group_name = str(len(curve_list)) + " Center Curve " + str(curve_list[0].Object.PC_Station)
-                target_group = group.newObject('App::DocumentObjectGroup', group_name)
+            curve_list.append(cur_curve)
+            cur_curve = []
 
-                for curve in curve_list:
-                    target_group.addObject(curve.Object)
+        #add the curves to the document hierarchy
+        for curve in curve_list:
 
-                curve_list = []
+            count = len(curve)
 
-            #an empty curve list means it's a single-center curve to be added
-            if curve_list is None:
-                group.addObject(vc_obj.Object)
+            curve_group = group
+
+            if count > 1:
+                curve_group = group.newObject('App::DocumentObjectGroup', 'Curve-' + str(count) + ': ' + str(curve[0]['PC_station']))
+
+            for item in curve:
+
+                _hc = HorizontalCurve.createHorizontalCurve(item, data['meta']['units'])
+                curve_group.addObject(_hc.Object)
 
     def validate_heirarchy(self, _id, _units):
         '''
@@ -104,6 +113,10 @@ class ImportHorizontalCurve():
 
         if grand_parent is None:
             grand_parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
+
+        #replace non-printable characters with underscore
+        for _x in [' ', '.', '+', '(', ')']:
+            _id = _id.replace(_x, '_')
 
         parent = grand_parent.newObject('App::DocumentObjectGroup', _id)
 

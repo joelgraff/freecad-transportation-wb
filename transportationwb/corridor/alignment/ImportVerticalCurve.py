@@ -81,28 +81,21 @@ class ImportVerticalCurve():
         if grand_parent is None:
             grand_parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
 
-        parent = grand_parent.newObject('App::DocumentObjectGroup', _id)
+        #replace non-printable characters with underscore
+        for _x in [' ', '.', '+', '(', ')']:
+            _id = _id.replace(_x, '_')
+
+        parent = grand_parent.getObject(_id)
 
         if parent is None:
-            parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', _id)
+            parent = grand_parent.newObject('App::DocumentObjectGroup', _id)
 
         group = App.ActiveDocument.getObject('Vertical_' + _id)
 
         if group is None:
             group = parent.newObject("App::DocumentObjectGroup", 'Vertical_' + _id)
 
-        meta = parent.getObject('metadata_' + _id)
-
-        if meta is None:
-            meta = Metadata.createMetadata(_id, _units)
-            parent.addObject(meta.Object)
-
-        else:
-            if meta.Object.Units != _units:
-                print("Unit mismatch")
-                return [None, None]
-
-        return [group, meta]
+        return group
 
     def Activated(self):
         '''
@@ -130,12 +123,10 @@ class ImportVerticalCurve():
                 print("Invalid units specified in json")
                 return
 
-            [group, meta] = self.validate_heirarchy(_id, _units)
+            group = self.validate_heirarchy(_id, _units)
 
             if group is None:
                 return
-
-            #meta.add_station_equations(alignment['meta'].get('st_eq'))
 
             self.build_alignment(group, alignment)
 

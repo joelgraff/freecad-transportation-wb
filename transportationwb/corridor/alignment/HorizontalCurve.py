@@ -50,7 +50,7 @@ def createHorizontalCurve(data, units):
     obj = App.ActiveDocument.addObject("App::FeaturePython", str(data['PC_station']))
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
-    vc = _HorizontalCurve(obj)
+    hc = _HorizontalCurve(obj)
 
     conv = 1000.0
 
@@ -61,7 +61,7 @@ def createHorizontalCurve(data, units):
 
     obj.PC_Station = float(data['PC_station'])
     obj.Delta = data['central_angle']
-    obj.Bearing = data['PC_bearing']
+    obj.Bearing = data['bearing']
     obj.Direction = data['direction']
     obj.Radius = radius * conv
 
@@ -73,7 +73,7 @@ def createHorizontalCurve(data, units):
 
     _ViewProviderHorizontalCurve(obj.ViewObject)
 
-    return vc
+    return hc
 
 class _HorizontalCurve():
 

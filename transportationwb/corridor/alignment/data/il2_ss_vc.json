@@ -176,7 +176,7 @@
     },
     {
         "meta": {
-            "id": "E Third St",
+            "id": "E 3rd St",
             "units": "english",
             "st_eq": []
         },
@@ -322,7 +322,7 @@
     },
     {
         "meta": {
-            "id": "River Dr (S)",
+            "id": "River Dr S",
             "units": "english",
             "st_eq": []
         },
@@ -407,7 +407,7 @@
     },
     {
         "meta": {
-            "id": "River Dr (N) Connector",
+            "id": "River Dr N Connector",
             "units": "english",
             "st_eq": []
         },
@@ -451,13 +451,13 @@
     },
     {
         "meta": {
-            "id": "River Dr (N)",
+            "id": "River Dr N",
             "units": "english",
             "st_eq": []
         },
         "geometry": [
             {
-                "pi": "5100",
+                "pi": "51000",
                 "length": "90",
                 "elevation": "689.72",
                 "g1": "0.63",
@@ -495,7 +495,7 @@
     },
     {
         "meta": {
-            "id": "Frontage Connector",
+            "id": "Frontage Rd Connector",
             "units": "english",
             "st_eq": []
         },
@@ -546,7 +546,7 @@
     },
     {
         "meta": {
-            "id": "Gold River Ave (N / LT)",
+            "id": "Gold River Ave N",
             "units": "english",
             "st_eq": []
         },
@@ -568,7 +568,7 @@
     },
     {
         "meta": {
-            "id": "Gold River Ave (S / RT)",
+            "id": "Gold River Ave S",
             "units": "english",
             "st_eq": []
         },
@@ -688,7 +688,7 @@
     },
     {
         "meta": {
-            "id": "Silver Creek Rd (S)",
+            "id": "Silver Creek Rd S",
             "units": "english",
             "st_eq": []
         },
@@ -716,7 +716,7 @@
     },
     {
         "meta": {
-            "id": "Silver Creek Rd (N)",
+            "id": "Silver Creek Rd N",
             "units": "english",
             "st_eq": []
         },
@@ -745,7 +745,7 @@
     },
     {
         "meta": {
-            "id": "Prairie Rd (N)",
+            "id": "Prairie Rd N",
             "units": "english",
             "st_eq": []
         },
@@ -767,7 +767,7 @@
     },
     {
         "meta": {
-            "id": "Prairie Rd (S)",
+            "id": "Prairie Rd S",
             "units": "english",
             "st_eq": []
         },
@@ -788,7 +788,7 @@
         ]
     },
     {
-        "meta": {
+        "alignment": {
             "id": "CEL 201+44.09",
             "units": "english",
             "st_eq": []
