@@ -41,9 +41,9 @@ def build_vertical_spline(elements):
 
     return spline
 
-def build_angle (deg, min, sec):
+def _dms_to_deg (deg, mins, sec):
 
-    return float(deg) + (float(min) / 60.0) + (float(sec) / 60.0)
+    return float(deg) + (float(mins) / 60.0) + (float(sec) / 60.0)
 
 def convert_horizontal_csv(path, infile, outfile):
     data_set = []
@@ -51,6 +51,7 @@ def convert_horizontal_csv(path, infile, outfile):
     geometry = []
     bearing = []
     tangent = []
+    bearing_quad = ''
 
     csv = open(path + '/' + infile, 'r')
 
@@ -75,7 +76,7 @@ def convert_horizontal_csv(path, infile, outfile):
                 bearing = []
                 tangent = []
 
-            meta = {'id': tokens[1], 'units': 'english', 'st_eq': [], 'location':[], 'limits':[], 'bearing':[]}
+            meta = {'id': tokens[1], 'units': 'english', 'st_eq': [], 'location':[], 'limits':[], 'bearing':[], 'quadrant':''}
 
         elif tokens[0] == 'sta_eq':
             meta['st_eq'].append(tokens[1:3])
@@ -85,16 +86,19 @@ def convert_horizontal_csv(path, infile, outfile):
 
         elif tokens[2] in ['NE', 'NW', 'SE', 'SW']:
             bearing = [float(tokens[3]), float(tokens[4]), float(tokens[5])]
+            bearing_quad = tokens[2]
             tangent = [float(tokens[0]), float(tokens[1])]
 
             if not meta['limits']:
                 meta['limits'].append(float(tokens[0]))
                 meta['bearing'].extend(bearing)
+                meta['quadrant'] = tokens[2]
 
         elif tokens[2] in ['L', 'R']:
             geometry.append({
                 'PC_station': tokens[0],
                 'bearing': bearing,
+                'quadrant': bearing_quad,
                 'direction': tokens[2],
                 'radius': tokens[1],
                 'central_angle': [float(tokens[3]), float(tokens[4]), float(tokens[5])]

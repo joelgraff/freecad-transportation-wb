@@ -70,8 +70,8 @@ class _Metadata():
         self._add_property('Length', 'General.Start_Station', 'Starting station', 0.00)
         self._add_property('Length', 'General.End_Station', 'Ending station', 0.00)
         self._add_property('Length', 'General.Length', 'Length of baseline', 0.00, True)
-        self._add_property('Float', 'General.Bearing', 'Initial bearing of alignment', 0.00)
-        self._add_property('String', 'General.Direction', 'Bearing direction', '')
+        self._add_property('Angle', 'General.Bearing', 'Initial bearing of alignment', 0.00)
+        self._add_property('String', 'General.Quadrant', 'Bearing quadrant', '')
         self._add_property('String', 'Location.Alignment', 'Name of reference alignment', '',True)
         self._add_property('Float', 'Location.Primary', 'Station position along reference alignment', 0.00)
         self._add_property('Float', 'Location.Secondary', 'Station position along local alignment', 0.00)
@@ -102,7 +102,7 @@ class _Metadata():
         '''
         Sets the bearing data based on passed list of three floats
         List must be in Degree-Minute-Second (DMS) format.
-        Bearing direction (N,S,E,W) is derived from DMS value
+        Bearing quadrant (N,S,E,W) is derived from DMS value
 
         bearing[0:3] = [Degrees, Minutes, Seconds]
         '''
@@ -111,23 +111,23 @@ class _Metadata():
             print("Invalid bearing data: ", bearing)
             return
 
-        dir_list = ['NE', 'SE', 'SW', 'NW']
-        dir_count = -1
+        quad_list = ['NE', 'SE', 'SW', 'NW']
+        quad_count = -1
         deg = bearing[0]
 
         while deg >= 0.0:
             deg -= 90.0
-            dir_count += 1
+            quad_count += 1
 
-            if dir_count > 3:
-                dir_count = 0
+            if quad_count > 3:
+                quad_count = 0
 
-        if dir_count < 0:
-            print("Invalid bearing data: ", bearing)
-            return
+        #if quad_count < 0:
+        #    print("Invalid bearing data: ", bearing)
+        #    return
 
-        self.Object.Bearing = deg + 90.0
-        self.Object.Direction = dir_list[dir_count]
+        self.Object.Bearing = deg + 90.0 + bearing[1] / 60.0  + bearing[2] / 3600.0
+        #self.Object.Quadrant = dir_list[dir_count]
 
     def set_limits(self, limits):
         '''
@@ -141,8 +141,8 @@ class _Metadata():
             print("Invalid limits specified")
             return
 
-        self.Object.Start_Station = limits[0]
-        self.Object.End_Station = limits[1]
+        self.Object.Start_Station = str(limits[0]) + "'"
+        self.Object.End_Station = str(limits[1]) + "'"
 
     def add_station_equations(self, sta_eqs):
         '''
@@ -207,6 +207,9 @@ class _Metadata():
 
         elif p_type == 'Float':
             p_type = 'App::PropertyFloat'
+
+        elif p_type == 'Angle':
+            p_type = 'App::PropertyAngle'
 
         else:
             print ('Invalid property type specifed', p_type)

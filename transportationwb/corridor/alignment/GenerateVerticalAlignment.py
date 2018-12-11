@@ -27,9 +27,9 @@ import os
 import json
 from PySide import QtGui
 from PySide import QtCore
-from transportationwb.corridor.alignment import HorizontalCurve, Metadata
+from transportationwb.corridor.alignment import VerticalCurve, Metadata
 
-class GenerateHorizontalAlignment():
+class GenerateVerticalAlignment():
 
     def __init__(self):
         pass
@@ -45,8 +45,8 @@ class GenerateHorizontalAlignment():
 
         return {'Pixmap'  : icon_path,
                 'Accel'   : "Shift+H",
-                'MenuText': "Generate Horizontal Alignment",
-                'ToolTip' : "Generate the Horizontal Alignment from an Alignment group",
+                'MenuText': "Generate Vertical Alignment",
+                'ToolTip' : "Generate the Vertical Alignment from an Alignment group",
                 'CmdType' : "ForEdit"}
 
     def build_alignment(self, curves):

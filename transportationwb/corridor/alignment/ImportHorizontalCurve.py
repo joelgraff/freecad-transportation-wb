@@ -49,6 +49,13 @@ class ImportHorizontalCurve():
                 'ToolTip' : "Import a Horizontal Alignment from JSON",
                 'CmdType' : "ForEdit"}
 
+    def _dms_to_deg(self, dms):
+        '''
+        Converts angle in DMS form to degrees
+        '''
+
+        return (float(dms[0]) + (float(dms[1]) / 60.0) + (float(dms[2]) / 3600.0))
+
     def getFile(self):
         '''
         Displays the file browser dialog to pick the JSON file
@@ -79,12 +86,12 @@ class ImportHorizontalCurve():
             #test the next cure in the list.  If it has no bearing, it's PC is attached to
             #the current curve's PT.
             #If the curve directions are the same, it's a multi-center curve.
-            if _x < count - 1:
-                next_curve = geo[_x+1]
+            #if _x < count - 1:
+            #    next_curve = geo[_x+1]
 
-                if next_curve['bearing'] == []:
-                    if next_curve['direction'] == geo[_x]['direction']:
-                        continue
+            #    if next_curve['bearing'] == []:
+            #        if next_curve['direction'] == geo[_x]['direction']:
+            #            continue
 
             curve_list.append(cur_curve)
             cur_curve = []
@@ -92,15 +99,21 @@ class ImportHorizontalCurve():
         #add the curves to the document hierarchy
         for curve in curve_list:
 
-            count = len(curve)
+            #count = len(curve)
 
             curve_group = group
 
-            if count > 1:
-                curve_group = group.newObject('App::DocumentObjectGroup', 'Curve-' + str(count) + ': ' + str(curve[0]['PC_station']))
+            #if count > 1:
+                #curve_group = group.newObject('App::DocumentObjectGroup', 'Curve-' + str(count) + ': ' + str(curve[0]['PC_station']))
 
             for item in curve:
 
+                item['central_angle'] = str(self._dms_to_deg(item['central_angle']))
+
+                if item['bearing'] == []:
+                    item['bearing'] = [-1.0,-1.0,-1.0]
+
+                item['bearing'] = str(self._dms_to_deg(item['bearing']))
                 _hc = HorizontalCurve.createHorizontalCurve(item, data['meta']['units'])
                 curve_group.addObject(_hc.Object)
 
@@ -171,7 +184,8 @@ class ImportHorizontalCurve():
             if group is None:
                 return
 
-            meta.set_bearing(alignment['meta']['bearing'])
+            meta.Object.Bearing = self._dms_to_deg(alignment['meta']['bearing'])
+            meta.Object.Quadrant = alignment['meta']['quadrant']
             meta.set_limits(alignment['meta']['limits'])
             meta.add_station_equations(alignment['meta'].get('st_eq'))
             meta.set_reference_alignment(alignment['meta'].get('location'))

@@ -47,23 +47,24 @@ def createHorizontalCurve(data, units):
     meta - dictionary containing hc metadata
     '''
 
-    obj = App.ActiveDocument.addObject("App::FeaturePython", str(data['PC_station']))
+    obj = App.ActiveDocument.addObject("App::FeaturePython", 'Sta ' + data['PC_station'])
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
     hc = _HorizontalCurve(obj)
 
-    conv = 1000.0
-
-    if units in ['english', 'british']:
-        conv = 25.4 * 12.0
-
+    print("Processing curve...")
+    print(data)
     radius = float(data.get('radius', 0.0))
 
-    obj.PC_Station = float(data['PC_station'])
+    obj.PC_Station = data['PC_station'] + "'"
     obj.Delta = data['central_angle']
     obj.Bearing = data['bearing']
+    obj.Quadrant = data['quadrant']
     obj.Direction = data['direction']
-    obj.Radius = radius * conv
+    obj.Radius = str(radius) + "'"
+
+    if obj.Bearing < 0.0:
+        obj.Bearing = 0.0
 
 #    obj.A = abs(obj.Grade_In - obj.Grade_Out)
 #    obj.K = lngth / obj.A
@@ -86,13 +87,14 @@ class _HorizontalCurve():
         self.Type = 'HorizontalCurve'
         self.Object = obj
 
-        self._add_property('FloatList', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
+        self._add_property('Angle', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
+        self._add_property('String','General.Quadrant', 'Bearing quadrant of the PC tangent', '')
         self._add_property('Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
         self._add_property('Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
         self._add_property('Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
-        self._add_property('FloatList', 'General.Delta', 'Central angle of the curve', [])
+        self._add_property('Angle', 'General.Delta', 'Central angle of the curve', 0.00)
         self._add_property('String', 'General.Direction', 'Curve direction', '')
-        self._add_property('Float', 'General.Radius', 'Curve radius', 0.00)        
+        self._add_property('Length', 'General.Radius', 'Curve radius', 0.00)        
         self._add_property('Length', 'General.Length', 'Curve length', 0.00)
         self._add_property('Float', 'General.E', 'External distance', 0.00, True)
         self._add_property('Float', 'General.T', 'Tangent length', 0.00, True)
@@ -142,6 +144,9 @@ class _HorizontalCurve():
 
         elif p_type == 'String':
             p_type = 'App::PropertyString'
+
+        elif p_type == 'Angle':
+            p_type = 'App::PropertyAngle'
 
         else:
             print('Invalid property type specified: ', p_type)

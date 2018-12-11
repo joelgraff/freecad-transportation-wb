@@ -33,7 +33,7 @@ class NewProject():
         Gui.ActiveDocument.ActiveView.addDraggable
 
     def _set_units(self):
-        App.ParamGet("User parameter:BaseApp/Preferences/Units").SetInt("UserSchema", 5)
+        App.ParamGet("User parameter:BaseApp/Preferences/Units").SetInt("UserSchema", 7)
 
     def _create_document(self):
 

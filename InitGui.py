@@ -333,6 +333,8 @@ class TransportationWorkbench (Workbench):
         import transportationwb.corridor.alignment.AddAlignment
         import transportationwb.corridor.alignment.ImportVerticalCurve
         import transportationwb.corridor.alignment.ImportHorizontalCurve
+        import transportationwb.corridor.alignment.GenerateHorizontalAlignment
+        import transportationwb.corridor.alignment.GenerateVerticalAlignment
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
@@ -368,7 +370,9 @@ class TransportationWorkbench (Workbench):
         self.appendToolbar("My Helpers", cmds)
 
         #create context menus for alignments
-        self.alignment_menu = ['AddAlignment','ImportVerticalCurve', 'ImportHorizontalCurve']
+        self.alignment_menu = ['AddAlignment',
+            'ImportVerticalCurve', 'ImportHorizontalCurve',
+            'GenerateHorizontalAlignment', 'GenerateVerticalAlignment']
 
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(
