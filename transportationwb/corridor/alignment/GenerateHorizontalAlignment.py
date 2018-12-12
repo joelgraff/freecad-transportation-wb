@@ -53,7 +53,28 @@ class GenerateHorizontalAlignment():
                 'ToolTip' : "Generate the Horizontal Alignment from an Alignment group",
                 'CmdType' : "ForEdit"}
 
-    def _project_arc(self, point, curve, bearing, segments=4):
+    def _azimuth_from_bearing(self, angle, quadrant):
+        '''
+        Calculate the azimuth from true bearing.
+        Angle - bearing angle in radians
+        Quadrant - Quadrant of bearing ('NE', 'NW', 'SE', 'SW')
+        '''
+
+        #1st quadrnat
+        result = angle
+
+        if quadrant == 'NW': #4th quadrant
+            result = (2.0 * math.pi) - angle
+
+        elif quadrant == 'SW': #3rd quadrant
+            result = math.pi + angle
+
+        elif quadrant == 'SE': #2nd quadrant
+            result = (math.pi / 2.0) + angle
+
+        return result
+
+    def _project_arc(self, point, curve, azimuth, segments=4):
         '''
         Return a series of points along an arc based on the starting point,
         central angle (delta) and radius
@@ -64,97 +85,153 @@ class GenerateHorizontalAlignment():
 
         points = []
 
-        cur_bearing = bearing
-
-        if curve.Bearing != []:
-            cur_bearing = math.radians(curve.Bearing)
-
-        #adjust bearing to reflect true north = pi / 2 radians
-        cur_bearing += math.radians(90.0)
-
-        print ('----> Ajusted Bearing: ', cur_bearing)
-        central_angle = math.radians(curve.Delta)
+        curve_dir = 1.0
 
         if curve.Direction == 'L':
-            central_angle *= -1
+            curve_dir = -1.0
 
-        delta = central_angle / float(segments)
+        if curve.Bearing != 0.0:
+            azimuth = self._azimuth_from_bearing(math.radians(curve.Bearing), curve.Quadrant)
+
+        #adjust bearing to reflect true north = pi / 2 radians
+        #cur_bearing += math.radians(90.0)
+
+        #print ('----> Ajusted Bearing: ', cur_azimuth)
+        central_angle = math.radians(curve.Delta)
+
+        angle_seg = central_angle / float(segments)
         radius = float(curve.Radius)
 
         cur_point = App.Vector(point)
 
-        fx = math.cos(cur_bearing)
-        fy = math.sin(cur_bearing)
+        fx = math.sin(azimuth)
+        fy = math.cos(azimuth)
 
-        lx = -math.sin(cur_bearing)
-        ly = math.cos(cur_bearing)
+        lx = -math.cos(azimuth)
+        ly = math.sin(azimuth)
+
+        print('direction: ', curve_dir)
+        print('azimuth: ', azimuth)
+        print('fx: ', fx)
+        print('fy: ', fy)
+        print('lx: ', lx)
+        print('ly: ', ly)
 
         for _i in range(0, segments):
 
-            dx = cur_point.x
-            dy = cur_point.y
+            print('\n--Segment: ', _i)
 
-            print('project arc point: ', cur_point, dx, dy, cur_bearing)
+            delta = float(_i + 1) * angle_seg
 
-            dx += radius * math.sin(delta) * fx
-            dy += radius * math.sin(delta) * fy
+            f_dist = radius * math.sin(delta)
 
-            dx += radius * (1 - math.cos(delta)) * (-lx)
-            dy += radius * (1 - math.cos(delta)) * (-ly)
+            fdx = f_dist * fx
+            fdy = f_dist * fy
 
-            cur_point.x = dx
-            cur_point.y = dy
+            print('f_dx: ', fdx)
+            print('f_dy: ', fdy)
+
+            l_dist = radius * (1 - math.cos(delta))
+
+            ldx = l_dist * (-lx) * curve_dir
+            ldy = l_dist * (-ly) * curve_dir
+
+            print('l_dx: ', ldx)
+            print('l_dy: ', ldy)
+
+            print('point: ', cur_point)
+            print('dx: ', fdx + ldx)
+            print('dy: ', fdy + ldy)
+
+            print('azimuth: ', azimuth)
+
+            cur_point.x = point.x + fdx + ldx
+            cur_point.y = point.y + fdy + ldy
 
             points.append(cur_point)
 
-            cur_bearing -= delta
-            cur_point = App.Vector(cur_point)
+            #if _i == 0:
 
-        print ('Generated arc points: ', points)
+                #cur_point = App.Vector()
 
-        return points, cur_bearing - math.radians(90.0)
+                #_delta = 25.0 / radius
 
-    def _azimuth_from_bearing(self, angle, quadrant):
-        '''
-        Calculate the azimuth from true bearing.
-        Angle - bearing angle in radians
-        Quadrant - Quadrant of bearing ('NE', 'NW', 'SE', 'SW')
-        '''
+                #_fdx = radius * math.sin(_delta) * fx
+                #_fdy = radius * math.sin(_delta) * fy
+                #_ldx = radius * (1 - math.cos(_delta)) * (-lx) * curve_dir
+                #_ldy = radius * (1 - math.cos(_delta)) * (-ly) * curve_dir
 
-        #default is the NE case
-        result = angle
+                #cur_point.x = point.x + _fdx + _ldx
+                #cur_point.y = point.y + _fdy + _ldy
 
-        if quadrant == 'NW':
-            result = math.pi - angle
+                #points.append(cur_point)
 
-        elif quadrant == 'SW':
-            result = (math.pi / 2.0) + angle
+            #elif _i == segments - 2:
 
-        elif quadrant == 'SE':
-            result = (math.pi / 2.0) - angle
+                #cur_point = App.Vector()
 
-        return result
+                #_delta = ((central_angle * radius) - 25) / radius
 
-    def _project_line(self, point, bearing, distance, segments=4):
+                #_fdx = radius * math.sin(_delta) * fx
+                #_fdy = radius * math.sin(_delta) * fy
+                #_ldx = radius * (1 - math.cos(_delta)) * (-lx) * curve_dir
+                #_ldy = radius * (1 - math.cos(_delta)) * (-ly) * curve_dir
+
+                #cur_point.x = point.x + _fdx + _ldx
+                #cur_point.y = point.y + _fdy + _ldy
+
+                #points.append(cur_point)
+
+            cur_point = App.Vector()
+
+        print ('\nGenerated arc points: ', points)
+
+        azimuth += central_angle * curve_dir
+
+        if azimuth < 0:
+            azimuth += 360.0
+
+        elif azimuth > 360.0:
+            azimuth -= 360.0
+
+        return points, azimuth
+
+    def _project_line(self, point, azimuth, distance, segments=4):
         '''
         Project a given distance along a line in the X,Y plane from a given cartesion coordinate
         '''
 
         f_segs = float(segments)
 
-        _dy = distance * math.cos(bearing) / f_segs
-        _dx = distance * math.sin(bearing) / f_segs
+        interval = distance / f_segs
+        cos_az = math.cos(azimuth)
+        sin_az = math.sin(azimuth)
+        _dy = interval * cos_az
+        _dx = interval * sin_az
 
         _x = point[0]
         _y = point[1]
 
         result = []
 
-        print('building line: ', _x, _y, _dx, _dy, segments)
+        print('building line: ', _x, _y, _dx, _dy, interval)
+
+        offsets = []
 
         for _i in range(1, segments + 1):
 
-            result.append(App.Vector(_x + (_dx * _i), _y + (_dy * _i), 0.0))
+            offsets.append([_dx * _i, _dy * _i])
+
+            #second point is an anchor point
+           # if _i == 1:
+           #     offsets.append([25.0 * sin_az, 25.0 * cos_az])
+
+            #elif _i == segments - 1:
+            #    offsets.append([((interval * (_i + 1)) - 25.0) * sin_az, ((interval * (_i + 1)) - 25.0) * cos_az])
+
+        for _i in range(0, len(offsets)):
+
+            result.append(App.Vector(_x + offsets[_i][0], _y + offsets[_i][1], 0.0))
 
         print('line points: ', result)
         return result
@@ -190,6 +267,60 @@ class GenerateHorizontalAlignment():
 
         return obj
 
+    def _get_station_distance(self, station, meta):
+        '''
+        Returns the distance in feet along an alignment that a station represents,
+        adjusting for station equations
+        '''
+
+        cur_eq = meta.getPropertyByName('Equation_1')
+
+        if cur_eq == []:
+            return -1.0
+
+        eq_list = [cur_eq]
+
+        while not cur_eq == []:
+            eq_list.append(cur_eq.Value)
+
+        result = 0.0
+
+        start_station = meta.Start_Station
+
+        for eq in eq_list:
+            if station > start_station:
+                if station < eq[0]:
+                    result += station - start_station
+                    return result
+
+            result += eq[0] - start_station
+            start_station = eq[1]
+
+        return -1.0
+
+    def _get_reference_coordinates(self, alignment, station):
+        '''
+        Return the x,y,z coordiantes of a station along the specified alignment
+        '''
+
+        spline = App.ActiveDocument.getObject('HA_' + alignment)
+        parent_meta = App.ActiveDocument.getObject(alignment + '_metadata')
+
+        if spline is None:
+            return None
+
+        distance = self._get_station_distance(station, parent_meta)
+
+        if distance == -1.0:
+            return None
+
+        result = spline.discretize(Distance = distance * 25.4 * 12.0)[1]
+
+        if len(result < 2):
+            return None
+
+        return result[1]
+
     def build_alignment(self, alignment):
         '''
         Generate the horizontal alignment
@@ -218,7 +349,14 @@ class GenerateHorizontalAlignment():
 
         cur_pt = meta.Start_Station.Value
         next_pc = 0.0
+
         cur_point = App.Vector(0.0, 0.0, 0.0)
+
+        if meta.Alignment != '':
+            cur_point = self._get_reference_coordinates(meta.Alignment, meta.Primary)
+
+        if cur_point is None:
+            print("Invalid reference alignment")
 
         points = [cur_point]
 
@@ -235,16 +373,14 @@ class GenerateHorizontalAlignment():
             #if the PT and the PC are within an inch, ignore the error
             if next_pc - cur_pt > 25.4:
                 print('-------PROJECTING LINE------')
+                print('point: ', cur_point)
+                print('azimuth: ', azimuth)
+                print('distance: ', next_pc - cur_pt)
 
                 if curve.Bearing != []:
                     azimuth = self._azimuth_from_bearing(math.radians(curve.Bearing), curve.Quadrant)
                 else:
                     print('NULL BEARING')
-
-                print('Point: ', cur_point)
-                print('Azimuth: ', azimuth)
-                print('Current PT: ', cur_pt)
-                print('Next PC: ', next_pc)
 
                 new_points.extend(self._project_line(cur_point, azimuth, next_pc - cur_pt))
                 cur_point = new_points[len(new_points) - 1]
@@ -253,6 +389,8 @@ class GenerateHorizontalAlignment():
             print('Label: ', curve.Label)
             print('Point: ', cur_point)
             print('Azimuth: ', azimuth)
+            print('Radius: ', curve.Radius)
+            print('Delta: ', curve.Delta)
 
             arc_points, azimuth = self._project_arc(cur_point, curve, azimuth)
 
@@ -267,6 +405,7 @@ class GenerateHorizontalAlignment():
         print('Spline points:')
         print(points)
         spline = self.generate_spline(points, curves.Label)
+        App.ActiveDocument.recompute()
 
     def validate_selection(self, grp):
         '''
