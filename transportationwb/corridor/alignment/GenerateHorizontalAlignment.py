@@ -376,14 +376,15 @@ class GenerateHorizontalAlignment():
         next_pc = 0.0
 
         cur_point = App.Vector(0.0, 0.0, 0.0)
+        ref_point = None
 
         if meta.Alignment != '':
             print('getting reference alignment...')
-            cur_point = self._get_reference_coordinates(meta.Alignment, meta.Primary.Value)
+            ref_point = self._get_reference_coordinates(meta.Alignment, meta.Primary.Value)
 
-        if cur_point is None:
-            print("Invalid reference alignment")
-            return
+            if ref_point is None:
+                print("Invalid reference alignment")
+                return
 
         points = [cur_point]
 
@@ -438,6 +439,24 @@ class GenerateHorizontalAlignment():
 
         parent = curves.InList[0]
         spline = self.generate_spline(points, 'HA_' + parent.Label)
+
+        #adjust vertices by the reference delta, if there's a reference point
+        if not ref_point is None:
+
+            #get the distance of the reference point along the secondary alignment
+            ref_dist = meta.Secondary.Value - meta.Start_Station.Value
+
+            #discretize the spline to get the cartesian coordinate
+            #and subtract it from the starting point to get the deltas
+            ref_delta = points[0].sub(spline.discretize(distance = ref_dist)[1])
+
+            #adjust the alginment points by the deltas
+            for _x in range(0, len(points)):
+                points[_x] =  points[_x].add(ref_delta)
+
+            #rebuild the spline
+            spline = self.generate_spline(points, 'HA_' + parent.Label)
+            
         parent.addObject(spline)
 
         App.ActiveDocument.recompute()
