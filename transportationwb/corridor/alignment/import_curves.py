@@ -1,6 +1,9 @@
 import FreeCAD as App
 import Draft
+import os
 import json
+from PySide import QtGui
+from PySide import QtCore
 
 def f_x(a, b, c, x):
 
@@ -45,7 +48,19 @@ def _dms_to_deg (deg, mins, sec):
 
     return float(deg) + (float(mins) / 60.0) + (float(sec) / 60.0)
 
-def convert_horizontal_csv(path, infile, outfile):
+def getFile():
+    '''
+    Displays the file browser dialog to pick the JSON file
+    '''
+    dlg = QtGui.QFileDialog()
+    options = dlg.Options()
+    options |= dlg.DontUseNativeDialog
+    dlg.setDefaultSuffix('.json')
+    file_name, _ = dlg.getOpenFileName(dlg,"QFileDialog.getOpenFileName()", "","All Files (*);;JSON Files (*.json)", options=options)
+
+    return os.path.split(file_name)
+
+def convert_horizontal_csv(): #path, infile, outfile):
     data_set = []
     meta = {}
     geometry = []
@@ -53,7 +68,16 @@ def convert_horizontal_csv(path, infile, outfile):
     tangent = []
     bearing_quad = ''
 
-    csv = open(path + '/' + infile, 'r')
+    file_path = getFile()
+
+    if file_path == '':
+        return
+
+    data = None
+
+    out_file = file_path[0] + '/' + file_path[1].split('.')[0] + '.json'
+
+    csv = open(file_path[0] + '/' + file_path[1], 'r')
 
     lines = csv.read().splitlines()
 
@@ -115,7 +139,7 @@ def convert_horizontal_csv(path, infile, outfile):
 
     data_set.append({'meta': meta, 'geometry': geometry})
 
-    jsn = open(path + '/' + outfile, 'w')
+    jsn = open(out_file, 'w')
     json.dump(data_set, jsn)
     jsn.close()
 

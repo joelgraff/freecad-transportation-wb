@@ -70,7 +70,7 @@ class GenerateHorizontalAlignment():
             result = math.pi + angle
 
         elif quadrant == 'SE': #2nd quadrant
-            result = (math.pi / 2.0) + angle
+            result = math.pi - angle
 
         return result
 
@@ -287,7 +287,7 @@ class GenerateHorizontalAlignment():
         if eq_list == []:
             return -1.0
 
-        result = 0.0
+        dist_acc = 0.0
 
         start_station = meta.Start_Station.Value
 
@@ -295,21 +295,25 @@ class GenerateHorizontalAlignment():
         print('start: ', start_station)
         print('target: ', station)
 
+        prev_eq_fwd = start_station
+
         for eq in eq_list:
 
-            if station > start_station:
+            eq_back = eq[0] * 25.4 * 12.0
 
-                #need to convert to mm as these are stored as floats and not Length quantities
-                eq_back = eq[0] * 25.4 * 12.0
-                eq_fwd = eq[1] * 25.4 * 12.0
+            if prev_eq_fwd <= station <= eq_back:
+                return dist_acc + station - prev_eq_fwd
 
-                if station < eq_back:
+            #increment distance accumulator
+            dist_acc += eq_back - prev_eq_fwd
 
-                    result += station - start_station
-                    return result
+            prev_eq_fwd = eq[1] * 25.4 * 12.0
 
-            result += eq_back - start_station
-            start_station = eq_fwd
+        #final test for the last station equation to the end station
+        eq_back = meta.End_Station.Value
+
+        if prev_eq_fwd <= station <= eq_back:
+            return dist_acc + station - prev_eq_fwd
 
         return -1.0
 
@@ -396,16 +400,17 @@ class GenerateHorizontalAlignment():
 
             #if the PT and the PC are within an inch, ignore the error
             if next_pc - cur_pt > 25.4:
-                print('-------PROJECTING LINE------')
-                print('point: ', cur_point)
-                print('azimuth: ', azimuth)
-                print('distance: ', next_pc - cur_pt)
 
                 if curve.Bearing != []:
                     azimuth = self._azimuth_from_bearing(math.radians(curve.Bearing), curve.Quadrant)
                 else:
                     print('NULL BEARING')
 
+                print('-------PROJECTING LINE------')
+                print('point: ', cur_point)
+                print('azimuth: ', azimuth)
+                print('distance: ', next_pc - cur_pt)
+                
                 new_points.extend(self._project_line(cur_point, azimuth, next_pc - cur_pt))
                 cur_point = new_points[len(new_points) - 1]
 
