@@ -254,7 +254,7 @@ class GenerateHorizontalAlignment():
         elif len(points) == 2: 
             obj_type = "Line"
 
-        obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", obj_type)
+        obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", label)
 
         Draft._BSpline(obj)
 
@@ -273,28 +273,43 @@ class GenerateHorizontalAlignment():
         adjusting for station equations
         '''
 
-        cur_eq = meta.getPropertyByName('Equation_1')
+        eq_name = 'Equation_1'
+        eq_no = 1
+        eq_list = []
 
-        if cur_eq == []:
+        while eq_name in meta.PropertiesList:
+
+            eq_list.append(meta.getPropertyByName(eq_name))
+
+            eq_no += 1
+            eq_name = 'Equation_' + str(eq_no)
+
+        if eq_list == []:
             return -1.0
-
-        eq_list = [cur_eq]
-
-        while not cur_eq == []:
-            eq_list.append(cur_eq.Value)
 
         result = 0.0
 
-        start_station = meta.Start_Station
+        start_station = meta.Start_Station.Value
+
+        print(eq_list)
+        print('start: ', start_station)
+        print('target: ', station)
 
         for eq in eq_list:
+
             if station > start_station:
-                if station < eq[0]:
+
+                #need to convert to mm as these are stored as floats and not Length quantities
+                eq_back = eq[0] * 25.4 * 12.0
+                eq_fwd = eq[1] * 25.4 * 12.0
+
+                if station < eq_back:
+
                     result += station - start_station
                     return result
 
-            result += eq[0] - start_station
-            start_station = eq[1]
+            result += eq_back - start_station
+            start_station = eq_fwd
 
         return -1.0
 
@@ -307,19 +322,25 @@ class GenerateHorizontalAlignment():
         parent_meta = App.ActiveDocument.getObject(alignment + '_metadata')
 
         if spline is None:
+            print('Reference spline not found: ', 'HA_' + alignment)
             return None
 
         distance = self._get_station_distance(station, parent_meta)
 
-        if distance == -1.0:
+        if distance < 0.0:
+            print('invalid station')
             return None
 
-        result = spline.discretize(Distance = distance * 25.4 * 12.0)[1]
+        print('discretize ', distance, spline.Name)
 
-        if len(result < 2):
+        result = spline.Shape.discretize(Distance=distance)[1]
+
+        if len(result) < 2:
+            print('failed discretize')
             return None
 
-        return result[1]
+        print('coordinates: ', result)
+        return result
 
     def build_alignment(self, alignment):
         '''
@@ -353,16 +374,19 @@ class GenerateHorizontalAlignment():
         cur_point = App.Vector(0.0, 0.0, 0.0)
 
         if meta.Alignment != '':
-            cur_point = self._get_reference_coordinates(meta.Alignment, meta.Primary)
+            print('getting reference alignment...')
+            cur_point = self._get_reference_coordinates(meta.Alignment, meta.Primary.Value)
 
         if cur_point is None:
             print("Invalid reference alignment")
+            return
 
         points = [cur_point]
 
         #curves.OutList.sort(key=self.sort_key)
 
         App.ActiveDocument.recompute()
+        last_curve = None
 
         for curve in curves.OutList:
 
@@ -402,9 +426,15 @@ class GenerateHorizontalAlignment():
             cur_pt = curve.PC_Station.Value + (curve.Radius.Value * math.radians(curve.Delta))
             cur_point = points[len(points) - 1]
 
-        print('Spline points:')
-        print(points)
-        spline = self.generate_spline(points, curves.Label)
+        #if the last curve ends more than an inch from the end of the project, 
+        #plot a tangent line to complete it
+        if meta.End_Station.Value - cur_pt > 25.4:
+            points.extend(self._project_line(cur_point, azimuth, meta.End_Station.Value - cur_pt))
+
+        parent = curves.InList[0]
+        spline = self.generate_spline(points, 'HA_' + parent.Label)
+        parent.addObject(spline)
+
         App.ActiveDocument.recompute()
 
     def validate_selection(self, grp):
@@ -436,7 +466,7 @@ class GenerateHorizontalAlignment():
             print('Horizontal curve group or an alignment group containing a horizontal curve group not selected')
             return
 
-        print('generating alignment ', group.Label)
+        print('generating alignment for ', group.Label)
         self.build_alignment(group)
 
 Gui.addCommand('GenerateHorizontalAlignment', GenerateHorizontalAlignment())

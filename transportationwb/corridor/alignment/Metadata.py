@@ -73,8 +73,8 @@ class _Metadata():
         self._add_property('Angle', 'General.Bearing', 'Initial bearing of alignment', 0.00)
         self._add_property('String', 'General.Quadrant', 'Bearing quadrant', '')
         self._add_property('String', 'Location.Alignment', 'Name of reference alignment', '',True)
-        self._add_property('Float', 'Location.Primary', 'Station position along reference alignment', 0.00)
-        self._add_property('Float', 'Location.Secondary', 'Station position along local alignment', 0.00)
+        self._add_property('Length', 'Location.Primary', 'Station position along reference alignment', 0.00)
+        self._add_property('Length', 'Location.Secondary', 'Station position along local alignment', 0.00)
 
         self.init = True
 
@@ -95,8 +95,8 @@ class _Metadata():
             return
 
         self.Object.Alignment = location[2]
-        self.Object.Secondary = float(location[0])
-        self.Object.Primary = float(location[1])
+        self.Object.Secondary = str(location[0]) + "'"
+        self.Object.Primary = str(location[1]) + "'"
 
     def set_bearing(self, bearing):
         '''

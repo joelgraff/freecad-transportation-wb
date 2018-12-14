@@ -56,6 +56,17 @@ class ImportHorizontalCurve():
 
         return (float(dms[0]) + (float(dms[1]) / 60.0) + (float(dms[2]) / 3600.0))
 
+    def _scrub_object_name(self, object_name):
+        '''
+        Scrubs the string of characters that are not allowed in the FreeCAD object names
+        '''
+
+        #replace non-printable characters with underscore
+        for _x in [' ', '.', '+', '(', ')']:
+            object_name = object_name.replace(_x, '_')
+
+        return object_name
+
     def getFile(self):
         '''
         Displays the file browser dialog to pick the JSON file
@@ -111,7 +122,7 @@ class ImportHorizontalCurve():
                 item['central_angle'] = str(self._dms_to_deg(item['central_angle']))
 
                 if item['bearing'] == []:
-                    item['bearing'] = [-1.0,-1.0,-1.0]
+                    item['bearing'] = [-1.0, -1.0, -1.0]
 
                 item['bearing'] = str(self._dms_to_deg(item['bearing']))
                 _hc = HorizontalCurve.createHorizontalCurve(item, data['meta']['units'])
@@ -122,14 +133,12 @@ class ImportHorizontalCurve():
         Validates the alignment heirarchy, adding missing groups
         '''
 
+        _id = self._scrub_object_name(_id)
+        
         grand_parent = App.ActiveDocument.getObject('Alignments')
 
         if grand_parent is None:
             grand_parent = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
-
-        #replace non-printable characters with underscore
-        for _x in [' ', '.', '+', '(', ')']:
-            _id = _id.replace(_x, '_')
 
         parent = grand_parent.newObject('App::DocumentObjectGroup', _id)
 
@@ -188,7 +197,12 @@ class ImportHorizontalCurve():
             meta.Object.Quadrant = alignment['meta']['quadrant']
             meta.set_limits(alignment['meta']['limits'])
             meta.add_station_equations(alignment['meta'].get('st_eq'))
-            meta.set_reference_alignment(alignment['meta'].get('location'))
+            
+            location = alignment['meta']['location']
+
+            if location != []:
+                location[2] = self._scrub_object_name(location[2])
+                meta.set_reference_alignment(location)
 
             self.build_alignment(group, alignment)
 
