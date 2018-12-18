@@ -269,37 +269,9 @@ class GenerateVerticalAlignment():
 
         for curve in curves.OutList:
 
-            next_pc = self._get_global_sta(curve.PC_Station.Value, meta)
+            self._project_curve(pt, curve)
 
-            if next_pc == -1:
-                print('unable to convert station ', next_pc, ' to global stationing...')
-                return
-
-            new_points = []
-
-            print('---------PROJECTING ARC--------')
-            print('Label: ', curve.Label)
-            print('Point: ', cur_point)
-#            print('Azimuth: ', azimuth)
-            print('Radius: ', curve.Radius)
-            print('Delta: ', curve.Delta)
-
-            arc_points, azimuth = self._project_arc(cur_point, curve, azimuth)
-
-            points.extend(new_points)
-            points.extend(arc_points)
-
-            cur_pt = self._get_global_sta(curve.PC_Station.Value, meta)
-            cur_pt += curve.Radius.Value * math.radians(curve.Delta)
-
-            cur_point = points[len(points) - 1]
-
-        #if the last curve ends more than an inch from the end of the project,
-        #plot a tangent line to complete it
-        remainder = self._get_global_sta(meta.End_Station.Value, meta) - cur_pt
-
-        if remainder > 25.4:
-            points.extend(self._project_line(cur_point, azimuth, remainder))
+###########################
 
         parent = curves.InList[0]
 
