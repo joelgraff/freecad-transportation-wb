@@ -65,11 +65,11 @@ def createVerticalCurve(data, units):
     obj.Grade_In = float(data['g1'])
     obj.Grade_Out = float(data['g2'])
     obj.A = abs(obj.Grade_In - obj.Grade_Out)
-    obj.K = lngth / obj.A
+    obj.K = str(lngth / obj.A) + "'"
 
     obj.Length = lngth * conv
-    obj.PI_Station = float(data['pi'])
-    obj.PI_Elevation = float(data['elevation']) * conv
+    obj.PI_Station = data['pi'] + "'"
+    obj.PI_Elevation = data['elevation'] + "'"
 
     _ViewProviderVerticalCurve(obj.ViewObject)
 
@@ -96,7 +96,7 @@ class _VerticalCurve():
         self._add_property('Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)        
         self._add_property('Length', 'General.Length', 'Length of the vertical curve', 0.00)
         self._add_property('Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
-        self._add_property('Float', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
+        self._add_property('Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
         self._add_property('Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
 
         self.doRecalc = False

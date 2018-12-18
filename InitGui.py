@@ -22,6 +22,7 @@
 
 import FreeCAD
 import FreeCADGui as Gui
+from importlib import reload
 #import sys
 #import TransportationToolbar
 
