@@ -194,6 +194,8 @@ class ImportHorizontalCurve():
                 return
 
             meta.Object.Bearing = self._dms_to_deg(alignment['meta']['bearing'])
+            print('METADATA')
+            print(alignment['meta'])
             meta.Object.Quadrant = alignment['meta']['quadrant']
             meta.set_limits(alignment['meta']['limits'])
             meta.add_station_equations(alignment['meta'].get('st_eq'))

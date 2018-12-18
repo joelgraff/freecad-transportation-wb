@@ -1,3 +1,6 @@
+'''
+Generates parabolic vertical alignments from a group of selected VerticalCurve objects
+'''
 # -*- coding: utf-8 -*-
 # **************************************************************************
 # *                                                                        *
@@ -21,10 +24,11 @@
 # *                                                                        *
 # **************************************************************************
 
-import FreeCAD as App
-import FreeCADGui as Gui
 import os
 import json
+
+import FreeCAD as App
+import FreeCADGui as Gui
 from PySide import QtGui
 from PySide import QtCore
 from transportationwb.corridor.alignment import VerticalCurve, Metadata
@@ -44,7 +48,7 @@ class GenerateVerticalAlignment():
         icon_path += "../../../icons/new_alignment.svg"
 
         return {'Pixmap'  : icon_path,
-                'Accel'   : "Shift+H",
+                'Accel'   : "Alt+G",
                 'MenuText': "Generate Vertical Alignment",
                 'ToolTip' : "Generate the Vertical Alignment from an Alignment group",
                 'CmdType' : "ForEdit"}

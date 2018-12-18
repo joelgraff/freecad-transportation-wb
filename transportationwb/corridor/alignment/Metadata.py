@@ -98,37 +98,6 @@ class _Metadata():
         self.Object.Secondary = str(location[0]) + "'"
         self.Object.Primary = str(location[1]) + "'"
 
-    def set_bearing(self, bearing):
-        '''
-        Sets the bearing data based on passed list of three floats
-        List must be in Degree-Minute-Second (DMS) format.
-        Bearing quadrant (N,S,E,W) is derived from DMS value
-
-        bearing[0:3] = [Degrees, Minutes, Seconds]
-        '''
-
-        if len(bearing) != 3:
-            print("Invalid bearing data: ", bearing)
-            return
-
-        quad_list = ['NE', 'SE', 'SW', 'NW']
-        quad_count = -1
-        deg = bearing[0]
-
-        while deg >= 0.0:
-            deg -= 90.0
-            quad_count += 1
-
-            if quad_count > 3:
-                quad_count = 0
-
-        #if quad_count < 0:
-        #    print("Invalid bearing data: ", bearing)
-        #    return
-
-        self.Object.Bearing = deg + 90.0 + bearing[1] / 60.0  + bearing[2] / 3600.0
-        #self.Object.Quadrant = dir_list[dir_count]
-
     def set_limits(self, limits):
         '''
         Sets the project limits based on passed float tuple
