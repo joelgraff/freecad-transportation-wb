@@ -37,6 +37,7 @@ class GenerateVerticalAlignment():
     Builds a spline based on a selected group of Vertical curve objects
     '''
     dms_to_deg = staticmethod(lambda _x: _x[0] + _x[1] / 60.0 + _x[2] / 3600.0)
+    parabolic_curve = staticmethod(lambda g1, g2, e, l, x: e + (g1 * x) + ((g2 - g1) * x * x) / (2 * l))
 
     def __init__(self):
         pass
@@ -77,69 +78,36 @@ class GenerateVerticalAlignment():
 
         return result
 
-    def _project_arc(self, point, curve, azimuth, segments=4):
+    def _project_curve(self, pt, curve, segments = 4):
         '''
-        Return a series of points along an arc based on the starting point,
-        central angle (delta) and radius
-        '''
-
-        #calculate the circle center from the passed point and bearing
-        #use the circle center with the delta to generate the remaining points along the arc
-
-        points = []
-
-        curve_dir = 1.0
-        two_pi = math.pi * 2.0
-
-        if curve.Direction == 'L':
-            curve_dir = -1.0
-
-        if curve.Bearing != 0.0:
-            azimuth = self._get_azimuth(math.radians(curve.Bearing), curve.Quadrant)
-
-        central_angle = math.radians(curve.Delta)
-
-        angle_seg = central_angle / float(segments)
-        radius = float(curve.Radius)
-
-        _fw = App.Vector(math.sin(azimuth), math.cos(azimuth), 0.0)
-        _lt = App.Vector(-_fw.y, _fw.x, 0.0)
-
-        for _i in range(0, segments):
-
-            delta = float(_i + 1) * angle_seg
-
-            fw_delta = App.Vector(_fw).multiply(radius * math.sin(delta))
-            lt_delta = App.Vector(-_lt).multiply(curve_dir * radius * (1 - math.cos(delta)))
-
-            points.append(point.add(fw_delta).add(lt_delta))
-
-        azimuth += central_angle * curve_dir
-
-        if azimuth > two_pi:
-            azimuth -= two_pi
-
-        elif azimuth < 0.0:
-            azimuth += two_pi
-
-        return points, azimuth
-
-    def _project_line(self, point, azimuth, distance, segments=4):
-        '''
-        Project a given distance along a line in the X,Y plane from a given cartesion coordinate
+        Generate opints for a parabolic curve or line segment based on
+        the starting point of tangency (PT) in stations, and the VerticalCurve object
         '''
 
-        #pre-calculate the delta-x / delta-y values for projection
-        _delta = App.Vector(math.sin(azimuth), math.cos(azimuth))
-        _delta.multiply(distance / float(segments))
+        _vpc = curve.PC_Station.Value
+        _g1 = curve.Grade_In
+        _g2 = curve.Grade_Out
+        _len = curve.Length.Value
+        _e = curve.PC_Elevation.Value
 
-        result = []
+        offset = abs(pt - _vpc)
 
-        #create line points for the start / end of each segment
+        if offset > 25.4 or _len == 0.0:
+            _g2 = _g1
+            _len = offset
+            _e = _e - offset * _g1
+            _vpc = pt
+
+        seg_len = _len / float(segments)
+
+        points = [[_vpc, _e]]
+
         for _i in range(1, segments + 1):
-            result.append(App.Vector(point[0] + _delta.x * _i, point[1] + _delta.y * _i, 0.0))
+            _x = seg_len * _i
+            _y = self.parabolic_curve(_g1, _g2, _e, _len, seg_len * _i)
+            points.append(App.Vector(_x, _y, 0.0))
 
-        return result
+        return points, pt + _len
 
     def generate_spline(self, points, label):
         '''
@@ -269,7 +237,19 @@ class GenerateVerticalAlignment():
 
         for curve in curves.OutList:
 
-            self._project_curve(pt, curve)
+            count = 0
+
+            while cur_pt < curve.PT_Station.Value:
+                count = count + 1
+                points.append(self._project_curve(cur_pt, curve))
+                if count > 3:
+                    break
+
+            if count > 3:
+                break
+
+        print(points)
+        return
 
 ###########################
 
