@@ -127,7 +127,7 @@ class GenerateVerticalAlignment():
 
         return points
 
-    def generate_spline(self, points, label):
+    def _generate_spline(self, points, label):
         '''
         Generate a spline based on passed points
         '''
@@ -287,8 +287,14 @@ class GenerateVerticalAlignment():
 
         print(points)
 
+        parent = curves.InList[0]
+
+        spline_name = 'VA_' + parent.Label
+
         #rebuild the spline
-        spline = self._generate_wire(points, "VA_TEST")
+        spline = self._generate_spline(points, spline_name)
+
+        parent.addObject(spline)
 
         return spline
 
