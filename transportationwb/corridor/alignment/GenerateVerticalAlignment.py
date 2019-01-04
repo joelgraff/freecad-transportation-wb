@@ -273,19 +273,11 @@ class GenerateVerticalAlignment():
 
         for curve in curves.OutList:
 
-            print ('ref in: ', ref_elev)
             points.extend(self._project_curve(cur_pt, ref_elev, curve, meta))
             cur_pt = self._get_global_sta(curve.PT_Station.Value, meta)
             ref_elev = curve.PT_Elevation.Value
-            print ('ref_out: ', ref_elev)
-
-            print (cur_pt)
-            #if count > 1:
-                #break
 
             count += 1
-
-        print(points)
 
         parent = curves.InList[0]
 
@@ -299,17 +291,6 @@ class GenerateVerticalAlignment():
         return spline
 
 ###########################
-
-        parent = curves.InList[0]
-
-        spline_name = 'HA_' + parent.Label
-
-        if not App.ActiveDocument.getObject(spline_name) is None:
-            App.ActiveDocument.removeObject(spline_name)
-
-        spline = self.generate_spline(points, spline_name)
-
-        App.ActiveDocument.recompute()
 
         #adjust vertices by the reference delta, if there's a reference point
         ref_point = None
@@ -343,7 +324,7 @@ class GenerateVerticalAlignment():
                 points[_x] = points[_x].add(ref_delta)
 
             #rebuild the spline
-            spline = self.generate_spline(points, spline_name)
+            spline = self._generate_spline(points, spline_name)
 
         parent.addObject(spline)
 
