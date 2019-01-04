@@ -138,6 +138,9 @@ class _VerticalCurve():
         elif p_type == 'Distance':
             p_type = 'App::PropertyDistance'
 
+        elif p_type == 'Percent':
+            p_type = 'App::PropertyPercent'
+
         else:
             print ('Invalid property type specified: ', p_type)
             return None
@@ -146,7 +149,11 @@ class _VerticalCurve():
 
         prop = self.Object.getPropertyByName(tple[1])
 
-        if p_type in ['App::PropertyFloat','App::PropertyBool']:
+        if p_type in [
+                'App::PropertyFloat',
+                'App::PropertyBool',
+                'App::PropertyPercent'
+            ]:
             prop = default_value
         else:
             prop.Value = default_value
@@ -154,7 +161,7 @@ class _VerticalCurve():
         if isReadOnly:
             self.Object.setEditorMode(tple[1], 1)
 
-        return prop              
+        return prop
 
     def __getstate__(self):
         return self.Type
@@ -168,8 +175,8 @@ class _VerticalCurve():
 
         pi = self.Object.PI_Station.Value
         elev = self.Object.PI_Elevation.Value
-        g1 = self.Object.Grade_In
-        g2 = self.Object.Grade_Out
+        g1 = self.Object.Grade_In / 100.0
+        g2 = self.Object.Grade_Out / 100.0
         lngth = self.Object.Length.Value
 
         half_length = lngth / 2.0

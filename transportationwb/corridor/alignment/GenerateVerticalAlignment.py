@@ -40,7 +40,7 @@ class GenerateVerticalAlignment():
     parabolic_curve = staticmethod(lambda g1, g2, e, l, x: e + (g1 * x) + ((g2 - g1) * x * x) / (2 * l))
 
     def __init__(self):
-        pass
+        self._scale_factor = 10.0
 
     def GetResources(self):
         """
@@ -78,45 +78,61 @@ class GenerateVerticalAlignment():
 
         return result
 
-    def _project_curve(self, pt, curve, segments = 4):
+    def _project_curve(self, pt, ref_elev, curve, meta, segments = 6):
         '''
         Generate opints for a parabolic curve or line segment based on
         the starting point of tangency (PT) in stations, and the VerticalCurve object
         '''
 
-        _vpc = curve.PC_Station.Value
-        _g1 = curve.Grade_In
-        _g2 = curve.Grade_Out
+        _vpc = self._get_global_sta(curve.PC_Station.Value, meta)
+        _g1 = (curve.Grade_In * self._scale_factor) / 100
+        _g2 = (curve.Grade_Out * self._scale_factor) / 100
         _len = curve.Length.Value
-        _e = curve.PC_Elevation.Value
+        _e = ref_elev * self._scale_factor
 
-        offset = abs(pt - _vpc)
+        points = []
 
-        if offset > 25.4 or _len == 0.0:
-            _g2 = _g1
-            _len = offset
-            _e = _e - offset * _g1
-            _vpc = pt
+        #if there's more than an inch between the curves, or the curve is a breakpoint, start a tangent
+#        if offset > 25.4 or _len == 0.0:
+#            _g2 = _g1
+#            _len = offset
+            #_e = _e + offset * _g1
+#            _vpc = pt
 
         seg_len = _len / float(segments)
 
-        points = [[_vpc, _e]]
+        print ("segment_length = ", seg_len)
+        print ("g1: ", _g1)
+        print ('g2: ', _g2)
+        print ('elev: ', _e)
+        print ('length: ', _len)
 
-        for _i in range(1, segments + 1):
-            _x = seg_len * _i
-            _y = self.parabolic_curve(_g1, _g2, _e, _len, seg_len * _i)
-            points.append(App.Vector(_x, _y, 0.0))
+        start_seg = 1
 
-        return points, pt + _len
+        offset = abs(pt - _vpc)
+
+        if offset > 25.4:
+            start_seg = 0
+            _e = _e + _g1 * offset
+
+        #zero length curve is a breakpoint
+        if _len == 0.0:
+            points.append(App.Vector(pt + offset, 0.0, _e + offset * _g1))
+            return points
+
+        for _i in range(start_seg, segments + 1):
+            _x = _vpc + seg_len * _i
+            _z = self.parabolic_curve(_g1, _g2, _e, _len, seg_len * _i)
+            points.append(App.Vector(_x, 0.0, _z))
+
+        return points
 
     def generate_spline(self, points, label):
         '''
         Generate a spline based on passed points
         '''
 
-        pt_count = len(points)
-
-        if pt_count < 2:
+        if len(points) < 2:
             return None
 
         obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", label)
@@ -131,6 +147,26 @@ class GenerateVerticalAlignment():
         Draft._ViewProviderWire(obj.ViewObject)
 
         return obj
+
+    def _generate_wire(self, points, label):
+        '''
+        Generate a wire / polyline of the supplied list of points
+        '''
+
+        if len(points) < 2:
+            return None
+
+#        obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", label)
+
+        pl = App.Placement()
+        pl.Rotation.Q = (0.0, -0.0, -0.0, 1.0)
+        pl.Base = points[0]
+
+        line = Draft.makeWire(points, placement=pl, closed=False, face=True, support=None)
+
+        Draft.autogroup(line)
+
+        return line
 
     def _get_global_sta(self, local_sta, meta):
         '''
@@ -228,28 +264,33 @@ class GenerateVerticalAlignment():
             print("unable to convert station ", meta.Start_Station, "to global stationing")
             return
 
-        next_pc = 0.0
-        cur_point = App.Vector(0.0, 0.0, 0.0)
-
-        points = [cur_point]
-
         App.ActiveDocument.recompute()
+
+        ref_elev = curves.OutList[0].PC_Elevation.Value
+        points = [App.Vector(0.0, 0.0, ref_elev * self._scale_factor)]
+
+        count = 0
 
         for curve in curves.OutList:
 
-            count = 0
+            print ('ref in: ', ref_elev)
+            points.extend(self._project_curve(cur_pt, ref_elev, curve, meta))
+            cur_pt = self._get_global_sta(curve.PT_Station.Value, meta)
+            ref_elev = curve.PT_Elevation.Value
+            print ('ref_out: ', ref_elev)
 
-            while cur_pt < curve.PT_Station.Value:
-                count = count + 1
-                points.append(self._project_curve(cur_pt, curve))
-                if count > 3:
-                    break
+            print (cur_pt)
+            #if count > 1:
+                #break
 
-            if count > 3:
-                break
+            count += 1
 
         print(points)
-        return
+
+        #rebuild the spline
+        spline = self._generate_wire(points, "VA_TEST")
+
+        return spline
 
 ###########################
 
