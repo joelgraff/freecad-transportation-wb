@@ -117,13 +117,13 @@ class GenerateVerticalAlignment():
 
         #zero length curve is a breakpoint
         if _len == 0.0:
-            points.append(App.Vector(pt + offset, 0.0, _e + offset * _g1))
+            points.append(App.Vector(pt + offset, _e + offset * _g1, 0.0))
             return points
 
         for _i in range(start_seg, segments + 1):
             _x = _vpc + seg_len * _i
             _z = self.parabolic_curve(_g1, _g2, _e, _len, seg_len * _i)
-            points.append(App.Vector(_x, 0.0, _z))
+            points.append(App.Vector(_x, _z, 0.0))
 
         return points
 
@@ -267,7 +267,7 @@ class GenerateVerticalAlignment():
         App.ActiveDocument.recompute()
 
         ref_elev = curves.OutList[0].PC_Elevation.Value
-        points = [App.Vector(0.0, 0.0, ref_elev * self._scale_factor)]
+        points = [App.Vector(0.0, ref_elev * self._scale_factor, 0.0)]
 
         count = 0
 

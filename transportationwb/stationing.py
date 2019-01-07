@@ -27,7 +27,7 @@ def combineCurves():
 
     #get the length of the curve and set the step interval
     horiz_len=horiz_edge.Length
-    step=3.
+    step=3000.
 
     #initialize point lists
     #ptsh is ... ?
@@ -37,12 +37,18 @@ def combineCurves():
     ptsc=[]
 
     #divide the length by the number of steps and add one, rounding up
-    #to give the segment length
-    seg_len=int(round(horiz_len/step)+1)
+    #to give the point count
+    point_count=int(horiz_len/step)+1
 
     #horizontal curve as equidistant points at the step interval...
-    hz_seg_pts=vert_edge.discretize(seg_len)
+    vt_seg_pts=vert_edge.discretize(point_count)
 
+    print(vt_seg_pts)
+
+    last_pt = len(vt_seg_pts)
+
+    for i in range(last_pt - 10, last_pt):
+        print(vt_seg_pts[i])
 
 #c=FreeCAD.getDocument("stationing").getObject("MyBezierSketch")
 #pts=c.Shape.Edge1.discretize(20)
@@ -50,27 +56,38 @@ def combineCurves():
     import numpy as np
 
     #this pairs coordinates of like axes in three tuples (x_coords,y_coords,z)
-    hz_pt_seg_axes=np.array(hz_seg_pts).swapaxes(0,1)
+    vt_pt_seg_axes=np.array(vt_seg_pts).swapaxes(0,1)
 
     #save the x_coords/y_coords coordinate pairs in separate variables
-    x_coords=hz_pt_seg_axes[0]
-    y_coords=hz_pt_seg_axes[1]
+    x_coords=vt_pt_seg_axes[0]
+    y_coords=vt_pt_seg_axes[1]
 
+    print(len(x_coords))
+    print(len(y_coords))
     #interpolation...
     from scipy import interpolate
     ff = interpolate.interp1d(x_coords, y_coords,kind='cubic',bounds_error=False,fill_value=0)
 
     #ll=800
-    #st=int(round(ll/seg_len))
+    #st=int(round(ll/point_count))
 
     #ll is an upper limit
-    ll=int(round(seg_len*step+1))
+    ll = int(h.Shape.Length) + 1
+    #ll=int(round(point_count*step+1))
     # ll=800
 
+    print ('ll = ', ll)
     #create a set of x_coords-values evenly spaced between 0 and ll at the specified step interval
     xnew=np.arange(0,ll,int(step))
 
-#	print ("!!gefuden", seg_len,xnew.shape,ll)
+    last_element = xnew[len(xnew)-1]
+    print ('last xnew: ', last_element)
+
+    if last_element != h.Shape.Length:
+        np.append(xnew, h.Shape.Length)
+
+
+#	print ("!!gefuden", point_count,xnew.shape,ll)
 #	print ("xdims",x_coords.max(),	x_coords.min())
 #	print ("xnewdims",xnew.max(),	xnew.min())
 
@@ -82,18 +99,27 @@ def combineCurves():
 #	plt.plot(x_coords, y_coords, 'o', xnew, ynew, '+')
 #	plt.show()
 
-    #minimum of seg_len, and the number of intervals in xnew
-    anz2=min(seg_len,xnew.shape[0])
+    #minimum of point_count, and the number of intervals in xnew
+    anz2=min(point_count,xnew.shape[0])
+
+    print ('point_count: ', point_count)
+    print ('xnew.shape[0]', xnew.shape[0])
+    print ("anz2: ", anz2)
 
     for i in range(anz2):
 
-        
-        p=horiz_edge.valueAt(fip+step*(lap-fip)/horiz_len*i)
+        print(xnew[i], ynew[i])
+        #x,y coordinate on horizontal
+        #p=horiz_edge.valueAt(fip+step*(lap-fip)/horiz_len*i)
 
+        #tangent at point
         t=horiz_edge.tangentAt(fip+step*(lap-fip)/horiz_len*i)
 
+        #x,y coordinate on horizontal
         p=horiz_edge.Curve.value(fip+step*(lap-fip)/horiz_len*i)
-        
+
+
+        #stationing line interval
         f=2
         if  i%5 == 0:
             f=4
@@ -102,12 +128,14 @@ def combineCurves():
         if  i%50 == 0:
             f=30
 
+        #calculate normal vector at point
         n=f*t.cross(FreeCAD.Vector(0,0,1))
         
         #hp=FreeCAD.Vector(p.x_coords,p.y_coords,hz_seg_pts[i].y_coords)
         # print i
 
-        hp=FreeCAD.Vector(p.x_coords,p.y_coords,ynew[i])
+        #generate z-coordinate for 3D spline
+        hp=FreeCAD.Vector(p.x,p.y,ynew[i])
         
         pts += [p,p+n,p,p-n,p]
         ptsn += [p,hp,p]
@@ -124,19 +152,21 @@ def combineCurves():
 
     import Part
 
+    #stationing along horizontal curve
     res=App.ActiveDocument.getObject("Wxy")
     if res == None:
         res=App.activeDocument().addObject('Part::Feature','Wxy')
 
     res.Shape=Part.makePolygon(pts)
 
+    #
     res=App.ActiveDocument.getObject("Whmap")
     if res == None:
         res=App.activeDocument().addObject('Part::Feature','Whmap')
 
     res.Shape=Part.makePolygon(ptsn)
 
-
+    #station along vertical curve
     res=App.ActiveDocument.getObject("Wh")
     if res == None:
         res=App.activeDocument().addObject('Part::Feature','Wh')
