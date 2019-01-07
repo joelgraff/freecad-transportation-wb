@@ -27,7 +27,7 @@ def combineCurves():
 
     #get the length of the curve and set the step interval
     horiz_len=horiz_edge.Length
-    step=3000.
+    step=3000
 
     #initialize point lists
     #ptsh is ... ?
@@ -36,19 +36,21 @@ def combineCurves():
     ptsn=[]
     ptsc=[]
 
-    #divide the length by the number of steps and add one, rounding up
-    #to give the point count
-    point_count=int(horiz_len/step)+1
+    #divide the length by the number of steps, truncating the integer
+    #then add one for the concluding point for the steps,
+    #plus a point for the end of the edge, if the step point falls short
+    point_count=int(horiz_len/float(step))+1
 
-    #horizontal curve as equidistant points at the step interval...
-    vt_seg_pts=vert_edge.discretize(point_count)
+    if ((point_count - 1) * step) < horiz_len:
+        point_count += 1
 
-    print(vt_seg_pts)
+    #vertial curve as equidistant points at the step interval...
+    vt_seg_pts=vert_edge.discretize(Number=point_count, First=0.00, Last=horiz_len)
 
-    last_pt = len(vt_seg_pts)
+    end_point = vt_seg_pts[point_count - 1]
 
-    for i in range(last_pt - 10, last_pt):
-        print(vt_seg_pts[i])
+    print('Start point: ',vt_seg_pts[0])
+    print('End point: ',vt_seg_pts[point_count-1])
 
 #c=FreeCAD.getDocument("stationing").getObject("MyBezierSketch")
 #pts=c.Shape.Edge1.discretize(20)
@@ -59,54 +61,55 @@ def combineCurves():
     vt_pt_seg_axes=np.array(vt_seg_pts).swapaxes(0,1)
 
     #save the x_coords/y_coords coordinate pairs in separate variables
-    x_coords=vt_pt_seg_axes[0]
+    x_coords=list(range(0, int(horiz_len) + 1, step))
+
+    #if we added two to the point count, then the step interval
+    #won't quite make it to the end... add the length as the last point
+    if len(x_coords) < point_count:
+        x_coords.append(horiz_len)
+
+    last_pt = len(x_coords)
+    print(x_coords[last_pt - 10:])
+
     y_coords=vt_pt_seg_axes[1]
+
+    #append the final elevation - see above
+    if (len(y_coords) < point_count):
+        y_coords = np.append(y_coords, end_point.y)
 
     print(len(x_coords))
     print(len(y_coords))
+
     #interpolation...
     from scipy import interpolate
     ff = interpolate.interp1d(x_coords, y_coords,kind='cubic',bounds_error=False,fill_value=0)
 
-    #ll=800
-    #st=int(round(ll/point_count))
-
-    #ll is an upper limit
     ll = int(h.Shape.Length) + 1
-    #ll=int(round(point_count*step+1))
-    # ll=800
 
-    print ('ll = ', ll)
     #create a set of x_coords-values evenly spaced between 0 and ll at the specified step interval
-    xnew=np.arange(0,ll,int(step))
+    xnew=np.arange(0,ll,step)
 
     last_element = xnew[len(xnew)-1]
-    print ('last xnew: ', last_element)
 
     if last_element != h.Shape.Length:
-        np.append(xnew, h.Shape.Length)
-
-
-#	print ("!!gefuden", point_count,xnew.shape,ll)
-#	print ("xdims",x_coords.max(),	x_coords.min())
-#	print ("xnewdims",xnew.max(),	xnew.min())
-
-#	print xnew
+        xnew = np.append(xnew, h.Shape.Length)
 
     #interpolates y_coords values for the specified x_coords values
     ynew = ff(xnew)   # use interpolation function returned by `interp1d`
 
+
+        #ynew = np.append(ynew, vert_edge.Curve.parameterAtDistance(horiz_len))
 #	plt.plot(x_coords, y_coords, 'o', xnew, ynew, '+')
 #	plt.show()
 
     #minimum of point_count, and the number of intervals in xnew
-    anz2=min(point_count,xnew.shape[0])
+    #anz2=min(point_count,xnew.shape[0])
 
     print ('point_count: ', point_count)
     print ('xnew.shape[0]', xnew.shape[0])
-    print ("anz2: ", anz2)
+    #print ("anz2: ", anz2)
 
-    for i in range(anz2):
+    for i in range(xnew.shape[0]):
 
         print(xnew[i], ynew[i])
         #x,y coordinate on horizontal
@@ -141,7 +144,8 @@ def combineCurves():
         ptsn += [p,hp,p]
         
         hh=FreeCAD.Vector(xnew[i],ynew[i],0)
-        vpp=vert_edge.Curve.parameter(hh)
+        vpp = vert_edge.Curve.parameterAtDistance(xnew[i])
+        #vpp=vert_edge.Curve.parameter(hh)
         vtt=vert_edge.tangentAt(vpp)
         vn=f*vtt.cross(FreeCAD.Vector(0,0,1))
         

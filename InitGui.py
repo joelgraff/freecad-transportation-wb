@@ -323,7 +323,7 @@ class TransportationWorkbench (Workbench):
         self.general_fn_list = ["NewProject"]
         self.alignment_fn_list = ["AddAlignment",
             "ImportVerticalCurve", "ImportHorizontalCurve",
-            "GenerateHorizontalAlignment", "GenerateVerticalAlignment"]
+            "GenerateHorizontalAlignment", "GenerateVerticalAlignment", "Generate3dAlignment"]
 
         self.toolbars = toolbars
         self.version = version
@@ -336,6 +336,7 @@ class TransportationWorkbench (Workbench):
         import transportationwb.corridor.alignment.ImportHorizontalCurve
         import transportationwb.corridor.alignment.GenerateHorizontalAlignment
         import transportationwb.corridor.alignment.GenerateVerticalAlignment
+        import transportationwb.corridor.alignment.Generate3dAlignment
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
@@ -373,7 +374,7 @@ class TransportationWorkbench (Workbench):
         #create context menus for alignments
         self.alignment_menu = ['AddAlignment',
             'ImportVerticalCurve', 'ImportHorizontalCurve',
-            'GenerateHorizontalAlignment', 'GenerateVerticalAlignment']
+            'GenerateHorizontalAlignment', 'GenerateVerticalAlignment', 'Generate3dAlignment']
 
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(
