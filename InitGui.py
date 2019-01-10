@@ -323,7 +323,8 @@ class TransportationWorkbench (Workbench):
         self.general_fn_list = ["NewProject"]
         self.alignment_fn_list = ["AddAlignment",
             "ImportVerticalCurve", "ImportHorizontalCurve",
-            "GenerateHorizontalAlignment", "GenerateVerticalAlignment", "Generate3dAlignment"]
+            "GenerateHorizontalAlignment", "GenerateVerticalAlignment", "Generate3dAlignment",
+            "GenerateSweep"]
 
         self.toolbars = toolbars
         self.version = version
@@ -337,6 +338,7 @@ class TransportationWorkbench (Workbench):
         import transportationwb.corridor.alignment.GenerateHorizontalAlignment
         import transportationwb.corridor.alignment.GenerateVerticalAlignment
         import transportationwb.corridor.alignment.Generate3dAlignment
+        import transportationwb.corridor.templates.GenerateSweep
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
@@ -374,11 +376,11 @@ class TransportationWorkbench (Workbench):
         #create context menus for alignments
         self.alignment_menu = ['AddAlignment',
             'ImportVerticalCurve', 'ImportHorizontalCurve',
-            'GenerateHorizontalAlignment', 'GenerateVerticalAlignment', 'Generate3dAlignment']
+            'GenerateHorizontalAlignment', 'GenerateVerticalAlignment', 'Generate3dAlignment',
+            'GenerateSweep']
 
     def Activated(self):
-        Msg("Transportation Workbench version {} activated\n".format(
-            self.version))
+        Msg("Transportation Workbench version {} activated\n".format(self.version))
 
     def Deactivated(self):
         Msg("Transportation Workbench deactivated\n")
