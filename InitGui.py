@@ -324,7 +324,7 @@ class TransportationWorkbench (Workbench):
         self.alignment_fn_list = ["AddAlignment",
             "ImportVerticalCurve", "ImportHorizontalCurve",
             "GenerateHorizontalAlignment", "GenerateVerticalAlignment", "Generate3dAlignment",
-            "GenerateSweep"]
+            "GenerateSweep", 'ViewTemplateLibrary']
 
         self.toolbars = toolbars
         self.version = version
@@ -338,7 +338,8 @@ class TransportationWorkbench (Workbench):
         import transportationwb.corridor.alignment.GenerateHorizontalAlignment
         import transportationwb.corridor.alignment.GenerateVerticalAlignment
         import transportationwb.corridor.alignment.Generate3dAlignment
-        import transportationwb.corridor.templates.GenerateSweep
+        import transportationwb.corridor.template.GenerateSweep
+        import transportationwb.corridor.template.ViewTemplateLibrary
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
@@ -377,7 +378,7 @@ class TransportationWorkbench (Workbench):
         self.alignment_menu = ['AddAlignment',
             'ImportVerticalCurve', 'ImportHorizontalCurve',
             'GenerateHorizontalAlignment', 'GenerateVerticalAlignment', 'Generate3dAlignment',
-            'GenerateSweep']
+            'GenerateSweep', 'ViewTemplateLibrary']
 
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(self.version))

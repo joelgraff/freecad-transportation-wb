@@ -258,9 +258,6 @@ class _Cell():
                 start_prm = edge.Curve.parameterAtDistance(start_pt, edge.FirstParameter)
                 end_prm = edge.Curve.parameterAtDistance(end_pt, edge.FirstParameter)
 
-                print("number: ", number)
-                print("start: ", start_prm)
-                print("end: ", end_prm)
                 points.extend(edge.discretize(Number=int(number), First=start_prm, Last=end_prm))
 
         return points
