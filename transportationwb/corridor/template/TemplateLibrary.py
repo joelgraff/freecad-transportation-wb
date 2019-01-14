@@ -41,6 +41,7 @@ import FreeCADGui as Gui
 import zipfile, tempfile
 import Part, Mesh
 from PySide import QtGui, QtCore
+from transportationwb.corridor.template import SketchTemplate
 
 #encoding error trap
 _encoding = None
