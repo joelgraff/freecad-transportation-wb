@@ -125,7 +125,9 @@ class ExpDockWidget(QtGui.QDockWidget):
             os.remove(path)
 
     def insert_folder(self, path):
-
+        '''
+        Add a new category folder
+        '''
         _nam = QtGui.QInputDialog.getText(None, "Inser folder", "Folder name:")[0]
 
         if path is None:
@@ -136,6 +138,13 @@ class ExpDockWidget(QtGui.QDockWidget):
             path += '/' + _nam
             os.mkdir(path)
 
+    def open_file(self, path):
+        '''
+        Open the path as a separate file in FC
+        '''
+
+        App.loadFile(path)
+
     def buildContextMenu(self, position):
 
         indexes = self.folder.selectedIndexes()
@@ -143,6 +152,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         menu = QtGui.QMenu()
         delete_file_action = None
         insert_folder_action = None
+        open_action = None
         path = None
 
         #delete action only if an item is selected
@@ -153,6 +163,8 @@ class ExpDockWidget(QtGui.QDockWidget):
         #insert action only if a file is not selected
         if not '.fcstd' in path.lower():
             insert_folder_action = menu.addAction(self.tr('Add Folder'))
+        else:
+            open_action = menu.addAction(self.tr('Open'))
 
         action = menu.exec_(self.folder.viewport().mapToGlobal(position))
 
@@ -164,6 +176,9 @@ class ExpDockWidget(QtGui.QDockWidget):
 
         elif action == delete_file_action:
             self.delete_file(path)
+
+        elif action == open_action:
+            self.open_file(path)
 
     def __init__(self, lib_path, param_path):
 
@@ -365,12 +380,14 @@ class ExpDockWidget(QtGui.QDockWidget):
             parameter_path = 'User parameter:BaseApp/Preferences/Document'
             param = App.ParamGet(parameter_path)
 
-            add_logo = '0'
-
             param.SetString('SaveThumbnail', '1')
-            param.SetString('AddThumbnailLogo', add_logo)
+            param.SetString('AddThumbnailLogo', '0')
 
-            _fn = _dialog[0] + ".fcstd"
+            _fn = _dialog[0]
+
+            if not '.fcstd' in _fn.lower():
+                _fn += '.FCStd'
+
             App.ActiveDocument.saveCopy(_fn)
 
     def pushlibrary(self):
