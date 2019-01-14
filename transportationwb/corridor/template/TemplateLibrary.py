@@ -35,7 +35,11 @@ __url__ = "http://www.freecadweb.org"
 FreeCAD Transportation Library
 '''
 
-import sys, FreeCAD, FreeCADGui, Part, zipfile, tempfile, Mesh, os, subprocess
+import sys, os, subprocess
+import FreeCAD as App
+import FreeCADGui as Gui
+import zipfile, tempfile
+import Part, Mesh
 from PySide import QtGui, QtCore
 
 #encoding error trap
@@ -77,47 +81,46 @@ class ExpDockWidget(QtGui.QDockWidget):
 
     key_pressed = QtCore.Signal(int)
 
-    def deleteTreeItem(self):
-
-        index = self.dirmodel.selectedIndexes()[0]
-        path = self.dirmodel.filePath(index)
-        do_delete = QtGui.QMessageBox.question(None, 'Delete template', 'Delete template %i' % path, '?')
-
-        if do_delete == QtGui.QMessageBox.Yes:
-            print ('deleting ', path, '...')
-
     def keyPressEvent (self, event):
 
         if event.key() == QtCore.Qt.Key_Delete:
-            self.deleteTreeItem()
+            index = self.folder.selectedIndexes()[0]
+            self.delete_file(self.dirmodel.filePath(index))
 
         return super(ExpDockWidget, self).keyPressEvent(event)
 
-    def delete_file(self, path, is_file):
-        
+    def delete_file(self, path):
+        '''
+        Delete a file from the template library
+        '''
+
+        button_list = QtGui.QMessageBox.StandardButton.No | QtGui.QMessageBox.StandardButton.Yes
+
         result = QtGui.QMessageBox.Yes
 
-        print('deleting: ', path, is_file   )
-        if not is_file:
+        file_name = path.split('/')[-1].split('\\')[-1]
 
-            result = QtGui.QMessageBox.critical(self, self.tr('Delete Warning'),'Delete ALL files and folders under selected folder?', QtGui.QMessageBox.StandardButton.No | QtGui.QMessageBox.StandardButton.Yes)
+        if file_name == '':
 
-            print (result == QtGui.QMessageBox.Yes)
+            result = QtGui.QMessageBox.critical(self, self.tr('Delete Warning'), 'Delete ALL files and folders under selected folder?', button_list)
+
             if result == QtGui.QMessageBox.Yes:
 
                 def deltree(path):
-                    print("deltree", path)
-                    for d in os.listdir(path):
+
+                    for _d in os.listdir(path):
                         try:
-                            deltree(path + '/' + d)
+                            deltree(path + '/' + _d)
                         except OSError:
-                            os.remove(path + '/' + d)
+                            os.remove(path + '/' + _d)
 
                     os.rmdir(path)
 
                 deltree(path)
 
         else:
+
+            result = QtGui.QMessageBox.critical(self, self.tr('Delete Warning'), 'Delete the template %s?' % (file_name), button_list)
 
             os.remove(path)
 
@@ -133,7 +136,7 @@ class ExpDockWidget(QtGui.QDockWidget):
             path += '/' + _nam
             os.mkdir(path)
 
-    def openMenu(self, position):
+    def buildContextMenu(self, position):
 
         indexes = self.folder.selectedIndexes()
 
@@ -143,25 +146,26 @@ class ExpDockWidget(QtGui.QDockWidget):
         path = None
 
         #delete action only if an item is selected
-        if len(indexes) > 0:
-            path = self.dirmodel.filePath(indexes[0])            
+        if indexes:
+            path = self.dirmodel.filePath(indexes[0])
             delete_file_action = menu.addAction(self.tr('Delete'))
 
-        is_file = 'fcstd' in path.lower()
-
         #insert action only if a file is not selected
-        if not is_file:
+        if not '.fcstd' in path.lower():
             insert_folder_action = menu.addAction(self.tr('Add Folder'))
 
         action = menu.exec_(self.folder.viewport().mapToGlobal(position))
+
+        if action is None:
+            return
 
         if action == insert_folder_action:
             self.insert_folder(path)
 
         elif action == delete_file_action:
-            self.delete_file(path, is_file)
+            self.delete_file(path)
 
-    def __init__(self,lib_path, param_path):
+    def __init__(self, lib_path, param_path):
 
         QtGui.QDockWidget.__init__(self)
 
@@ -173,7 +177,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         # setting up a directory model that shows only fcstd
         self.dirmodel = ExpFileSystemModel()
         self.dirmodel.setRootPath(lib_path)
-        self.dirmodel.setNameFilters(["*.fcstd","*.FcStd","*.FCSTD"])
+        self.dirmodel.setNameFilters(['*.fcstd', '*.FcStd', '*.FCSTD'])
         self.dirmodel.setNameFilterDisables(0)
 
         self.folder = QtGui.QTreeView()
@@ -182,7 +186,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         self.folder.doubleClicked[QtCore.QModelIndex].connect(self.doubleclicked)
 
         self.folder.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.folder.customContextMenuRequested.connect(self.openMenu)
+        self.folder.customContextMenuRequested.connect(self.buildContextMenu)
 
         # Don't show columns for size, file type, and last modified
         self.folder.setHeaderHidden(True)
@@ -257,21 +261,22 @@ class ExpDockWidget(QtGui.QDockWidget):
             import git
 
         except:
-            FreeCAD.Console.PrintWarning("python-git not found. Git-related functions will be disabled\n")
+            App.Console.PrintWarning("python-git not found. Git-related functions will be disabled\n")
 
         else:
             try:
                 self.repo = git.Repo(lib_path)
 
             except:
-                FreeCAD.Console.PrintWarning("Your library is not a valid Git repository. Git-related functions will be disabled\n")
+                App.Console.PrintWarning("Your library is not a valid Git repository. Git-related functions will be disabled\n")
 
             else:
                 if not self.repo.remotes:
-                    FreeCAD.Console.PrintWarning("No remote repository set. Git-related functions will be disabled\n")
+                    App.Console.PrintWarning("No remote repository set. Git-related functions will be disabled\n")
                     self.repo = None
 
         if not self.repo:
+
             self.updatebutton.setEnabled(False)
             self.pushbutton.setEnabled(False)
 
@@ -281,7 +286,7 @@ class ExpDockWidget(QtGui.QDockWidget):
 
     def retranslateUi(self):
 
-        self.setWindowTitle(translate(self.lib_title, "Parts Library"))
+        self.setWindowTitle(translate(self.lib_title, "Template Library"))
         self.updatebutton.setText(translate(self.lib_title, "Update from Git"))
         self.configbutton.setText(translate(self.lib_title, "Config"))
         self.formatLabel.setText(translate(self.lib_title, "Add to library"))
@@ -318,14 +323,37 @@ class ExpDockWidget(QtGui.QDockWidget):
 
         self.preview.clear()
 
+    def validate_tree(self):
+        '''
+        Validate the tree of the active document, ensuring there is a templates folder
+        '''
+
+        result = App.ActiveDocument.findObjects('App::DocumentObjectGroup', 'Templates')
+
+        if not result:
+            result = [App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Templates')]
+
+        return result[0]
+
+    def mergeTemplate(self, folder, path):
+        '''
+        Merge the selected template into the project and add it to the templates group
+        '''
+
+        App.ActiveDocument.mergeProject(path)
+
+        for obj in App.ActiveDocument.RootObjects:
+
+            if obj.TypeId == 'Sketcher::SketchObject':
+                folder.addObject(obj)
+
     def doubleclicked(self, index):
 
         path = self.dirmodel.filePath(index)
 
-        FreeCADGui.ActiveDocument.mergeProject(path)
-        FreeCADGui.SendMsgToActiveView("ViewFit")
+        folder = self.validate_tree()
 
-        
+        self.mergeTemplate(folder, path)
 
     def addtolibrary(self):
 
@@ -335,18 +363,15 @@ class ExpDockWidget(QtGui.QDockWidget):
 
             #save the thumbnail enabling the logo if desired
             parameter_path = 'User parameter:BaseApp/Preferences/Document'
-            param = FreeCAD.ParamGet(parameter_path)
+            param = App.ParamGet(parameter_path)
 
             add_logo = '0'
-
-            #if self.thumb_logo:
-            #    add_logo = '1'
 
             param.SetString('SaveThumbnail', '1')
             param.SetString('AddThumbnailLogo', add_logo)
 
             _fn = _dialog[0] + ".fcstd"
-            FreeCAD.ActiveDocument.saveCopy(_fn)
+            App.ActiveDocument.saveCopy(_fn)
 
     def pushlibrary(self):
 
@@ -495,12 +520,12 @@ class ConfigDialog(QtGui.QDialog):
         QtCore.QObject.connect(self.pushButton_3, QtCore.SIGNAL("clicked()"), self.changepath)
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        librarypath = FreeCAD.ParamGet('User parameter:Plugins/parts_library').GetString('destination','')
+        librarypath = App.ParamGet('User parameter:Plugins/parts_library').GetString('destination','')
         self.lineEdit_3.setText(librarypath)
 
     def retranslateUi(self):
 
-        self.setWindowTitle(QtGui.QApplication.translate(self.library_title, "Parts library configuration", None, _encoding))
+        self.setWindowTitle(QtGui.QApplication.translate(self.library_title, "Template library configuration", None, _encoding))
         self.groupBox.setTitle(QtGui.QApplication.translate(self.library_title, "Pull server (where you get your updates from)", None, _encoding))
         self.lineEdit.setToolTip(QtGui.QApplication.translate(self.library_title, "Enter the URL of the pull server here", None, _encoding))
         self.pushButton.setToolTip(QtGui.QApplication.translate(self.library_title, "Use the official FreeCAD-library repository", None, _encoding))
@@ -509,7 +534,7 @@ class ConfigDialog(QtGui.QDialog):
         self.lineEdit_2.setToolTip(QtGui.QApplication.translate(self.library_title, "Enter the URL of the push server here", None, _encoding))
         self.label.setText(QtGui.QApplication.translate(self.library_title, "Warning: You need write permission on this server", None, _encoding))
         self.groupBox_3.setTitle(QtGui.QApplication.translate(self.library_title, "Library path", None, _encoding))
-        self.lineEdit_3.setToolTip(QtGui.QApplication.translate(self.library_title, "Enter the path to your parts library", None, _encoding))
+        self.lineEdit_3.setToolTip(QtGui.QApplication.translate(self.library_title, "Enter the path to your templae library", None, _encoding))
         self.pushButton_3.setToolTip(QtGui.QApplication.translate(self.library_title, "Browse to your path library", None, _encoding))
         self.pushButton_3.setText(QtGui.QApplication.translate(self.library_title, "...", None, _encoding))
 
@@ -518,8 +543,9 @@ class ConfigDialog(QtGui.QDialog):
         pass
 
     def changepath(self):
-        self.library_path = FreeCAD.ParamGet('User parameter:Plugins/parts_library').GetString('destination', '')
-        np = QtGui.QFileDialog.getExistingDirectory(self, "Location of your existing Parts library", self.library_path)
+        self.library_path = App.ParamGet('User parameter:BaseApp/Preferences/Mod/Transportation').GetString('TemplateLibPath', '')
+        np = QtGui.QFileDialog.getExistingDirectory(self, "Location of your existing template library", self.library_path)
+
         if np:
             self.lineEdit_3.setText(np)
 
@@ -533,7 +559,7 @@ class ConfigDialog(QtGui.QDialog):
             if hasattr(cw, "release"):
                 cw.release()
         if self.lineEdit_3.text():
-            FreeCAD.ParamGet(self.parameter_path).SetString('TemplateLibPath', self.lineEdit_3.text())
+            App.ParamGet(self.parameter_path).SetString('TemplateLibPath', self.lineEdit_3.text())
         QtGui.QDialog.accept(self)
 
 def show():
@@ -542,7 +568,7 @@ def show():
     '''
 
     parameter_path = 'User parameter:BaseApp/Preferences/Mod/Transportation'
-    param = FreeCAD.ParamGet(parameter_path)
+    param = App.ParamGet(parameter_path)
     library_path = param.GetString('TemplateLibPath')
 
     if not library_path:
@@ -553,7 +579,7 @@ def show():
         library_path = param.GetString('TemplateLibPath')
 
     if QtCore.QDir(library_path).exists():
-        m = FreeCADGui.getMainWindow()
+        m = Gui.getMainWindow()
         w = m.findChild(QtGui.QDockWidget, "TransportationTemplateLibrary")
         if w:
             if hasattr(w, "isVisible"):
