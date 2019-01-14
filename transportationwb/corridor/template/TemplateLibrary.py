@@ -79,8 +79,6 @@ class ExpDockWidget(QtGui.QDockWidget):
 
     def deleteTreeItem(self):
 
-        print (self.folder.selectedIndexes())
-        return
         index = self.dirmodel.selectedIndexes()[0]
         path = self.dirmodel.filePath(index)
         do_delete = QtGui.QMessageBox.question(None, 'Delete template', 'Delete template %i' % path, '?')
@@ -94,6 +92,74 @@ class ExpDockWidget(QtGui.QDockWidget):
             self.deleteTreeItem()
 
         return super(ExpDockWidget, self).keyPressEvent(event)
+
+    def delete_file(self, path, is_file):
+        
+        result = QtGui.QMessageBox.Yes
+
+        print('deleting: ', path, is_file   )
+        if not is_file:
+
+            result = QtGui.QMessageBox.critical(self, self.tr('Delete Warning'),'Delete ALL files and folders under selected folder?', QtGui.QMessageBox.StandardButton.No | QtGui.QMessageBox.StandardButton.Yes)
+
+            print (result == QtGui.QMessageBox.Yes)
+            if result == QtGui.QMessageBox.Yes:
+
+                def deltree(path):
+                    print("deltree", path)
+                    for d in os.listdir(path):
+                        try:
+                            deltree(path + '/' + d)
+                        except OSError:
+                            os.remove(path + '/' + d)
+
+                    os.rmdir(path)
+
+                deltree(path)
+
+        else:
+
+            os.remove(path)
+
+    def insert_folder(self, path):
+
+        _nam = QtGui.QInputDialog.getText(None, "Inser folder", "Folder name:")[0]
+
+        if path is None:
+            path = self.library_path
+
+        if not _nam is None:
+
+            path += '/' + _nam
+            os.mkdir(path)
+
+    def openMenu(self, position):
+
+        indexes = self.folder.selectedIndexes()
+
+        menu = QtGui.QMenu()
+        delete_file_action = None
+        insert_folder_action = None
+        path = None
+
+        #delete action only if an item is selected
+        if len(indexes) > 0:
+            path = self.dirmodel.filePath(indexes[0])            
+            delete_file_action = menu.addAction(self.tr('Delete'))
+
+        is_file = 'fcstd' in path.lower()
+
+        #insert action only if a file is not selected
+        if not is_file:
+            insert_folder_action = menu.addAction(self.tr('Add Folder'))
+
+        action = menu.exec_(self.folder.viewport().mapToGlobal(position))
+
+        if action == insert_folder_action:
+            self.insert_folder(path)
+
+        elif action == delete_file_action:
+            self.delete_file(path, is_file)
 
     def __init__(self,lib_path, param_path):
 
@@ -114,7 +180,9 @@ class ExpDockWidget(QtGui.QDockWidget):
         self.folder.setModel(self.dirmodel)
         self.folder.clicked[QtCore.QModelIndex].connect(self.clicked)
         self.folder.doubleClicked[QtCore.QModelIndex].connect(self.doubleclicked)
-        #self.folder.keyPressed.connect(on_key)
+
+        self.folder.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.folder.customContextMenuRequested.connect(self.openMenu)
 
         # Don't show columns for size, file type, and last modified
         self.folder.setHeaderHidden(True)
@@ -257,6 +325,8 @@ class ExpDockWidget(QtGui.QDockWidget):
         FreeCADGui.ActiveDocument.mergeProject(path)
         FreeCADGui.SendMsgToActiveView("ViewFit")
 
+        
+
     def addtolibrary(self):
 
         _dialog = QtGui.QFileDialog.getSaveFileName(None, "Choose category and set filename (no extension)", self.library_path)
@@ -269,10 +339,11 @@ class ExpDockWidget(QtGui.QDockWidget):
 
             add_logo = '0'
 
-            if self.tumb_logo:
-                add_logo = '1'
+            #if self.thumb_logo:
+            #    add_logo = '1'
 
-            param.SetString('TemplateLibPath', add_logo)
+            param.SetString('SaveThumbnail', '1')
+            param.SetString('AddThumbnailLogo', add_logo)
 
             _fn = _dialog[0] + ".fcstd"
             FreeCAD.ActiveDocument.saveCopy(_fn)
@@ -303,7 +374,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         self.repo.git.pull()
 
     def setconfig(self):
-        _d = ConfigDialog(self.library_path, self.parameter_path)
+        _d = ConfigDialog(self.library_path, self.parameter_path, self.lib_title, self.repo)
 
         if self.repo:
             _d.lineEdit.setText(self.repo.remote().url)
@@ -361,10 +432,12 @@ class ExpDockWidget(QtGui.QDockWidget):
 
 class ConfigDialog(QtGui.QDialog):
 
-    def __init__(self, lib_path, param_path):
+    def __init__(self, lib_path, param_path, lib_title, repo):
 
         self.library_path = lib_path
         self.parameter_path = param_path
+        self.library_title = lib_title
+        self.repo = repo
 
         QtGui.QDialog.__init__(self)
 
@@ -396,7 +469,7 @@ class ConfigDialog(QtGui.QDialog):
         self.pushButton.setObjectName("pushButton")
         self.horizontalLayout.addWidget(self.pushButton)
         self.verticalLayout.addWidget(self.groupBox)
-        
+
         self.groupBox_2 = QtGui.QGroupBox(self)
         self.groupBox_2.setObjectName("groupBox_2")
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.groupBox_2)
@@ -408,7 +481,7 @@ class ConfigDialog(QtGui.QDialog):
         self.label.setObjectName("label")
         self.verticalLayout_2.addWidget(self.label)
         self.verticalLayout.addWidget(self.groupBox_2)
-        
+
         self.buttonBox = QtGui.QDialogButtonBox(self)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
@@ -421,24 +494,24 @@ class ConfigDialog(QtGui.QDialog):
         QtCore.QObject.connect(self.pushButton, QtCore.SIGNAL("clicked()"), self.setdefaulturl)
         QtCore.QObject.connect(self.pushButton_3, QtCore.SIGNAL("clicked()"), self.changepath)
         QtCore.QMetaObject.connectSlotsByName(self)
-        
+
         librarypath = FreeCAD.ParamGet('User parameter:Plugins/parts_library').GetString('destination','')
         self.lineEdit_3.setText(librarypath)
 
     def retranslateUi(self):
 
-        self.setWindowTitle(QtGui.QApplication.translate(self.lib_title, "Parts library configuration", None, _encoding))
-        self.groupBox.setTitle(QtGui.QApplication.translate(self.lib_title, "Pull server (where you get your updates from)", None, _encoding))
-        self.lineEdit.setToolTip(QtGui.QApplication.translate(self.lib_title, "Enter the URL of the pull server here", None, _encoding))
-        self.pushButton.setToolTip(QtGui.QApplication.translate(self.lib_title, "Use the official FreeCAD-library repository", None, _encoding))
-        self.pushButton.setText(QtGui.QApplication.translate(self.lib_title, "use official", None, _encoding))
-        self.groupBox_2.setTitle(QtGui.QApplication.translate(self.lib_title, "Push server (where you push your changes to)", None, _encoding))
-        self.lineEdit_2.setToolTip(QtGui.QApplication.translate(self.lib_title, "Enter the URL of the push server here", None, _encoding))
-        self.label.setText(QtGui.QApplication.translate(self.lib_title, "Warning: You need write permission on this server", None, _encoding))
-        self.groupBox_3.setTitle(QtGui.QApplication.translate(self.lib_title, "Library path", None, _encoding))
-        self.lineEdit_3.setToolTip(QtGui.QApplication.translate(self.lib_title, "Enter the path to your parts library", None, _encoding))
-        self.pushButton_3.setToolTip(QtGui.QApplication.translate(self.lib_title, "Browse to your path library", None, _encoding))
-        self.pushButton_3.setText(QtGui.QApplication.translate(self.lib_title, "...", None, _encoding))
+        self.setWindowTitle(QtGui.QApplication.translate(self.library_title, "Parts library configuration", None, _encoding))
+        self.groupBox.setTitle(QtGui.QApplication.translate(self.library_title, "Pull server (where you get your updates from)", None, _encoding))
+        self.lineEdit.setToolTip(QtGui.QApplication.translate(self.library_title, "Enter the URL of the pull server here", None, _encoding))
+        self.pushButton.setToolTip(QtGui.QApplication.translate(self.library_title, "Use the official FreeCAD-library repository", None, _encoding))
+        self.pushButton.setText(QtGui.QApplication.translate(self.library_title, "use official", None, _encoding))
+        self.groupBox_2.setTitle(QtGui.QApplication.translate(self.library_title, "Push server (where you push your changes to)", None, _encoding))
+        self.lineEdit_2.setToolTip(QtGui.QApplication.translate(self.library_title, "Enter the URL of the push server here", None, _encoding))
+        self.label.setText(QtGui.QApplication.translate(self.library_title, "Warning: You need write permission on this server", None, _encoding))
+        self.groupBox_3.setTitle(QtGui.QApplication.translate(self.library_title, "Library path", None, _encoding))
+        self.lineEdit_3.setToolTip(QtGui.QApplication.translate(self.library_title, "Enter the path to your parts library", None, _encoding))
+        self.pushButton_3.setToolTip(QtGui.QApplication.translate(self.library_title, "Browse to your path library", None, _encoding))
+        self.pushButton_3.setText(QtGui.QApplication.translate(self.library_title, "...", None, _encoding))
 
     def setdefaulturl(self):
         #self.lineEdit.setText("https://github.com/FreeCAD/FreeCAD-library.git")
@@ -451,8 +524,8 @@ class ConfigDialog(QtGui.QDialog):
             self.lineEdit_3.setText(np)
 
     def accept(self):
-        if repo:
-            cw = repo.remote().config_writer
+        if self.repo:
+            cw = self.repo.remote().config_writer
             if self.lineEdit.text():
                 cw.set("url", str(self.lineEdit.text()))
             if self.lineEdit_2.text():
@@ -460,7 +533,7 @@ class ConfigDialog(QtGui.QDialog):
             if hasattr(cw, "release"):
                 cw.release()
         if self.lineEdit_3.text():
-            FreeCAD.ParamGet(PARAMETER_PATH).SetString('TemplateLibPath', self.lineEdit_3.text())
+            FreeCAD.ParamGet(self.parameter_path).SetString('TemplateLibPath', self.lineEdit_3.text())
         QtGui.QDialog.accept(self)
 
 def show():
