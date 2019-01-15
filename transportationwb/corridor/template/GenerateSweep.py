@@ -31,6 +31,12 @@ import time
 import FreeCAD as App
 import FreeCADGui as Gui
 
+def regenerate(loft, section_shape):
+    '''
+    Regenerate the loft with a new section
+    '''
+
+
 class GenerateSweep():
     '''
     Sweep generation class.
@@ -54,15 +60,14 @@ class GenerateSweep():
                 'ToolTip' : "Generate sweep of template along a path",
                 'CmdType' : "ForEdit"}
 
-    def _build_sections(self):
-        #get spline path
-        s=Gui.Selection.getSelection()[0].Shape.Edges[0]
+    @staticmethod
+    def _build_sections(spline_path, section_sketch):
 
-        #refernce spline curve object
-        c=s.Curve
+        #reference spline curve object
+        curve = spline_path.Curve
 
         #return first / last parameters?
-        [a,b]=s.ParameterRange
+        [a,b]=spline_path.ParameterRange
 
         #round the length up and add one
         bm=int(round(b))+1
@@ -74,75 +79,46 @@ class GenerateSweep():
         comps = []
 
         #Z-up vector
-        h = App.Vector(0, 0, 1)
+        z_up = App.Vector(0, 0, 1)
 
         #iterate the range of the length as integers
         i = 0.0
-        step = 304.8 * 25
-        poly_count = 0
+        step = 304.8 * 1
+
+        sketch_points = []
+
+        for vtx in section_sketch.Shape.Vertexes:
+            sketch_points.append(vtx.Point)
 
         while i < bm:
 
+            normal = curve.tangent(i)[0].cross(z_up).normalize()
+
             #get the coordinate of the sweep path at the first millimeter
-            v = c.value(i)
+            origin = curve.value(i)
 
             #get the tangent of the sweep path at that coordinate
-            t = c.tangent(i)
+            tangent = curve.tangent(i)
 
             #calculate the normal against z-up and normalize
-            n = t[0].cross(h).normalize()
+            x_normal = tangent[0].cross(z_up).normalize()
+            z_normal = tangent[0].cross(x_normal).normalize()
 
-            #accumulate the sweep path point list with a list of:
-            # - the coordinate
-            # - the coordinate plus twice the tangent
-            # - the coordinate
-            # - the coordinate plus twice the normal
-            # - the coordinate
+            #z-coordinate should always be positive
+            if z_normal.z < 0.0:
+                z_normal = z_normal.negative()
 
-            #pts += [v,v+t[0]*2,v,v+n*2,v]
+            poly_points = []
 
-            #create a copy of the shape
-            #ff2=ff.copy()
+            for point in sketch_points:
+                poly_points.append(origin + (point.x * normal) + (point.y * z_normal))
 
-            #reference it's placement and base
-            #pm=ff2.Placement
-            #v0=pm.Base
-
-            #reference the global placement and base
-            #pm2=App.Placement()
-           # pm2.Base=v
-
-            #create a list of points containing:
-            # - the point,
-            # - the point plus twice the normal
-            # - the point plus twice the normal plus the unit up vector
-            # - the point plus the unit up vector
-            # - the point
-            ptsa = [v, v+3000*n, v+3000*n+h*200, v+h*200, v]
+            poly_points.append(origin)
 
             #generate a polygon of the points and save it
-            ff2 = Part.makePolygon(ptsa)
-
-            #add the polygon to the components list
-            comps += [ff2]
-
-            #500 = 76s
-            #1000 = 73.6s
-            #1500 = 72.6s
-            #2000 = 72.9s
-            #4000 = 72.0s
-            #8000 = 71.0s
-            #16000 = 61.0s
-
-            #if poly_count == 500 * 64:
-                #result.append(comps)
-                #comps = [ff2]
-                #poly_count = 0
+            comps += [Part.makePolygon(poly_points)]
 
             i += step
-            poly_count = poly_count + 1
-
-        print ('generated ', bm / step, 'polys')
 
         return comps
 
@@ -172,7 +148,7 @@ class GenerateSweep():
         sweep_name = 'sweep'
         parent = parent.newObject('App::DocumentObjectGroup', sweep_name)
 
-        section_list = self._build_sections()
+        section_list = self._build_sections(Gui.Selection.getSelection()[0].Shape.Edges[0], Gui.Selection.getSelection()[1])
 
         #create a compound of the components (polygons)
         sections = parent.newObject('Part::Feature', sweep_name + '_sections')

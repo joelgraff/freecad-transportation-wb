@@ -79,7 +79,6 @@ class ExpDockWidget(QtGui.QDockWidget):
     '''
     a library explorer dock widget
     '''
-
     key_pressed = QtCore.Signal(int)
 
     def keyPressEvent (self, event):
@@ -181,7 +180,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         elif action == open_action:
             self.open_file(path)
 
-    def __init__(self, lib_path, param_path):
+    def __init__(self, lib_path, param_path, call_back):
 
         QtGui.QDockWidget.__init__(self)
 
@@ -189,6 +188,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         self.setObjectName("TransportationTemplateLibrary")
         self.library_path = lib_path
         self.parameter_path = param_path
+        self.call_back = call_back
 
         # setting up a directory model that shows only fcstd
         self.dirmodel = ExpFileSystemModel()
@@ -339,37 +339,16 @@ class ExpDockWidget(QtGui.QDockWidget):
 
         self.preview.clear()
 
-    def validate_tree(self):
-        '''
-        Validate the tree of the active document, ensuring there is a templates folder
-        '''
-
-        result = App.ActiveDocument.findObjects('App::DocumentObjectGroup', 'Templates')
-
-        if not result:
-            result = [App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Templates')]
-
-        return result[0]
-
-    def mergeTemplate(self, folder, path):
-        '''
-        Merge the selected template into the project and add it to the templates group
-        '''
-
-        App.ActiveDocument.mergeProject(path)
-
-        for obj in App.ActiveDocument.RootObjects:
-
-            if obj.TypeId == 'Sketcher::SketchObject':
-                folder.addObject(obj)
-
     def doubleclicked(self, index):
 
         path = self.dirmodel.filePath(index)
 
-        folder = self.validate_tree()
-
-        self.mergeTemplate(folder, path)
+        if path.lower().endswith(".fcstd"):
+            #pass the selected path back to the parent object for further processing
+            self.call_back(self.dirmodel.filePath(index))
+        
+        #else:
+         #   self.folder.expanded(index)
 
     def addtolibrary(self):
 
@@ -470,8 +449,6 @@ class ExpDockWidget(QtGui.QDockWidget):
 
             self.preview.show()
             self.prevbutton.setText(QtGui.QApplication.translate(self.lib_title, "Preview", None, _encoding))
-
-
 
 class ConfigDialog(QtGui.QDialog):
 
@@ -580,7 +557,7 @@ class ConfigDialog(QtGui.QDialog):
             App.ParamGet(self.parameter_path).SetString('TemplateLibPath', self.lineEdit_3.text())
         QtGui.QDialog.accept(self)
 
-def show():
+def show(call_back):
     '''
     Show the template library window
     '''
@@ -608,8 +585,8 @@ def show():
             else:
                 # something went wrong with our widget... Recreate it
                 del w
-                m.addDockWidget(QtCore.Qt.RightDockWidgetArea, ExpDockWidget(library_path, parameter_path))
+                m.addDockWidget(QtCore.Qt.RightDockWidgetArea, ExpDockWidget(library_path, parameter_path, call_back))
         else:
-            m.addDockWidget(QtCore.Qt.RightDockWidgetArea, ExpDockWidget(library_path, parameter_path))
+            m.addDockWidget(QtCore.Qt.RightDockWidgetArea, ExpDockWidget(library_path, parameter_path, call_back))
     else:
         print("Library path ", library_path, "not found.")

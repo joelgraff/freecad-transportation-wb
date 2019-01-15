@@ -30,7 +30,7 @@ import os
 import time
 import FreeCAD as App
 import FreeCADGui as Gui
-from transportationwb.corridor.template import TemplateLibrary
+from transportationwb.corridor.template import TemplateLibrary, SketchTemplate
 
 class ViewTemplateLibrary():
     '''
@@ -55,9 +55,57 @@ class ViewTemplateLibrary():
                 'ToolTip' : "Open the template library",
                 'CmdType' : "ForEdit"}
 
+    def _validate_tree(self):
+        '''
+        Validate the tree of the active document, ensuring there is a templates folder
+        '''
+
+        result = App.ActiveDocument.findObjects('App::DocumentObjectGroup', 'Templates')
+
+        if not result:
+            result = [App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Templates')]
+
+        return result[0]
+
+    def _library_call_back(self, path):
+        '''
+        Library Callback
+        Merge the selected template into the project and add it to the templates group
+        '''
+
+        #create a snapshot of the tree root where new objects will be merged
+        snapshot = []
+
+        for obj in App.ActiveDocument.RootObjects:
+            snapshot += obj.Name
+
+        #merge new objects
+        App.ActiveDocument.mergeProject(path)
+
+        #validate the template folder structure
+        folder = self._validate_tree()
+
+        #iterate the root objects, looking for objects not in the snapshot
+        #relocate the skether objects
+        new_objects = []
+
+        for obj in App.ActiveDocument.RootObjects:
+
+            if not obj.Name in snapshot:
+                if obj.TypeId != 'Sketcher::SketchObject':
+                    continue
+
+                new_objects.append(obj.Name)
+                _o = SketchTemplate.create(obj, obj.Label)
+                folder.addObject(_o.Object)
+
+        #remove the root objects...
+        for obj_name in new_objects:
+                App.ActiveDocument.removeObject(obj_name)
+
     def Activated(self):
 
-        TemplateLibrary.show()
+        TemplateLibrary.show(self._library_call_back)
 
 
 Gui.addCommand('ViewTemplateLibrary', ViewTemplateLibrary())
