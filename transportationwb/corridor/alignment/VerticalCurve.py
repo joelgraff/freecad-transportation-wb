@@ -32,12 +32,11 @@ __url__ = "https://www.freecadweb.org"
 import FreeCAD as App
 import Draft
 import Part
-import transportationwb
+from transportationwb import ScriptedObjectSupport as Sos
 
 if App.Gui:
     import FreeCADGui as Gui
     from DraftTools import translate
-    from PySide.QtCore import QT_TRANSLATE_NOOP
 
 def createVerticalCurve(data, units):
     '''
@@ -86,82 +85,20 @@ class _VerticalCurve():
         self.Type = 'VerticalCurve'
         self.Object = obj
 
-        self._add_property('Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
-        self._add_property('Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
-        self._add_property('Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
-        self._add_property('Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
-        self._add_property('Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
-        self._add_property('Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
-        self._add_property('Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
-        self._add_property('Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)        
-        self._add_property('Length', 'General.Length', 'Length of the vertical curve', 0.00)
-        self._add_property('Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
-        self._add_property('Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
-        self._add_property('Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
+        Sos._add_property('Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
+        Sos._add_property('Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
+        Sos._add_property('Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
+        Sos._add_property('Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
+        Sos._add_property('Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
+        Sos._add_property('Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
+        Sos._add_property('Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
+        Sos._add_property('Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)
+        Sos._add_property('Length', 'General.Length', 'Length of the vertical curve', 0.00)
+        Sos._add_property('Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
+        Sos._add_property('Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
+        Sos._add_property('Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
 
         self.doRecalc = False
-
-    def _add_property(self, p_type, name, desc, default_value=None, isReadOnly=False):
-        '''
-        Build FPO properties
-
-        p_type - the Property type, either using the formal type definition ('App::Propertyxxx') or shortended version
-        name - the Property name.  Groups are defined here in 'Group.Name' format.  
-               If group is omitted (no '.' in the string), the entire string is used as the name and the default group is
-               the object type name
-        desc - tooltip description
-        default_value - default property value
-        isReadOnly - sets the property as read-only
-        '''
-
-        tple = name.split('.')
-
-        p_name = tple[0]
-        p_group = self.Type
-
-        if len(tple) == 2:
-            p_name = tple[1]
-            p_group = tple[0]
-
-        if p_type == 'Length':
-            p_type = 'App::PropertyLength'
-
-        elif p_type == 'Float':
-            p_type = 'App::PropertyFloat'
-
-        elif p_type == 'Bool':
-            p_type = 'App::PropertyBool'
-
-        elif p_type == 'PropertyLink':
-            p_type = 'App::PropertyLink'
-
-        elif p_type == 'Distance':
-            p_type = 'App::PropertyDistance'
-
-        elif p_type == 'Percent':
-            p_type = 'App::PropertyPercent'
-
-        else:
-            print ('Invalid property type specified: ', p_type)
-            return None
-
-        self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
-
-        prop = self.Object.getPropertyByName(tple[1])
-
-        if p_type in [
-                'App::PropertyFloat',
-                'App::PropertyBool',
-                'App::PropertyPercent'
-            ]:
-            prop = default_value
-        else:
-            prop.Value = default_value
-
-        if isReadOnly:
-            self.Object.setEditorMode(tple[1], 1)
-
-        return prop
 
     def __getstate__(self):
         return self.Type

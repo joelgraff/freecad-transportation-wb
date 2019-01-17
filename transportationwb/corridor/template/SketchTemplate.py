@@ -4,10 +4,10 @@
 #https://forum.freecadweb.org/viewtopic.php?t=6121
 #https://forum.freecadweb.org/viewtopic.php?t=12829
 import FreeCAD as App
+from transportationwb import ScriptedObjectSupport as Sos
 
 if App.Gui:
     import FreeCADGui as Gui
-    from PySide.QtCore import QT_TRANSLATE_NOOP
 
 def create(sketch_object, template_name):
     '''
@@ -32,7 +32,7 @@ class _Sketch(object):
 
         _ViewProvider(obj.ViewObject, icon)
 
-        self._add_property('LinkList', 'Lofts', 'List of dependent lofts', isReadOnly=True)
+        Sos._add_property('LinkList', 'Lofts', 'List of dependent lofts', isReadOnly=True)
 
     def duplicate(self, sketch):
         '''
@@ -53,74 +53,6 @@ class _Sketch(object):
 
         self.Object.solve()
         self.Object.recompute()
-
-    def _add_property(self, p_type, name, desc, default_value=None, isReadOnly=False):
-        '''
-        Build FPO properties
-
-        p_type - the Property type, either using the formal type definition ('App::Propertyxxx') 
-                 or shortended version
-        name - the Property name.  Groups are defined here in 'Group.Name' format.  
-               If group is omitted (no '.' in the string), the entire string is used 
-               as the name and the default group is the object type name
-        desc - tooltip description
-        default_value - default property value
-        isReadOnly - sets the property as read-only
-        '''
-
-        tple = name.split('.')
-
-        p_name = tple[0]
-        p_group = 'Base'
-
-        if len(tple) == 2:
-            p_name = tple[1]
-            p_group = tple[0]
-
-        if p_type == 'Length':
-            p_type = 'App::PropertyLength'
-
-        elif p_type == 'Float':
-            p_type = 'App::PropertyFloat'
-
-        elif p_type == 'Bool':
-            p_type = 'App::PropertyBool'
-
-        elif p_type == 'Link':
-            p_type = 'App::PropertyLink'
-
-        elif p_type == 'LinkList':
-            p_type = 'App::PropertyLinkList'
-
-        elif p_type == 'Distance':
-            p_type = 'App::PropertyDistance'
-
-        elif p_type == 'Percent':
-            p_type = 'App::PropertyPercent'
-
-        else:
-            print ('Invalid property type specified: ', p_type)
-            return None
-
-        self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
-
-        prop = self.Object.getPropertyByName(p_name)
-
-        if p_type in [
-                'App::PropertyFloat',
-                'App::PropertyBool',
-                'App::PropertyPercent',
-                'App::PropertyLinkList'
-            ]:
-            prop = default_value
-        else:
-            prop.Value = default_value
-
-        if isReadOnly:
-            self.Object.setEditorMode(p_name, 1)
-
-        return prop
-
 
     def onChanged(self, obj, prop):
 

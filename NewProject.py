@@ -22,8 +22,7 @@ class NewProject():
         if Gui.ActiveDocument == None:
             self._create_document()
 
-        self._set_units()
-
+        self._set_preferences()
         return
 
     def IsActive(self):
@@ -32,8 +31,10 @@ class NewProject():
     def _attach_handlers(self):
         Gui.ActiveDocument.ActiveView.addDraggable
 
-    def _set_units(self):
+    def _set_preferences(self):
         App.ParamGet("User parameter:BaseApp/Preferences/Units").SetInt("UserSchema", 7)
+        App.ParamGet('User parameter:BaseApp/Preferences/Mod/Sketcher').SetBool('AutoRecompute', False)
+        App.ParamGet('User parameter:BaseApp/Preferences/Document').SetBool('DuplicateLabels', True)
 
     def _create_document(self):
 

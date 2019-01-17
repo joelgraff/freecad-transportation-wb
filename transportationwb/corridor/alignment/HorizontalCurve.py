@@ -32,12 +32,10 @@ __url__ = "https://www.freecadweb.org"
 import FreeCAD as App
 import Draft
 import Part
-import transportationwb
+from transportationwb import ScriptedObjectSupport as Sos
 
 if App.Gui:
     import FreeCADGui as Gui
-    from DraftTools import translate
-    from PySide.QtCore import QT_TRANSLATE_NOOP
 
 def createHorizontalCurve(data, units):
     '''
@@ -87,86 +85,20 @@ class _HorizontalCurve():
         self.Type = 'HorizontalCurve'
         self.Object = obj
 
-        self._add_property('Angle', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
-        self._add_property('String','General.Quadrant', 'Bearing quadrant of the PC tangent', '')
-        self._add_property('Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
-        self._add_property('Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
-        self._add_property('Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
-        self._add_property('Angle', 'General.Delta', 'Central angle of the curve', 0.00)
-        self._add_property('String', 'General.Direction', 'Curve direction', '')
-        self._add_property('Length', 'General.Radius', 'Curve radius', 0.00)        
-        self._add_property('Length', 'General.Length', 'Curve length', 0.00)
-        self._add_property('Float', 'General.E', 'External distance', 0.00, True)
-        self._add_property('Float', 'General.T', 'Tangent length', 0.00, True)
-        self._add_property('Float', 'General.D', 'Degree of Curvature', True, True)
+        Sos._add_property('Angle', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
+        Sos._add_property('String','General.Quadrant', 'Bearing quadrant of the PC tangent', '')
+        Sos._add_property('Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
+        Sos._add_property('Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
+        Sos._add_property('Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
+        Sos._add_property('Angle', 'General.Delta', 'Central angle of the curve', 0.00)
+        Sos._add_property('String', 'General.Direction', 'Curve direction', '')
+        Sos._add_property('Length', 'General.Radius', 'Curve radius', 0.00)        
+        Sos._add_property('Length', 'General.Length', 'Curve length', 0.00)
+        Sos._add_property('Float', 'General.E', 'External distance', 0.00, True)
+        Sos._add_property('Float', 'General.T', 'Tangent length', 0.00, True)
+        Sos._add_property('Float', 'General.D', 'Degree of Curvature', True, True)
 
         self.doRecalc = False
-
-    def _add_property(self, p_type, name, desc, default_value=None, isReadOnly=False):
-        '''
-        Build FPO properties
-
-        p_type - the Property type, either using the formal type definition ('App::Propertyxxx') or shortended version
-        name - the Property name.  Groups are defined here in 'Group.Name' format.  
-               If group is omitted (no '.' in the string), the entire string is used as the name and the default group is
-               the object type name
-        desc - tooltip description
-        default_value - default property value
-        isReadOnly - sets the property as read-only
-        '''
-
-        tple = name.split('.')
-
-        p_name = tple[0]
-        p_group = self.Type
-
-        if len(tple) == 2:
-            p_name = tple[1]
-            p_group = tple[0]
-
-        if p_type == 'Length':
-            p_type = 'App::PropertyLength'
-
-        elif p_type == 'Float':
-            p_type = 'App::PropertyFloat'
-
-        elif p_type == 'Bool':
-            p_type = 'App::PropertyBool'
-
-        elif p_type == 'PropertyLink':
-            p_type = 'App::PropertyLink'
-
-        elif p_type == 'Distance':
-            p_type = 'App::PropertyDistance'
-
-        elif p_type == 'FloatList':
-            p_type = 'App::PropertyFloatList'
-
-        elif p_type == 'String':
-            p_type = 'App::PropertyString'
-
-        elif p_type == 'Angle':
-            p_type = 'App::PropertyAngle'
-
-        else:
-            print('Invalid property type specified: ', p_type)
-            return None
-
-        self.Object.addProperty(p_type, p_name, p_group, QT_TRANSLATE_NOOP("App::Property", desc))
-
-        self.Object.getPropertyByName(tple[1])
-
-        setattr(self.Object, p_name, default_value)
-
-        #if p_type in ['App::PropertyFloat', 'App::PropertyBool']:
-        #    prop = default_value
-        #else:
-        #    prop.Value = default_value
-
-        if isReadOnly:
-            self.Object.setEditorMode(tple[1], 1)
-
-        return
 
     def __getstate__(self):
         return self.Type

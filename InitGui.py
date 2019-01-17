@@ -320,11 +320,11 @@ class TransportationWorkbench (Workbench):
     def __init__(self, toolbars, version):
 
         self.policies_ist = ["Edit..."]
-        self.general_fn_list = ["NewProject"]
+        self.general_fn_list = ["TestCommand", "NewProject"]
         self.alignment_fn_list = ["AddAlignment",
             "ImportVerticalCurve", "ImportHorizontalCurve",
-            "GenerateHorizontalAlignment", "GenerateVerticalAlignment", "Generate3dAlignment",
-            "GenerateSweep", 'ViewTemplateLibrary']
+            "GenerateHorizontalAlignment", "GenerateVerticalAlignment", "Generate3dAlignment"]
+        self.template_fn_list = ["GenerateLoft", 'ViewTemplateLibrary']
 
         self.toolbars = toolbars
         self.version = version
@@ -338,8 +338,9 @@ class TransportationWorkbench (Workbench):
         import transportationwb.corridor.alignment.GenerateHorizontalAlignment
         import transportationwb.corridor.alignment.GenerateVerticalAlignment
         import transportationwb.corridor.alignment.Generate3dAlignment
-        import transportationwb.corridor.template.GenerateSweep
+        import transportationwb.corridor.template.GenerateLoft
         import transportationwb.corridor.template.ViewTemplateLibrary
+        import transportationwb.TestCommand
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
@@ -375,10 +376,12 @@ class TransportationWorkbench (Workbench):
         self.appendToolbar("My Helpers", cmds)
 
         #create context menus for alignments
+        self.general_menu = ['TestCommand']
         self.alignment_menu = ['AddAlignment',
             'ImportVerticalCurve', 'ImportHorizontalCurve',
-            'GenerateHorizontalAlignment', 'GenerateVerticalAlignment', 'Generate3dAlignment',
-            'GenerateSweep', 'ViewTemplateLibrary']
+            'GenerateHorizontalAlignment', 'GenerateVerticalAlignment', 'Generate3dAlignment']
+
+        self.template_menu = ['GenerateLoft', 'ViewTemplateLibrary']
 
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(self.version))
@@ -389,7 +392,9 @@ class TransportationWorkbench (Workbench):
 #-------------------
     def ContextMenu(self, recipient):
         # "recipient" will be either "view" or "tree"
+        self.appendContextMenu('', self.general_menu)
         self.appendContextMenu('', self.alignment_menu)
+        self.appendContextMenu('', self.template_menu)
 
     def GetClassName(self):
         # this function is mandatory if this is a full python workbench

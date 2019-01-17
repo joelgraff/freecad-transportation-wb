@@ -346,7 +346,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         if path.lower().endswith(".fcstd"):
             #pass the selected path back to the parent object for further processing
             self.call_back(self.dirmodel.filePath(index))
-        
+
         #else:
          #   self.folder.expanded(index)
 

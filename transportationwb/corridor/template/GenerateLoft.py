@@ -30,14 +30,9 @@ import os
 import time
 import FreeCAD as App
 import FreeCADGui as Gui
+from transportationwb.corridor.template import LoftGroup
 
-def regenerate(loft, section_shape):
-    '''
-    Regenerate the loft with a new section
-    '''
-
-
-class GenerateSweep():
+class GenerateLoft():
     '''
     Sweep generation class.
     Builds a sweep based on passed template and sweep path
@@ -56,85 +51,21 @@ class GenerateSweep():
 
         return {'Pixmap'  : icon_path,
                 'Accel'   : "Ctrl+Alt+G",
-                'MenuText': "Generate Sweep",
-                'ToolTip' : "Generate sweep of template along a path",
+                'MenuText': "Generate Loft",
+                'ToolTip' : "Generate loft of template along a path",
                 'CmdType' : "ForEdit"}
-
-    @staticmethod
-    def _build_sections(spline_path, section_sketch):
-
-        #reference spline curve object
-        curve = spline_path.Curve
-
-        #return first / last parameters?
-        [a,b]=spline_path.ParameterRange
-
-        #round the length up and add one
-        bm=int(round(b))+1
-
-        #reference to the shape objecct
-        #ff=App.ActiveDocument.Template.Shape
-
-        #list initialization
-        comps = []
-
-        #Z-up vector
-        z_up = App.Vector(0, 0, 1)
-
-        #iterate the range of the length as integers
-        i = 0.0
-        step = 304.8 * 1
-
-        sketch_points = []
-
-        for vtx in section_sketch.Shape.Vertexes:
-            sketch_points.append(vtx.Point)
-
-        while i < bm:
-
-            normal = curve.tangent(i)[0].cross(z_up).normalize()
-
-            #get the coordinate of the sweep path at the first millimeter
-            origin = curve.value(i)
-
-            #get the tangent of the sweep path at that coordinate
-            tangent = curve.tangent(i)
-
-            #calculate the normal against z-up and normalize
-            x_normal = tangent[0].cross(z_up).normalize()
-            z_normal = tangent[0].cross(x_normal).normalize()
-
-            #z-coordinate should always be positive
-            if z_normal.z < 0.0:
-                z_normal = z_normal.negative()
-
-            poly_points = []
-
-            for point in sketch_points:
-                poly_points.append(origin + (point.x * normal) + (point.y * z_normal))
-
-            poly_points.append(origin)
-
-            #generate a polygon of the points and save it
-            comps += [Part.makePolygon(poly_points)]
-
-            i += step
-
-        return comps
 
     def _validate_tree(self):
         '''
         Validate the current tree structure, ensuring Sweep document group exists
         and return the Sweeps group object
-
-        TODO:  Add popup to select target folder in sweep group and return the target group
         '''
 
-        parent = App.ActiveDocument.findObjects('App::DocumentObjectGroup', 'Sweeps')
+        parent = App.ActiveDocument.findObjects('App::DocumentObjectGroup', 'Lofts')
         result = None
 
         if parent == []:
-            result = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Sweeps')
+            result = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Lofts')
             App.ActiveDocument.recompute()
         else:
             result = parent[0]
@@ -145,17 +76,26 @@ class GenerateSweep():
 
         parent = self._validate_tree()
 
-        sweep_name = 'sweep'
-        parent = parent.newObject('App::DocumentObjectGroup', sweep_name)
+        sel = Gui.Selection.getSelection()
 
-        section_list = self._build_sections(Gui.Selection.getSelection()[0].Shape.Edges[0], Gui.Selection.getSelection()[1])
+        if len(sel) != 2:
+            print ('Invalid number of objects selected.  Select a spline and sketch to perform loft')
+            return
 
-        #create a compound of the components (polygons)
-        sections = parent.newObject('Part::Feature', sweep_name + '_sections')
-        sections.Shape = Part.Compound(section_list)
+        spline = None
+        sketch = None
 
-        #loft the polygons to generate the solid
-        loft = parent.newObject('Part::Feature', 'loft')
-        loft.Shape = Part.makeLoft(section_list, False, True, False)
+        for obj in sel:
 
-Gui.addCommand('GenerateSweep', GenerateSweep())
+            if not obj.TypeId in ['Part::Part2DObjectPython', 'Sketcher::SketchObjectPython']:
+                print('Invalid object type found.  Select a spline and sketch to perform loft')
+                return
+
+            if obj.TypeId == 'Part::Part2DObjectPython':
+                spline = obj
+            else:
+                sketch = obj
+
+        LoftGroup.createLoftGroup(parent, sketch.Label, spline, sketch)
+
+Gui.addCommand('GenerateLoft', GenerateLoft())
