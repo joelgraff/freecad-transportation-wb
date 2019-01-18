@@ -70,14 +70,12 @@ def _add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False)
         print('Invalid property type specified: ', p_type)
         return None
 
-    print ('creating ', p_type, p_name, desc, default_value)
     target.addProperty(p_type, p_name, p_group, desc)
 
     App.ActiveDocument.recompute()
 
     prop = target.getPropertyByName(p_name)
 
-    print(prop)
     if p_type in [
             'App::PropertyFloat',
             'App::PropertyBool',
