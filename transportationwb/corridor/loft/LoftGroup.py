@@ -159,6 +159,28 @@ class _LoftGroup():
             if obj.Label in ['sections', 'loft']:
                 self.Object.removeObject(obj)
 
+    def set_stations(self, stations):
+        '''
+        Set the starting and ending station of the loft from the provided list
+        '''
+
+        pass
+
+    def set_interval(self, interval):
+        '''
+        Set the section interval for the loft
+        '''
+
+        pass
+
+    def set_material(self, material):
+        '''
+        Set the name of the material for the loft
+        '''
+
+        pass
+
+
     def execute(self, obj):
         '''
         Rebuild the loft
