@@ -45,6 +45,7 @@ class NewProject():
         dlg.setWindowTitle("New Proejct")
         dlg.setLabelText('Enter project name:')
         dlg.setWindowModality(QtCore.Qt.ApplicationModal)
+        dlg.setTextValue('New Project')
         dlg.exec_()
 
         if dlg.result() == False:
