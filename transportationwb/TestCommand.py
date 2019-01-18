@@ -1,7 +1,7 @@
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from transportationwb.corridor.template import LoftGroup
+from transportationwb.corridor.loft import LoftGroup
 
 class TestCommand():
     '''

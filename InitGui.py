@@ -338,7 +338,7 @@ class TransportationWorkbench (Workbench):
         import transportationwb.corridor.alignment.GenerateHorizontalAlignment
         import transportationwb.corridor.alignment.GenerateVerticalAlignment
         import transportationwb.corridor.alignment.Generate3dAlignment
-        import transportationwb.corridor.template.GenerateLoft
+        import transportationwb.corridor.loft.GenerateLoft
         import transportationwb.corridor.template.ViewTemplateLibrary
         import transportationwb.TestCommand
 

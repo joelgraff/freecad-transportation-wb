@@ -89,4 +89,8 @@ class NewProject():
         App.ActiveDocument = App.getDocument(project_name)
         Gui.ActiveDocument = Gui.getDocument(project_name)
 
+        App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Templates')
+        App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
+        App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Lofts')
+
 Gui.addCommand('NewProject',NewProject())

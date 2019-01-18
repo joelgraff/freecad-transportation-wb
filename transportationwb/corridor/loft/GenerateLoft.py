@@ -27,7 +27,7 @@ import os
 import time
 import FreeCAD as App
 import FreeCADGui as Gui
-from transportationwb.corridor.template import LoftGroup
+from transportationwb.corridor.loft import LoftGroup, NewLoftDialog
 
 class GenerateLoft():
     '''
@@ -71,28 +71,57 @@ class GenerateLoft():
 
     def Activated(self):
 
-        parent = self._validate_tree()
+        dialog = NewLoftDialog.NewLoftDialog('ft')
 
-        sel = Gui.Selection.getSelection()
+        align_list = []
+        template_list = []
 
-        if len(sel) != 2:
-            print ('Invalid number of objects selected.  Select a spline and sketch to perform loft')
-            return
-
-        spline = None
-        sketch = None
-
-        for obj in sel:
+        #test to see if a template / alignment have been pre-selected
+        for obj in Gui.Selection.getSelection():
 
             if not obj.TypeId in ['Part::Part2DObjectPython', 'Sketcher::SketchObjectPython']:
                 print('Invalid object type found.  Select a spline and sketch to perform loft')
                 return
 
             if obj.TypeId == 'Part::Part2DObjectPython':
-                spline = obj
+                align_list.append(obj)
             else:
-                sketch = obj
+                template_list.append(obj)
 
-        LoftGroup.createLoftGroup(parent, sketch.Label, spline, sketch)
+        #populate the lists with all current alignments and templates
+        align_folder = App.ActiveDocument.getObject('Alignments')
+        template_folder = App.ActiveDocument.getObject('Templates')
+
+        if align_folder:
+            for obj in align_folder.OutList:
+                align_list.append(obj)
+
+        if template_folder:
+            for obj in template_folder.OutList:
+                template_list.append(obj)
+
+        #set the dialog properties
+        dialog.set_alignment_list(align_list)
+        dialog.set_template_list(template_list)
+
+        #show the dialog
+        dialog.exec_()
+
+        #retrieve the properties
+        spline = dialog.get_alignment()
+        sketch = dialog.get_template()
+        loft_name = dialog.get_name()
+        interval = dialog.get_interval()
+        stations = dialog.get_stations()
+
+        #create the loft object, assign the data, and generate it
+        _lg = LoftGroup.createLoftGroup(App.ActiveDocument.Lofts, loft_name, spline, sketch)
+
+        _lg.set_stations(stations)
+        _lg.set_interval(interval)
+
+        _lg.regenerate()
+
+        App.ActiveDocument.recompute()
 
 Gui.addCommand('GenerateLoft', GenerateLoft())
