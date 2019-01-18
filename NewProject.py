@@ -57,7 +57,12 @@ class NewProject():
             return
 
         App.newDocument(project_name)
+
+        #substitute underscores for spaces for internal naming
+        project_name = project_name.replace(' ', '_')
+
         App.setActiveDocument(project_name)
+
         App.ActiveDocument = App.getDocument(project_name)
         Gui.ActiveDocument = Gui.getDocument(project_name)
 
