@@ -32,7 +32,7 @@ class _Sketch(object):
 
         _ViewProvider(obj.ViewObject, icon)
 
-        Sos._add_property('LinkList', 'Lofts', 'List of dependent lofts', isReadOnly=True)
+        Sos._add_property(self, 'LinkList', 'Lofts', 'List of dependent lofts', isReadOnly=True, default_value=[])
 
     def duplicate(self, sketch):
         '''
