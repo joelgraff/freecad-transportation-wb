@@ -69,6 +69,13 @@ class GenerateLoft():
 
         return result
 
+    def _dialog_updates(self, properties):
+        '''
+        Callback for loft dialog to pass loft properties as a dictionary
+        '''
+
+        self.loft_properties = properties
+
     def Activated(self):
 
         dialog = NewLoftDialog.NewLoftDialog('ft')
@@ -103,24 +110,22 @@ class GenerateLoft():
         #set the dialog properties
         dialog.set_alignment_list(align_list)
         dialog.set_template_list(template_list)
+        dialog.set_update_cb(self._dialog_updates)
 
         #show the dialog
-        dialog.exec_()
+        result = dialog.exec_()
 
-        #retrieve the properties
-        spline = dialog.get_alignment()
-        sketch = dialog.get_template()
-        loft_name = dialog.get_name()
-        interval = dialog.get_interval()
-        stations = dialog.get_stations()
+        print(result)
+
+        print(self.loft_properties)
 
         #create the loft object, assign the data, and generate it
-        _lg = LoftGroup.createLoftGroup(App.ActiveDocument.Lofts, loft_name, spline, sketch)
+        #_lg = LoftGroup.createLoftGroup(App.ActiveDocument.Lofts, loft_name, spline, sketch)
 
-        _lg.set_stations(stations)
-        _lg.set_interval(interval)
+        #_lg.set_stations(stations)
+        #_lg.set_interval(interval)
 
-        _lg.regenerate()
+        #_lg.regenerate()
 
         App.ActiveDocument.recompute()
 
