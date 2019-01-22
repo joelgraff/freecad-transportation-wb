@@ -25,6 +25,42 @@ from PySide import QtCore, QtGui
 
 class NewLoftDialog(QtGui.QDialog):
 
+    def getNumber(self, text):
+        '''
+        Get the number, assuming it's float, int, or station
+        '''
+
+        #assume the text is a float, int or valid station
+        result = None
+
+        try:
+            result = float(text)
+        except:
+            try:
+                result = float(int(text))
+            except:
+                if '+' in text:
+                    result = self.getNumber(text.replace('+', ''))
+
+        return result
+
+    def update_station(self, line_edit):
+        '''
+        Validate the data entered in the station line edit
+        '''
+
+        value = self.getNumber(line_edit.text())
+
+        if value is None:
+            msg = QtGui.QMessageBox.critical(self, self.tr('Station Error'), self.tr('Invalid station entered'))
+            msg.show()
+            return
+
+        station = int(value / 100.0)
+        offset = value - float(station * 100.0)
+
+        line_edit.setText(str(station) + '+' + str('{:04.2f}').format(offset))
+
     def __init__(self, units, parent=None):
 
         super(NewLoftDialog, self).__init__(parent)
@@ -47,21 +83,19 @@ class NewLoftDialog(QtGui.QDialog):
         #start and end stations
         layout.addWidget(QtGui.QLabel(self.tr('Station')), 1, 1)
 
-        self.start_sta = QtGui.QLineEdit('0', self)
-        self.start_sta.setInputMask('00009+99.99;_')
+        self.start_sta = QtGui.QLineEdit('', self)
         self.start_sta.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.start_sta.setSizePolicy(size_policy)
-        #self.start_sta.textChanged.connect( lambda: self.start_sta.cursorBackward(False))
+        self.start_sta.editingFinished.connect( lambda: self.update_station(self.start_sta))
 
         layout.addWidget(self.start_sta, 1, 2)
 
         layout.addWidget(QtGui.QLabel(self.tr('to')), 1, 3)
 
         self.end_sta = QtGui.QLineEdit('0', self)
-        self.end_sta.setInputMask('00009+99.99;_')
         self.end_sta.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.end_sta.setSizePolicy(size_policy)
-        #self.end_sta.textChanged.connect( lambda: self.end_sta.cursorBackward(False))
+        self.end_sta.editingFinished.connect(lambda: self.update_station(self.end_sta)
 
         layout.addWidget(self.end_sta, 1, 4)
 
