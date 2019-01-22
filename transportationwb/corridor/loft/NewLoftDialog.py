@@ -69,82 +69,89 @@ class NewLoftDialog(QtGui.QDialog):
         self.setSizeGripEnabled(True)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        layout = QtGui.QGridLayout(self)
+        form_layout = QtGui.QFormLayout()
         size_policy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
 
         #loft name input
-        layout.addWidget(QtGui.QLabel(self.tr('Name')), 0, 1)
-
         self.loft_name = QtGui.QLineEdit('Loft', self)
         self.loft_name.setSizePolicy(size_policy)
-
-        layout.addWidget(self.loft_name, 0, 2, )
+        form_layout.addRow(self.tr('Name'), self.loft_name)
 
         #start and end stations
-        layout.addWidget(QtGui.QLabel(self.tr('Station')), 1, 1)
+        station_layout = QtGui.QGridLayout()
+        station_layout.addWidget(QtGui.QLabel(self.tr('from')),0,0)
 
         self.start_sta = QtGui.QLineEdit('', self)
         self.start_sta.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.start_sta.setSizePolicy(size_policy)
+        self.start_sta.setInputMethodHints(QtCore.Qt.ImhPreferNumbers)
         self.start_sta.editingFinished.connect( lambda: self.update_station(self.start_sta))
 
-        layout.addWidget(self.start_sta, 1, 2)
+        station_layout.addWidget(self.start_sta,0,1)
 
-        layout.addWidget(QtGui.QLabel(self.tr('to')), 1, 3)
+        station_layout.addWidget(QtGui.QLabel(self.tr('to')),0,2)
 
         self.end_sta = QtGui.QLineEdit('0', self)
         self.end_sta.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.end_sta.setSizePolicy(size_policy)
-        self.end_sta.editingFinished.connect(lambda: self.update_station(self.end_sta)
+        self.start_sta.setInputMethodHints(QtCore.Qt.ImhPreferNumbers)
+        self.end_sta.editingFinished.connect(lambda: self.update_station(self.end_sta))
 
-        layout.addWidget(self.end_sta, 1, 4)
+        station_layout.addWidget(self.end_sta, 0, 3)
+
+        form_layout.addRow(self.tr('Station'), station_layout)
+        form_layout.setAlignment(station_layout, QtCore.Qt.AlignLeft)
 
         #sektch template dropdown
-        layout.addWidget(QtGui.QLabel(self.tr('Template')), 2, 1)
-        
+        sketch_layout = QtGui.QGridLayout()
+
         self.sketch_template = QtGui.QComboBox(self)
         self.sketch_template.setSizePolicy(size_policy)
 
-        layout.addWidget(self.sketch_template, 2, 2)
+        sketch_layout.addWidget(self.sketch_template,0,0)
 
         self.sketch_local = QtGui.QCheckBox('Local Copy', self)
         self.sketch_local.setCheckState(QtCore.Qt.CheckState.Checked)
 
-        layout.addWidget(self.sketch_local, 2, 4)
+        sketch_layout.addWidget(self.sketch_local,0,1)
+
+        form_layout.addRow(self.tr('Template'), sketch_layout)
 
         #alignment drop down
-        layout.addWidget(QtGui.QLabel(self.tr('Alignment')), 3, 1)
-
         self.alignment = QtGui.QComboBox(self)
         self.alignment.setSizePolicy(size_policy)
 
-        layout.addWidget(self.alignment, 3, 2)
+        form_layout.addRow(self.tr('Alignment'), self.alignment)
 
         #interval spinbox
-        layout.addWidget(QtGui.QLabel(self.tr('Interval (%s)' % units)), 4, 1)
-
         self.interval = QtGui.QSpinBox(self)
         self.interval.setRange(0,100)
         self.interval.setValue(25)
 
-        layout.addWidget(self.interval, 4, 2)
+        form_layout.addRow(self.tr('Interval (%s)' % units), self.interval)
 
         #material dropdown
-        layout.addWidget(QtGui.QLabel(self.tr('Material')), 5, 1)
-
         self.material = QtGui.QComboBox(self)
         self.material.addItems(['Default', 'Material 1', 'Material 2', 'Material 3'])
         self.material.setSizePolicy(size_policy)
 
-        layout.addWidget(self.material, 5, 2)
+        form_layout.addRow(self.tr('Material'), self.material)
 
         #buttons
+        button_layout = QtGui.QHBoxLayout()
+        button_layout.addStretch(1)
+
         self.ok_button = QtGui.QPushButton(self.tr('&Ok'), self)
-        layout.addWidget(self.ok_button, 6, 1)
+        button_layout.addWidget(self.ok_button)
 
         self.cancel_button = QtGui.QPushButton(self.tr('&Cancel'), self)
-        layout.addWidget(self.cancel_button, 6, 4)
+        button_layout.addWidget(self.cancel_button)
 
+        #build dialog
+        layout = QtGui.QVBoxLayout()
+        layout.addLayout(form_layout)
+        layout.addStretch(1)
+        layout.addLayout(button_layout)
         self.setLayout(layout)
 
     def set_template_list(self, list_items):
