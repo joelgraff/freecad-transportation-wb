@@ -34,12 +34,19 @@ import FreeCAD as App
 import Part
 from transportationwb import ScriptedObjectSupport as Sos
 
-def createLoftGroup(parent, group_name, spline, sketch):
+def createLoftGroup(parent, group_name, spline, sketch, local_sketch):
     '''
     Constructor method for loft group
     '''
 
     obj = parent.newObject("App::DocumentObjectGroupPython", group_name)
+
+    #duplicate the sketch and include it in the loft group
+    #then set the link to the local sketch
+    if local_sketch:
+        sketch = App.ActiveDocument.copyObject(sketch, False)
+        obj.addObject(sketch)
+
     fpo = _LoftGroup(obj, spline, sketch)
     _ViewProviderLoftGroup(obj.ViewObject)
 

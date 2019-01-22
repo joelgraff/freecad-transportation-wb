@@ -27,6 +27,7 @@ import os
 import time
 import FreeCAD as App
 import FreeCADGui as Gui
+from PySide import QtGui
 from transportationwb.corridor.loft import LoftGroup, NewLoftDialog
 
 class GenerateLoft():
@@ -76,6 +77,29 @@ class GenerateLoft():
 
         self.loft_properties = properties
 
+    def generate_loft(self):
+        '''
+        Generate the loft from the loft properties
+        '''
+
+        if self.loft_properties is None:
+            print('Invalid loft properties')
+            return
+
+        _lg = LoftGroup.createLoftGroup(
+            App.ActiveDocument.Lofts,
+            self.loft_properties['name'],
+            self.loft_properties['alignment'],
+            self.loft_properties['sketch'],
+            self.loft_properties['is_local']
+            )
+
+        #_lg.set_stations(self.loft_properties['stations'])
+        #_lg.set_interval(self.loft_properties['interval'])
+        #_lg.set_material(self.loft_properties['material'])
+
+        #_lg.regenerate()
+
     def Activated(self):
 
         dialog = NewLoftDialog.NewLoftDialog('ft')
@@ -115,17 +139,11 @@ class GenerateLoft():
         #show the dialog
         result = dialog.exec_()
 
-        print(result)
+        if self.loft_properties is None or result == QtGui.QDialog.DialogCode.Rejected:
+            return
 
-        print(self.loft_properties)
-
-        #create the loft object, assign the data, and generate it
-        #_lg = LoftGroup.createLoftGroup(App.ActiveDocument.Lofts, loft_name, spline, sketch)
-
-        #_lg.set_stations(stations)
-        #_lg.set_interval(interval)
-
-        #_lg.regenerate()
+        #create the loft object, assign the data, and generate i
+        self.generate_loft()
 
         App.ActiveDocument.recompute()
 
