@@ -98,7 +98,9 @@ class GenerateLoft():
         _lg.set_interval(self.loft_properties['interval'])
         #_lg.set_material(self.loft_properties['material'])
 
-        _lg.regenerate()
+        _lg.set_initialized()
+
+        #_lg.regenerate()
         print('loft generated')
 
     def Activated(self):

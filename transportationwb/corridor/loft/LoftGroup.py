@@ -55,15 +55,16 @@ def createLoftGroup(parent, group_name, spline, sketch, local_sketch):
 class _LoftGroup():
 
     def __init__(self, obj, spline, sketch):
-        obj.Proxy = self
+        self.Initialized = False
         self.Type = "_LoftGroup"
         self.Object = obj
+
+        obj.Proxy = self
 
         Sos._add_property(self, 'Link', 'Spline', 'Linked spline', spline)
         Sos._add_property(self, 'Link', 'Sketch', 'Linked sketch', sketch)
         Sos._add_property(self, 'Float', 'Interval', 'Section spacing interval', 100.0)
 
-        self.Lock=False
 
     def _build_sections(self, spline, sketch):
         '''
@@ -177,6 +178,13 @@ class _LoftGroup():
             if obj.Label in ['sections', 'loft']:
                 self.Object.removeObject(obj)
 
+    def set_initialized(self):
+        '''
+        Set the initialized variable to True to permit execution
+        '''
+
+        self.Initialized = True
+
     def set_stations(self, stations):
         '''
         Set the starting and ending station of the loft from the provided list
@@ -204,7 +212,11 @@ class _LoftGroup():
         '''
         Rebuild the loft
         '''
-        pass
+        
+        if not self.Initialized:
+            return
+
+        self.regenerate()
 
     def regenerate(self):
 

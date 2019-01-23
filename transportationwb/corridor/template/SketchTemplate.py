@@ -84,4 +84,4 @@ class _ViewProvider():
         vobj.Proxy = self
 
     def getIcon(self):
-        return self.iconpath
+        return None #self.iconpath
