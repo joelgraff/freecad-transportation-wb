@@ -96,7 +96,9 @@ class _LoftGroup():
         for vtx in sketch.Shape.Vertexes:
             sketch_points.append(vtx.Point)
 
-        while i < length:
+        is_last_section = False
+
+        while i <= length:
 
             normal = curve.tangent(i)[0].cross(z_up).normalize()
 
@@ -125,6 +127,10 @@ class _LoftGroup():
             comps += [Part.makePolygon(poly_points)]
 
             i += step
+
+            if (not is_last_section) and (i > length):
+                i = length
+                is_last_section = True
 
         return comps
 
