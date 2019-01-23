@@ -45,8 +45,7 @@ def createLoftGroup(parent, group_name, spline, sketch, local_sketch):
     #then set the link to the local sketch
     if local_sketch:
 
-        sketch_copy = App.ActiveDocument.copyObject(sketch, False)
-        return
+        sketch = App.ActiveDocument.copyObject(sketch, False)
         obj.addObject(sketch)
 
     fpo = _LoftGroup(obj, spline, sketch)
@@ -57,7 +56,7 @@ def createLoftGroup(parent, group_name, spline, sketch, local_sketch):
 class _LoftGroup():
 
     def __init__(self, obj, spline, sketch):
-        self.Initialized = False
+        self.Enabled = False
         self.Type = "_LoftGroup"
         self.Object = obj
 
@@ -67,6 +66,7 @@ class _LoftGroup():
         Sos._add_property(self, 'Link', 'Sketch', 'Linked sketch', sketch)
         Sos._add_property(self, 'Float', 'Interval', 'Section spacing interval', 100.0)
 
+        self.Enabled = True
 
     def _build_sections(self, spline, sketch):
         '''
@@ -180,12 +180,12 @@ class _LoftGroup():
             if obj.Label in ['sections', 'loft']:
                 self.Object.removeObject(obj)
 
-    def set_initialized(self):
+    def set_enabled(self, toggle):
         '''
-        Set the initialized variable to True to permit execution
+        Enable the object for recomputation
         '''
 
-        self.Initialized = True
+        self.Enabled = toggle
 
     def set_stations(self, stations):
         '''
@@ -215,56 +215,79 @@ class _LoftGroup():
         Rebuild the loft
         '''
 
-        if not self.Initialized:
+        print('---> Execute.  Enabled? ', self.Enabled)
+        if not self.Enabled:
             return
 
+        self.Enabled = False
         self.regenerate()
+        self.Enabled = True
 
-        section_object = None
-        loft_object = None
-
-    def _rebuild_geometry(self):
+    def _rebuild_geometry(self, generate_new):
         '''
         Retrieve existing geometry if found, otherwise create new
         '''
-        for obj in self.Object.Group:
-
-            print(obj.Label)
-            loft_object = None
-
-            if obj.Label == 'Loft':
-                self.Object.removeObject(obj)
-                break
 
         loft_object = None
-        #loft_object = self.Object.newObject('Part::Loft', 'Loft')
-        #loft_object.Label = 'Loft'
 
+        for obj in self.Object.Group:
+
+            print(obj.Label, obj.TypeId, obj.Name)
+            if obj.Label == 'Loft':
+                loft_object = obj
+                break
+
+        #if the loft object is not found and we're regenerating existing objects only, abort
+        if loft_object:
+            return loft_object
+
+        if not generate_new:
+            return None
+
+        #    print ('-Removing ', loft_object.Name)
+        #    self.Object.removeObject(loft_object)
+
+        print('+new object in ', self.Object.Name)
+        loft_object = self.Object.newObject('Part::Loft', 'Loft')
+        loft_object.Label = 'Loft'
+
+        print('++added new object ', loft_object.Name)
         return loft_object #, section_object
 
-    def regenerate(self):
+    def generate(self):
+        '''
+        Convenience function to force regeneration without existing geometry
+        '''
 
-        pass
+        self.regenerate(True)
 
-        #loft_object = self._rebuild_geometry()
+    def regenerate(self, generate_new=False):
+
+        loft_object = self._rebuild_geometry(generate_new)
+
+        if loft_object is None:
+            return
 
         #get the support objects.  local copies supersede linked objects
-        #spline, sketch = self._get_support()
+        spline, sketch = self._get_support()
 
         #create loft sections
-        #section_list = self._build_sections(spline, sketch)
+        section_list = self._build_sections(spline, sketch)
 
+        print('generated ', len(section_list), ' sections...')
         #create a compound of the components (polygons)
         #section_object.Shape = Part.Compound(section_list)
 
         #loft the polygons to generate the solid
         #loft_object.Sections = section_object.Shape
-        #loft_object.Shape = Part.makeLoft(section_list, False, True, False)
+        loft_object.Shape = Part.makeLoft(section_list, False, True, False)
 
-    def onChanged(self,obj,prop):
+        #self.Object.addObject(loft_object)
+
+    def onChanged(self, obj, prop):
         print('onChanged ', prop)
 
-    def onBeforeChange(self,obj,prop):
+    def onBeforeChange(self, obj, prop):
         print('onBeforeChange ', prop)
 
 class _ViewProviderLoftGroup(object):

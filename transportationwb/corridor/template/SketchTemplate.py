@@ -17,20 +17,22 @@ def create(sketch_object, template_name):
     obj = App.ActiveDocument.addObject("Sketcher::SketchObjectPython", template_name)
 
     _o = _Sketch(obj)
+
     _o.duplicate(sketch_object)
 
     App.activeDocument().recompute()
 
     return _o
 
+
 class _Sketch(object):
 
-    def __init__(self, obj, icon=''):
+    def __init__(self, obj):
         obj.Proxy = self
         self.Type = self.__class__.__name__
         self.Object = obj
 
-        _ViewProvider(obj.ViewObject, icon)
+        _ViewProvider(obj.ViewObject)
 
         Sos._add_property(self, 'LinkList', 'Lofts', 'List of dependent lofts', isReadOnly=True, default_value=[])
 
@@ -65,8 +67,8 @@ class _Sketch(object):
 
     def myExecute(self, obj):
 
-        if self.Object.Lofts:
-            pass
+        #if self.Object.Lofts:
+        pass
 #        try: fa=App.ActiveDocument.curve
 #        except: fa=App.ActiveDocument.addObject('Part::Spline','curve')
 #        fa.Shape=bc.toShape()
@@ -78,10 +80,15 @@ class _ViewProvider():
         obj.recompute()
         self.myExecute(obj)
 
-    def __init__(self, vobj, icon='/icons/mover.png'):
-        self.iconpath =  icon
+    def __init__(self, vobj):
         self.Object = vobj.Object
         vobj.Proxy = self
 
     def getIcon(self):
-        return None #self.iconpath
+        return ''
+
+    def __getstate__(self):
+        return None
+
+    def __setstate__(self, state):
+        return None        

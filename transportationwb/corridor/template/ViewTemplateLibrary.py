@@ -98,7 +98,7 @@ class ViewTemplateLibrary():
 
         #remove the root objects...
         for obj_name in new_objects:
-                App.ActiveDocument.removeObject(obj_name)
+            App.ActiveDocument.removeObject(obj_name)
 
     def Activated(self):
 

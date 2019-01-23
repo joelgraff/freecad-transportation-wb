@@ -1,7 +1,7 @@
 import FreeCAD as App
 import FreeCADGui as Gui
+import Part
 
-from transportationwb.corridor.loft import LoftGroup
 
 class TestCommand():
     '''
@@ -21,14 +21,42 @@ class TestCommand():
                 'ToolTip' : "Command for testing",
                 'CmdType' : "ForEdit"}
 
-    def buildLinkedLoft(self):
-        '''
-        Test the loft DocumentObjectGroupPython class linking with a sketch
-        '''
+    def buildLoft(self, loft, size):
 
-        _lg = LoftGroup.createLoftGroup('test_loft', App.ActiveDocument.Sketch)
+        boxes = []
+
+        for i in range(0, 10):
+
+            y = float(i) * 100.0
+
+            box = [
+                App.Vector(0.0, y, 0.0),
+                App.Vector(0.0, y, size),
+                App.Vector(size, y, size),
+                App.Vector(size, y, 0.0),
+                App.Vector(0.0, y, 0.0)
+            ]
+
+            boxes += [Part.makePolygon(box)]
+
+        if loft is None:
+            loft = App.ActiveDocument.addObject('Part::Loft', 'Loft')
+
+        loft.Shape = Part.makeLoft(boxes, False, True, False)
+
+    def testLoftRebuild(self):
+
+        loft = App.ActiveDocument.getObject('Loft')
+        size = 10.0
+
+        if loft:
+            size = 20.0
+
+        self.buildLoft(loft, size)
+
+        App.ActiveDocument.recompute()
 
     def Activated(self):
-        self.buildLinkedLoft()
+        self.testLoftRebuild()
 
 Gui.addCommand('TestCommand', TestCommand())

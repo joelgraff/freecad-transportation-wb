@@ -94,15 +94,13 @@ class GenerateLoft():
             self.loft_properties['is_local']
             )
 
-        return
-        
+
         #_lg.set_stations(self.loft_properties['stations'])
         _lg.set_interval(self.loft_properties['interval'])
         #_lg.set_material(self.loft_properties['material'])
 
-        _lg.set_initialized()
-
-        #_lg.regenerate()
+        #force new generation
+        _lg.generate()
         print('loft generated')
 
     def Activated(self):
@@ -150,6 +148,6 @@ class GenerateLoft():
         #create the loft object, assign the data, and generate i
         self.generate_loft()
 
-        App.ActiveDocument.recompute()
+        #App.ActiveDocument.recompute()
 
 Gui.addCommand('GenerateLoft', GenerateLoft())
