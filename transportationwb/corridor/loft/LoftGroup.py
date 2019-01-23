@@ -23,7 +23,7 @@
 # **************************************************************************
 
 '''
-AddProperty helper function for FeaturePythonObjects
+Loft Group object for managing lofts
 '''
 
 __title__ = "LoftGroup.py"
