@@ -85,18 +85,18 @@ class _VerticalCurve():
         self.Type = 'VerticalCurve'
         self.Object = obj
 
-        Sos._add_property('Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
-        Sos._add_property('Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
-        Sos._add_property('Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
-        Sos._add_property('Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
-        Sos._add_property('Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
-        Sos._add_property('Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
-        Sos._add_property('Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
-        Sos._add_property('Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)
-        Sos._add_property('Length', 'General.Length', 'Length of the vertical curve', 0.00)
-        Sos._add_property('Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
-        Sos._add_property('Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
-        Sos._add_property('Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
+        Sos._add_property(self, 'Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
+        Sos._add_property(self, 'Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
+        Sos._add_property(self, 'Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
+        Sos._add_property(self, 'Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
+        Sos._add_property(self, 'Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
+        Sos._add_property(self, 'Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
+        Sos._add_property(self, 'Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
+        Sos._add_property(self, 'Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)
+        Sos._add_property(self, 'Length', 'General.Length', 'Length of the vertical curve', 0.00)
+        Sos._add_property(self, 'Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
+        Sos._add_property(self, 'Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
+        Sos._add_property(self, 'Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
 
         self.doRecalc = False
 

@@ -85,18 +85,18 @@ class _HorizontalCurve():
         self.Type = 'HorizontalCurve'
         self.Object = obj
 
-        Sos._add_property('Angle', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
-        Sos._add_property('String','General.Quadrant', 'Bearing quadrant of the PC tangent', '')
-        Sos._add_property('Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
-        Sos._add_property('Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
-        Sos._add_property('Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
-        Sos._add_property('Angle', 'General.Delta', 'Central angle of the curve', 0.00)
-        Sos._add_property('String', 'General.Direction', 'Curve direction', '')
-        Sos._add_property('Length', 'General.Radius', 'Curve radius', 0.00)        
-        Sos._add_property('Length', 'General.Length', 'Curve length', 0.00)
-        Sos._add_property('Float', 'General.E', 'External distance', 0.00, True)
-        Sos._add_property('Float', 'General.T', 'Tangent length', 0.00, True)
-        Sos._add_property('Float', 'General.D', 'Degree of Curvature', True, True)
+        Sos._add_property(self, 'Angle', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
+        Sos._add_property(self, 'String','General.Quadrant', 'Bearing quadrant of the PC tangent', '')
+        Sos._add_property(self, 'Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
+        Sos._add_property(self, 'Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
+        Sos._add_property(self, 'Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
+        Sos._add_property(self, 'Angle', 'General.Delta', 'Central angle of the curve', 0.00)
+        Sos._add_property(self, 'String', 'General.Direction', 'Curve direction', '')
+        Sos._add_property(self, 'Length', 'General.Radius', 'Curve radius', 0.00)        
+        Sos._add_property(self, 'Length', 'General.Length', 'Curve length', 0.00)
+        Sos._add_property(self, 'Float', 'General.E', 'External distance', 0.00, True)
+        Sos._add_property(self, 'Float', 'General.T', 'Tangent length', 0.00, True)
+        Sos._add_property(self, 'Float', 'General.D', 'Degree of Curvature', True, True)
 
         self.doRecalc = False
 

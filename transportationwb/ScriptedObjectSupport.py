@@ -77,11 +77,16 @@ def _add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False)
     prop = target.getPropertyByName(p_name)
 
     if p_type in [
-            'App::PropertyFloat',
+            'App::PropertyFloat'
+        ]:
+        prop = default_value
+
+    elif p_type in [
             'App::PropertyBool',
             'App::PropertyPercent',
             'App::PropertyLinkList',
-            'App::PropertyLink'
+            'App::PropertyLink',
+            'App::PropertyString'
         ]:
         setattr(target, p_name, default_value)
         #prop = default_value

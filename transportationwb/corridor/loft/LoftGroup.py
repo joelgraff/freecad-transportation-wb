@@ -58,10 +58,12 @@ class _LoftGroup():
         obj.Proxy = self
         self.Type = "_LoftGroup"
         self.Object = obj
-        self.Lock=False
 
         Sos._add_property(self, 'Link', 'Spline', 'Linked spline', spline)
         Sos._add_property(self, 'Link', 'Sketch', 'Linked sketch', sketch)
+        Sos._add_property(self, 'Float', 'Interval', 'Section spacing interval', 100.0)
+
+        self.Lock=False
 
     def _build_sections(self, spline, sketch):
         '''
@@ -69,10 +71,10 @@ class _LoftGroup():
         '''
 
         #reference spline curve object
-        curve = spline.Curve
+        curve = spline.Shape.Curve
 
         #return first / last parameters
-        [a, b]=spline.ParameterRange
+        [a, b]=spline.Shape.ParameterRange
 
         #round the length up and add one
         length = int(round(b)) + 1
@@ -82,8 +84,10 @@ class _LoftGroup():
 
         #iterate the range of the length as integers
         i = 0.0
-        step = 304.8 * self.Object.interval
+        step = 304.8 * float(self.Object.Interval)
 
+        print ('interval = ', self.Object.Interval)
+        print ('step = ', step)
         sketch_points = []
 
         for vtx in sketch.Shape.Vertexes:
@@ -121,6 +125,13 @@ class _LoftGroup():
 
         return comps
 
+    def __getstate__(self):
+        return self.Type
+
+    def __setstate__(self, state):
+        if state:
+            self.Type = state
+
     def _get_child(self, object_type):
         '''
         Test for a spline, either linked or local
@@ -139,19 +150,19 @@ class _LoftGroup():
         spline = self._get_child('Part::Part2DObjectPython')
         sketch = self._get_child('Sketcher::SketchObjectPython')
 
-        if spline is None:
-            spline = self.Object.Spline
+        #if spline is None:
+        spline = self.Object.Spline
 
-            if spline is None:
-                print('Missing linked or local spline')
-                return
+        if spline is None:
+            print('Missing linked or local spline')
+            return
+
+        #if sketch is None:
+        sketch = self.Object.Sketch
 
         if sketch is None:
-            sketch = self.Object.Sketch
-
-            if sketch is None:
-                print('Missing linked or local sketch')
-                return
+            print('Missing linked or local sketch')
+            return
 
         return spline, sketch
 
@@ -178,7 +189,9 @@ class _LoftGroup():
         Set the section interval for the loft
         '''
 
-        pass
+        print('assigning interval ', interval)
+        self.Object.Interval = interval
+        print('interval assigned ', self.Object.Interval)
 
     def set_material(self, material):
         '''
@@ -187,11 +200,14 @@ class _LoftGroup():
 
         pass
 
-
     def execute(self, obj):
         '''
         Rebuild the loft
         '''
+        pass
+
+    def regenerate(self):
+
         self._clear_loft()
 
         #get the support objects.  local copies supersede linked objects
@@ -200,6 +216,7 @@ class _LoftGroup():
         #create loft sections
         section_list = self._build_sections(spline, sketch)
 
+        print ('sections = ', len(section_list))
         #create a compound of the components (polygons)
         sections = self.Object.newObject('Part::Feature', 'Sections')
         sections.Shape = Part.Compound(section_list)
@@ -207,14 +224,6 @@ class _LoftGroup():
         #loft the polygons to generate the solid
         loft = self.Object.newObject('Part::Feature', 'loft')
         loft.Shape = Part.makeLoft(section_list, False, True, False)
-
-    def __getstate__(self):
-        print("getstate " + str(self))
-        return None
-
-    def __setstate__(self,state):
-        print("setstate " + str(self) + str(state))
-        return None
         
     def onChanged(self,obj,prop):
         print('onChanged ', prop)

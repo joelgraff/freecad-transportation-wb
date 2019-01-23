@@ -347,9 +347,6 @@ class ExpDockWidget(QtGui.QDockWidget):
             #pass the selected path back to the parent object for further processing
             self.call_back(self.dirmodel.filePath(index))
 
-        #else:
-         #   self.folder.expanded(index)
-
     def addtolibrary(self):
 
         _dialog = QtGui.QFileDialog.getSaveFileName(None, "Choose category and set filename (no extension)", self.library_path)
