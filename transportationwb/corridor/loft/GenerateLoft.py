@@ -94,6 +94,8 @@ class GenerateLoft():
             self.loft_properties['is_local']
             )
 
+        return
+        
         #_lg.set_stations(self.loft_properties['stations'])
         _lg.set_interval(self.loft_properties['interval'])
         #_lg.set_material(self.loft_properties['material'])

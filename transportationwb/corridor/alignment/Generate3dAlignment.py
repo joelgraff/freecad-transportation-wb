@@ -86,7 +86,7 @@ class Generate3dAlignment():
             if ('HA' in objs[0].Label) & ('VA' in objs[1].Label):
                 return objs
 
-            if ('HA' in objs[1].Labael) & ('VA' in objs[0].Label):
+            if ('HA' in objs[1].Label) & ('VA' in objs[0].Label):
                 return [objs[1], objs[0]]
 
         return None
