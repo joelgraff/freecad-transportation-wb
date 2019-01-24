@@ -30,10 +30,10 @@ __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
-import Part
-from transportationwb import ScriptedObjectSupport as Sos
 
-def createAlignment(parent, group_name)
+from transportationwb.ScriptedObjectSupport import Properties
+
+def createAlignment(parent, group_name):
     '''
     Constructor method for alignment group
     '''
@@ -57,15 +57,15 @@ class _AlignmentGroup():
 
         obj.Proxy = self
 
-        Sos._add_property('', 'General.Units', 'Base units of alignment', 'English', False, ['English', 'Metric'])
-        Sos._add_property('Length', 'General.Start_Station', 'Starting station', 0.00)
-        Sos._add_property('Length', 'General.End_Station', 'Ending station', 0.00)
-        Sos._add_property('Length', 'General.Length', 'Length of baseline', 0.00, True)
-        Sos._add_property('Angle', 'General.Bearing', 'Initial bearing of alignment', 0.00)
-        Sos._add_property('String', 'General.Quadrant', 'Bearing quadrant', '')
-        Sos._add_property('Link', 'Location.Alignment', 'Reference alignment', '',True)
-        Sos._add_property('Length', 'Location.Primary', 'Station position along reference alignment', 0.00)
-        Sos._add_property('Length', 'Location.Secondary', 'Station position along local alignment', 0.00)
+        Properties.add('', 'General.Units', 'Base units of alignment', 'English', False, ['English', 'Metric'])
+        Properties.add('Length', 'General.Start_Station', 'Starting station', 0.00)
+        Properties.add('Length', 'General.End_Station', 'Ending station', 0.00)
+        Properties.add('Length', 'General.Length', 'Length of baseline', 0.00, True)
+        Properties.add('Angle', 'General.Bearing', 'Initial bearing of alignment', 0.00)
+        Properties.add('String', 'General.Quadrant', 'Bearing quadrant', '')
+        Properties.add('Link', 'Location.Alignment', 'Reference alignment', '', True)
+        Properties.add('Length', 'Location.Primary', 'Station position along reference alignment', 0.00)
+        Properties.add('Length', 'Location.Secondary', 'Station position along local alignment', 0.00)
 
         self.Enabled = True
 

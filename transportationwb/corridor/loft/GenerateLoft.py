@@ -21,10 +21,7 @@
 # *                                                                        *
 # **************************************************************************
 
-import Draft
-import Part
 import os
-import time
 import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtGui
@@ -36,7 +33,7 @@ class GenerateLoft():
     Builds a sweep based on passed template and sweep path
     '''
     def __init__(self):
-        pass
+        self.loft_properties = None
 
     def GetResources(self):
         """
@@ -90,32 +87,31 @@ class GenerateLoft():
             self.loft_properties['alignment'],
             self.loft_properties['sketch'],
             self.loft_properties['name'],
-            App.ActiveDocument.Lofts            
+            App.ActiveDocument.Lofts
             )
-
 
         #_lg.set_stations(self.loft_properties['stations'])
         fpo.Object.Interval = self.loft_properties['interval']
         #_lg.set_material(self.loft_properties['material'])
 
-        #force new generation
-        #_lg.generate()
-
         App.ActiveDocument.recompute()
-        print('loft generated')
 
     def Activated(self):
-
-        dialog = NewLoftDialog.NewLoftDialog('ft')
-
+        '''
+        Command activation method
+        '''
         align_list = []
         template_list = []
 
         #test to see if a template / alignment have been pre-selected
         for obj in Gui.Selection.getSelection():
 
-            if not obj.TypeId in ['Part::Part2DObjectPython', 'Sketcher::SketchObjectPython']:
+            if not obj.TypeId in [
+                    'Part::Part2DObjectPython', 'Sketcher::SketchObjectPython'
+                ]:
+
                 print('Invalid object type found.  Select a spline and sketch to perform loft')
+
                 return
 
             if obj.TypeId == 'Part::Part2DObjectPython':
@@ -135,6 +131,8 @@ class GenerateLoft():
             for obj in template_folder.OutList:
                 template_list.append(obj)
 
+        dialog = NewLoftDialog.NewLoftDialog('ft')
+
         #set the dialog properties
         dialog.set_alignment_list(align_list)
         dialog.set_template_list(template_list)
@@ -148,7 +146,5 @@ class GenerateLoft():
 
         #create the loft object, assign the data, and generate i
         self.generate_loft()
-
-        #App.ActiveDocument.recompute()
 
 Gui.addCommand('GenerateLoft', GenerateLoft())

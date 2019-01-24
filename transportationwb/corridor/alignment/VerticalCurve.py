@@ -32,7 +32,7 @@ __url__ = "https://www.freecadweb.org"
 import FreeCAD as App
 import Draft
 import Part
-from transportationwb import ScriptedObjectSupport as Sos
+from transportationwb.ScriptedObjectSupport import Properties
 
 if App.Gui:
     import FreeCADGui as Gui
@@ -85,18 +85,18 @@ class _VerticalCurve():
         self.Type = 'VerticalCurve'
         self.Object = obj
 
-        Sos._add_property(self, 'Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
-        Sos._add_property(self, 'Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
-        Sos._add_property(self, 'Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
-        Sos._add_property(self, 'Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
-        Sos._add_property(self, 'Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
-        Sos._add_property(self, 'Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
-        Sos._add_property(self, 'Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
-        Sos._add_property(self, 'Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)
-        Sos._add_property(self, 'Length', 'General.Length', 'Length of the vertical curve', 0.00)
-        Sos._add_property(self, 'Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
-        Sos._add_property(self, 'Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
-        Sos._add_property(self, 'Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
+        Properties.add(self, 'Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
+        Properties.add(self, 'Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
+        Properties.add(self, 'Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
+        Properties.add(self, 'Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
+        Properties.add(self, 'Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
+        Properties.add(self, 'Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
+        Properties.add(self, 'Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
+        Properties.add(self, 'Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)
+        Properties.add(self, 'Length', 'General.Length', 'Length of the vertical curve', 0.00)
+        Properties.add(self, 'Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
+        Properties.add(self, 'Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
+        Properties.add(self, 'Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
 
         self.doRecalc = False
 

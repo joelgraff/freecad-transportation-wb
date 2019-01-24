@@ -27,7 +27,7 @@ DESCRIPTION
 '''
 import FreeCAD as App
 import Part
-from transportationwb import ScriptedObjectSupport as Sos
+from transportationwb.ScriptedObjectSupport import Properties
 
 _CLASS_NAME = 'Loft'
 _TYPE = 'Part::FeaturePython'
@@ -72,10 +72,10 @@ class _Loft(object):
         self.Object = obj
 
         #add class properties
-        Sos.add_property(self, 'StringList', 'Control_Schedule', 'Schedule for loft controls', [], isReadOnly=False, isHidden=True)
-        Sos.add_property(self, 'Link', 'Alignment', 'Linked alignment', spline)
-        Sos.add_property(self, 'Link', 'Template', 'Linked template', sketch)
-        Sos.add_property(self, 'Float', 'Interval', 'Section spacing interval', 100.0)
+        Properties.add(self, 'StringList', 'Control_Schedule', 'Schedule for loft controls', [], is_read_only=False, is_hidden=True)
+        Properties.add(self, 'Link', 'Alignment', 'Linked alignment', spline)
+        Properties.add(self, 'Link', 'Template', 'Linked template', sketch)
+        Properties.add(self, 'Float', 'Interval', 'Section spacing interval', 100.0)
 
         self.Enabled = True
 

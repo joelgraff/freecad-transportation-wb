@@ -22,16 +22,16 @@
 # **************************************************************************
 
 '''
-AddProperty helper function for FeaturePythonObjects
+Helper functions for scripted object properties
 '''
 
-__title__ = "AddProeprty.py"
+__title__ = "Properties.py"
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
 
-def add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False, isHidden=False):
+def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidden=False):
 
     '''
     Build FPO properties
@@ -43,7 +43,7 @@ def add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False, 
     isReadOnly      Boolean property (read-only = True)
     '''
 
-    target = obj
+    target = obj.Object
 
     tple = name.split('.')
 
@@ -100,10 +100,10 @@ def add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False, 
 
     editor_mode = 0
 
-    if isReadOnly:
+    if is_read_only:
         editor_mode += 1
 
-    if isHidden:
+    if is_hidden:
         editor_mode += 2
 
     target.setEditorMode(p_name, editor_mode)
