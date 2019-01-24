@@ -21,42 +21,65 @@ class TestCommand():
                 'ToolTip' : "Command for testing",
                 'CmdType' : "ForEdit"}
 
-    def buildLoft(self, loft, size):
+    def Activated(self):
+        prop_list = [
+            'App::PropertyBool',
+            'App::PropertyBoolList',
+            'App::PropertyFloat',
+            'App::PropertyFloatList',
+            'App::PropertyFloatConstraint',
+            'App::PropertyQuantity',
+            'App::PropertyQuantityConstraint',
+            'App::PropertyAngle',
+            'App::PropertyDistance',
+            'App::PropertyLength',
+            'App::PropertySpeed',
+            'App::PropertyAcceleration',
+            'App::PropertyForce',
+            'App::PropertyPressure',
+            'App::PropertyInteger',
+            'App::PropertyIntegerConstraint',
+            'App::PropertyPercent',
+            'App::PropertyEnumeration',
+            'App::PropertyIntegerList',
+            'App::PropertyIntegerSet',
+            'App::PropertyMap',
+            'App::PropertyString',
+            'App::PropertyUUID',
+            'App::PropertyFont',
+            'App::PropertyStringList',
+            'App::PropertyLink',
+            'App::PropertyLinkSub',
+            'App::PropertyLinkList',
+            'App::PropertyLinkSubList',
+            'App::PropertyMatrix',
+            'App::PropertyVector',
+            'App::PropertyVectorList',
+            'App::PropertyPlacement',
+            'App::PropertyPlacementLink',
+            'App::PropertyColor',
+            'App::PropertyColorList',
+            'App::PropertyMaterial',
+            'App::PropertyPath',
+            'App::PropertyFile',
+            'App::PropertyFileIncluded',
+            'App::PropertyPythonObject',
+            'Part::PropertyPartShape',
+            'Part::PropertyGeometryList',
+            'Part::PropertyShapeHistory',
+            'Part::PropertyFilletEdges',
+            'Sketcher::PropertyConstraintList'
+        ]
 
-        boxes = []
+        x = App.ActiveDocument.addObject('Part::FeaturePython', 'fpo')
 
-        for i in range(0, 10):
+        for prop in prop_list:
+            p_name = prop.replace('App::Property', '')
+            p_name = p_name.replace('Part::Property', '')
+            p_name = p_name.replace('Sketcher::Property', '')
 
-            y = float(i) * 100.0
-
-            box = [
-                App.Vector(0.0, y, 0.0),
-                App.Vector(0.0, y, size),
-                App.Vector(size, y, size),
-                App.Vector(size, y, 0.0),
-                App.Vector(0.0, y, 0.0)
-            ]
-
-            boxes += [Part.makePolygon(box)]
-
-        if loft is None:
-            loft = App.ActiveDocument.addObject('Part::Loft', 'Loft')
-
-        loft.Shape = Part.makeLoft(boxes, False, True, False)
-
-    def testLoftRebuild(self):
-
-        loft = App.ActiveDocument.getObject('Loft')
-        size = 10.0
-
-        if loft:
-            size = 20.0
-
-        self.buildLoft(loft, size)
+            x.addProperty(prop, p_name, p_name)
 
         App.ActiveDocument.recompute()
-
-    def Activated(self):
-        self.testLoftRebuild()
 
 Gui.addCommand('TestCommand', TestCommand())

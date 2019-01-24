@@ -124,6 +124,13 @@ class _Loft(object):
 
         self.regenerate()
 
+    def _spreadsheet_on_close(self):
+        '''
+        Callback to clean up and save spreadsheet results
+        '''
+
+        print('callback!')
+
     def show_schedule(self):
         '''
         Create a temporary spreadsheet for viewing and
