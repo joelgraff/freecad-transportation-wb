@@ -33,9 +33,6 @@ import FreeCAD as App
 
 def add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False, isHidden=False):
 
-    add_prop(obj.Object, p_type, name, desc, default_value, isReadOnly, isHidden)
-
-def add_prop(obj, p_type, name, desc, default_value=None, isReadOnly=False, isHidden=False):
     '''
     Build FPO properties
 
