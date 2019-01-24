@@ -28,7 +28,7 @@ import time
 import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtGui
-from transportationwb.corridor.loft import LoftGroup, NewLoftDialog
+from transportationwb.corridor.loft import Loft, NewLoftDialog
 
 class GenerateLoft():
     '''
@@ -86,21 +86,22 @@ class GenerateLoft():
             print('Invalid loft properties')
             return
 
-        _lg = LoftGroup.createLoftGroup(
-            App.ActiveDocument.Lofts,
-            self.loft_properties['name'],
+        fpo = Loft.createLoft(
             self.loft_properties['alignment'],
             self.loft_properties['sketch'],
-            self.loft_properties['is_local']
+            self.loft_properties['name'],
+            App.ActiveDocument.Lofts            
             )
 
 
         #_lg.set_stations(self.loft_properties['stations'])
-        _lg.set_interval(self.loft_properties['interval'])
+        fpo.Object.Interval = self.loft_properties['interval']
         #_lg.set_material(self.loft_properties['material'])
 
         #force new generation
-        _lg.generate()
+        #_lg.generate()
+
+        App.ActiveDocument.recompute()
         print('loft generated')
 
     def Activated(self):

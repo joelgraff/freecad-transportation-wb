@@ -31,7 +31,11 @@ __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
 
-def _add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False):
+def add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False, isHidden=False):
+
+    add_prop(obj.Object, p_type, name, desc, default_value, isReadOnly, isHidden)
+
+def add_prop(obj, p_type, name, desc, default_value=None, isReadOnly=False, isHidden=False):
     '''
     Build FPO properties
 
@@ -42,7 +46,7 @@ def _add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False)
     isReadOnly      Boolean property (read-only = True)
     '''
 
-    target = obj.Object
+    target = obj
 
     tple = name.split('.')
 
@@ -54,16 +58,19 @@ def _add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False)
         p_group = tple[0]
 
 
-    if p_type in [  'Length',
-                    'Float',
-                    'Bool',
-                    'Link',
-                    'Distance',
-                    'Percent',
-                    'FloatList',
-                    'String',
-                    'Angle',
-                    'LinkList']:
+    if p_type in [
+            'Length',
+            'Distance',
+            'Percent',
+            'Angle',
+            'Link',
+            'LinkList',
+            'Float',
+            'FloatList',
+            'Bool',
+            'String',
+            'StringList'
+        ]:
         p_type = 'App::Property' + p_type
 
     else:
@@ -86,14 +93,22 @@ def _add_property(obj, p_type, name, desc, default_value=None, isReadOnly=False)
             'App::PropertyPercent',
             'App::PropertyLinkList',
             'App::PropertyLink',
-            'App::PropertyString'
+            'App::PropertyString',
+            'App::PropertyStringList'
         ]:
         setattr(target, p_name, default_value)
         #prop = default_value
     else:
         prop.Value = default_value
 
+    editor_mode = 0
+
     if isReadOnly:
-        target.setEditorMode(p_name, 1)
+        editor_mode += 1
+
+    if isHidden:
+        editor_mode += 2
+
+    target.setEditorMode(p_name, editor_mode)
 
     return prop
