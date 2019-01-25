@@ -26,8 +26,9 @@
 DESCRIPTION
 '''
 import FreeCAD as App
+import FreeCADGui as Gui
 import Part
-from transportationwb.ScriptedObjectSupport import Properties, 
+from transportationwb.ScriptedObjectSupport import Properties, QEventHandler
 
 _CLASS_NAME = 'Loft'
 _TYPE = 'Part::FeaturePython'
@@ -78,6 +79,13 @@ class _Loft(object):
         Properties.add(self, 'Float', 'Interval', 'Section spacing interval', 100.0)
 
         self.Enabled = True
+
+    def onDocumentRestored(self, fp):
+        '''
+        Restore object references on reload
+        '''
+
+        self.Object = fp
 
     def __getstate__(self):
         '''
@@ -131,18 +139,23 @@ class _Loft(object):
 
         print('callback!')
 
-    def show_schedule(self):
+        App.ActiveDocument.removeObject(self.temp_sheet.Name)
+        self.handler = None
+
+    def show_interval_schedule(self):
         '''
         Create a temporary spreadsheet for viewing and
         editing the schedule data
         '''
 
-        sheet = App.ActiveDocument.addObject('Spreadsheet::Sheet', 'temp_sheet')
+        self.temp_sheet = App.ActiveDocument.addObject('Spreadsheet::Sheet', 'temp_sheet')
+
         values = self.Object.Control_Schedule
 
         print(values)
 
-        App.ActiveDocument.removeObject(sheet.Name)
+        Gui.ActiveDocument.setEdit(self.temp_sheet)
+        self.handler = QEventHandler.create('temp_sheet[*]', 'Destroy', self._spreadsheet_on_close)
 
     @staticmethod
     def _build_sections(spline, sketch, interval):
@@ -215,8 +228,14 @@ class _ViewProviderLoft():
         View Provider initialization
         '''
         self.Object = vobj
-        self.Fpo = vobj.Object.Proxy
         vobj.Proxy = self
+
+    def onDocumentRestored(self, vobj):
+        '''
+        Restore object references on reload
+        '''
+
+        self.Object = vobj
 
     def getIcon(self):
         '''
@@ -243,7 +262,9 @@ class _ViewProviderLoft():
         '''
         return None
 
-    def setupContextMenu(self, obj, menu):
-
+    def setupContextMenu(self, vobj, menu):
+        '''
+        Object-specific context menu items
+        '''
         action = menu.addAction("Schedule...")
-        action.triggered.connect(self.Fpo.show_schedule)
+        action.triggered.connect(lambda: vobj.Object.Proxy.show_interval_schedule())

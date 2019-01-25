@@ -47,7 +47,7 @@ def create(window_title, event_name, call_back):
 
     for item in sub_windows:
 
-        if item.widget().windowTitle() == window_title:
+        if window_title == item.widget().windowTitle():
             return QEventHandler(item, event_name, call_back)
     
     return None
@@ -66,5 +66,7 @@ class QEventHandler(QtGui.QMainWindow):
 
     def eventFilter(self, source, event):
 
-        if event.
+        if self.event_name in str(event.type()):
+            self.call_back()
+
         return super(QEventHandler, self).eventFilter(source, event)
