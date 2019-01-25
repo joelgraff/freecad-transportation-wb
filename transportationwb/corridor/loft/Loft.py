@@ -27,7 +27,7 @@ DESCRIPTION
 '''
 import FreeCAD as App
 import Part
-from transportationwb.ScriptedObjectSupport import Properties
+from transportationwb.ScriptedObjectSupport import Properties, 
 
 _CLASS_NAME = 'Loft'
 _TYPE = 'Part::FeaturePython'
