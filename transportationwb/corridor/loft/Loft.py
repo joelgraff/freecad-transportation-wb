@@ -28,7 +28,9 @@ DESCRIPTION
 import FreeCAD as App
 import FreeCADGui as Gui
 import Part
-from transportationwb.ScriptedObjectSupport import Properties, QEventHandler
+import xml.etree.ElementTree as etree
+
+from transportationwb.ScriptedObjectSupport import Properties, QtEventFilter
 
 _CLASS_NAME = 'Loft'
 _TYPE = 'Part::FeaturePython'
@@ -55,14 +57,15 @@ def createLoft(spline, sketch, object_name='', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    fpo = _Loft(_obj, spline, sketch)
+    units = Properties.get_units()
+    fpo = _Loft(_obj, spline, sketch, units)
     _ViewProviderLoft(_obj.ViewObject)
 
     return fpo
 
 class _Loft(object):
 
-    def __init__(self, obj, spline, sketch):
+    def __init__(self, obj, spline, sketch, units):
         '''
         Main class intialization
         '''
@@ -77,6 +80,7 @@ class _Loft(object):
         Properties.add(self, 'Link', 'Alignment', 'Linked alignment', spline)
         Properties.add(self, 'Link', 'Template', 'Linked template', sketch)
         Properties.add(self, 'Float', 'Interval', 'Section spacing interval', 100.0)
+        Properties.add(self, 'StringList', 'Interval_Schedule', 'Schedule for loft section intervals', [], is_hidden=False)
 
         self.Enabled = True
 
@@ -137,10 +141,29 @@ class _Loft(object):
         Callback to clean up and save spreadsheet results
         '''
 
-        print('callback!')
+        xml = self._sheet.Content
+
+        tree = etree.fromstring(xml)
+
+        result = {}
+
+        #iterate each cell in the cells group, saving the address and the value
+        for node in tree.findall('Cells'):
+
+            for cell in node.findall('Cell'):
+                result[node.get('address')] = node.get('content')
+
+        print(result)
 
         App.ActiveDocument.removeObject(self.temp_sheet.Name)
-        self.handler = None
+
+        QtEventFilter.remove(self.event_filter)
+        self.event_filter = None
+
+    def on_cell_click(self, index):
+
+        print('Clicked', index)
+        print('cell: ', index.row(), index.column(), index.data())
 
     def show_interval_schedule(self):
         '''
@@ -148,14 +171,36 @@ class _Loft(object):
         editing the schedule data
         '''
 
-        self.temp_sheet = App.ActiveDocument.addObject('Spreadsheet::Sheet', 'temp_sheet')
+        _sheet = App.ActiveDocument.addObject('Spreadsheet::Sheet', 'temp_sheet')
+        values = self.Object.Interval_Schedule
 
-        values = self.Object.Control_Schedule
+        _sheet.set('A1', 'Station')
+        _sheet.set('B1', 'Interval (%s)' % Properties.get_units())
 
-        print(values)
+        if not values:
+            _sheet.set('B2', str(self.Object.Interval))
 
-        Gui.ActiveDocument.setEdit(self.temp_sheet)
-        self.handler = QEventHandler.create('temp_sheet[*]', 'Destroy', self._spreadsheet_on_close)
+        else:
+            cell_values = [value.split(',') for value in values][0]
+
+            row = 1
+
+            for vals in cell_values:
+
+                col = 65
+                row += 1
+                str_row = str(row)
+
+                for val in vals:
+
+                    _sheet.set(chr(col) + str(row), val)
+                    col += 1
+
+        Gui.ActiveDocument.setEdit(_sheet)
+        self.event_filter = QtEventFilter.create('temp_sheet[*]', 'Destroy', self._spreadsheet_on_close)
+        QtEventFilter.trapCellClick('temp_sheet[*]', self.on_cell_click)
+
+        self.temp_sheeet = _sheet
 
     @staticmethod
     def _build_sections(spline, sketch, interval):

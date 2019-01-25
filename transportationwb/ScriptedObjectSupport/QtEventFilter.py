@@ -22,18 +22,33 @@
 # **************************************************************************
 
 '''
-Class to handle QEvents from windows / widgets
+Class to filter QEvents from windows / widgets
 '''
 
 from PySide import QtGui
 import FreeCADGui as Gui
 
-_CLASS_NAME = 'QEventHandler'
+_CLASS_NAME = 'QtEventFilter'
 _TYPE = 'Part::FeaturePython'
 
 __title__ = _CLASS_NAME + '.py'
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
+
+def trapCellClick(window_title, callback):
+    '''
+    '''
+
+    main_window = Gui.getMainWindow()
+    mdi = main_window.findChild(QtGui.QMdiArea)
+    sub_windows = mdi.subWindowList()
+
+    for item in sub_windows:
+
+        if window_title == item.widget().windowTitle():
+            table = item.widget().findChild(QtGui.QTableWidget)
+            print(table)
+            table.entered.connect(callback)
 
 def create(window_title, event_name, call_back):
     '''
@@ -48,25 +63,32 @@ def create(window_title, event_name, call_back):
     for item in sub_windows:
 
         if window_title == item.widget().windowTitle():
-            return QEventHandler(item, event_name, call_back)
-    
+            return QtEventFilter(item, event_name, call_back)
+
     return None
 
+def remove(filter):
+    '''
+    Remove the installed filter
+    '''
 
-class QEventHandler(QtGui.QMainWindow):
+    filter.widget.removeEventFilter(filter)
+
+class QtEventFilter(QtGui.QMainWindow):
 
     def __init__(self, obj, event_name, call_back):
-        
-        super(QEventHandler, self).__init__()
+
+        super(QtEventFilter, self).__init__()
 
         obj.installEventFilter(self)
 
         self.event_name = event_name
         self.call_back = call_back
+        self.widget = obj
 
     def eventFilter(self, source, event):
 
         if self.event_name in str(event.type()):
             self.call_back()
 
-        return super(QEventHandler, self).eventFilter(source, event)
+        return super(QtEventFilter, self).eventFilter(source, event)
