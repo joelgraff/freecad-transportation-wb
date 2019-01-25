@@ -54,7 +54,6 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
         p_name = tple[1]
         p_group = tple[0]
 
-
     if p_type in [
             'Length',
             'Distance',

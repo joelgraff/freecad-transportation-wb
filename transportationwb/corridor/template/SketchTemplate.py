@@ -4,7 +4,7 @@
 #https://forum.freecadweb.org/viewtopic.php?t=6121
 #https://forum.freecadweb.org/viewtopic.php?t=12829
 import FreeCAD as App
-from transportationwb import ScriptedObjectSupport as Sos
+from transportationwb.ScriptedObjectSupport import Properties
 
 if App.Gui:
     import FreeCADGui as Gui
@@ -34,7 +34,7 @@ class _Sketch(object):
 
         _ViewProvider(obj.ViewObject)
 
-        Sos._add_property(self, 'LinkList', 'Lofts', 'List of dependent lofts', isReadOnly=True, default_value=[])
+        Properties.add(self, 'LinkList', 'Lofts', 'List of dependent lofts', is_read_only=True, default_value=[])
 
     def duplicate(self, sketch):
         '''
