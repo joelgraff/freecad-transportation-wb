@@ -27,6 +27,7 @@ DESCRIPTION
 
 from PySide import QtGui, QtCore
 import operator
+import re
 
 class IntervalTask:
     def __init__(self):
@@ -34,6 +35,7 @@ class IntervalTask:
         self.form = None
 
     def accept(self):
+        print(self.form.table_view.model().dataset)
         return True
 
     def reject(self):
@@ -86,10 +88,14 @@ class IntervalTask:
             self.form.table_view.model().removeRows(index.row(), 1)
 
     def setupUi(self):
+
         _mw = self.getMainWindow()
+
         form = _mw.findChild(QtGui.QWidget, 'TaskPanel')
+
         form.add_button = form.findChild(QtGui.QPushButton, 'add_button')
         form.remove_button = form.findChild(QtGui.QPushButton, 'remove_button')
+
         form.table_view = form.findChild(QtGui.QTableView, 'table_view')
         form.table_view.setModel(TableModel())
         form.table_view.setItemDelegate(TableModelDelegate())
@@ -133,6 +139,10 @@ class TableModel(QtCore.QAbstractTableModel):
             headerdata: a list of strings
         """
         QtCore.QAbstractTableModel.__init__(self, parent)
+
+        self.rex_station = re.compile('[0-9]+\+[0-9]{2}\.[0-9]{2,}')
+        self.rex_near_station = re.compile('(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
+
         self.dataset = [['0+00.00', 25], ['15+00.00', 10], ['20+00.00', 35], ['35+00.00', 50], ['60+00.00', 25]]
         self.headerdata = ['Station', 'Interval']
 
@@ -170,6 +180,45 @@ class TableModel(QtCore.QAbstractTableModel):
         
         return self.dataset[index.row()][index.column()]
 
+    def fixup_station(self, text):
+        '''
+        Fix up a string that is nearly a station
+        '''
+
+        value = float(text.replace('+',''))
+
+        station = '0'
+
+        #split the station and offset, if the station exists
+        if value >= 100.0:
+            station = str(int(value / 100.0))
+            offset = str(round(value - float(station) * 100.0, 2))
+
+        else:
+            offset = str(value)
+
+        print('station ', station)
+        print('offset ', offset)
+
+        offset = offset.split('.')
+
+        #no decimals entered
+        if len(offset) == 1:
+            offset.append('00')
+
+        #offset is less than ten feet
+        if len(offset[0]) == 1:
+            offset[0] = '0' + offset[0]
+
+        #only one decimal entered
+        if len(offset[1]) == 1:
+            offset[1] += '0'
+        
+        #truncate the offset to two decimal places
+        offset[1] = offset[1][:2]
+
+        return station + '+' + offset[0] + '.' + offset[1]
+
     def setData(self, index, value, role):
         '''
         Update existing model data
@@ -179,6 +228,30 @@ class TableModel(QtCore.QAbstractTableModel):
             return False
 
         if index.isValid() and 0 <= index.row() < len(self.dataset):
+
+            if index.column() == 0:
+
+                #test to see if input is correctly formed
+                rex = self.rex_station.match(value)
+
+                if rex is None:
+
+                    rex = self.rex_near_station.match(value)
+
+                    #not a valid station.  Abort
+                    if rex is None:
+                        return False
+
+                    #value is nearly a valid station.  Fix it up.
+                    value = self.fixup_station(rex.group())
+
+            else:
+
+                try:
+                    test = float(value)
+
+                except:
+                    return False
 
             self.dataset[index.row()][index.column()] = value
             self.dataChanged.emit(index, index)
