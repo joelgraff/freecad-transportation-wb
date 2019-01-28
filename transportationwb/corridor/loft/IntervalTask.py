@@ -31,7 +31,7 @@ import re
 
 class IntervalTask:
     def __init__(self):
-        self.ui = '/home/shawty/.FreeCAD/Mod/freecad-transportation-wb/transportationwb/corridor/loft/task_panel_view.ui'
+        self.ui = '/home/shawty/.FreeCAD/Mod/freecad-transportation-wb/transportationwb/corridor/task_panel.ui'
         self.form = None
 
     def accept(self):
@@ -177,7 +177,7 @@ class TableModel(QtCore.QAbstractTableModel):
 
         if not 0 <= index.row() < len(self.dataset):
             return None
-        
+
         return self.dataset[index.row()][index.column()]
 
     def fixup_station(self, text):
@@ -213,7 +213,7 @@ class TableModel(QtCore.QAbstractTableModel):
         #only one decimal entered
         if len(offset[1]) == 1:
             offset[1] += '0'
-        
+
         #truncate the offset to two decimal places
         offset[1] = offset[1][:2]
 
