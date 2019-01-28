@@ -73,10 +73,11 @@ class IntervalTask:
     def add_item(self):
 
         indices = self.form.table_view.selectionModel().selectedIndexes()
+        index = 0
 
         if not indices:
             self.form.table_view.model().insertRows(self.form.table_view.model().rowCount(), 1)
-            #select new index
+            index = self.form.table_view.model().index(self.form.table_view.model().rowCount(), 0)
 
         else:
             for index in indices:
@@ -86,7 +87,8 @@ class IntervalTask:
 
                 self.form.table_view.model().insertRows(index.row(), 1)
 
-        index = self.form.table_view.selectedRow(self.form.table_view.model().rowCount())
+            index = indices[0]
+
         self.form.table_view.setCurrentIndex(index)
         self.form.table_view.edit(index)
 
