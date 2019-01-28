@@ -32,6 +32,7 @@ class EditIntervals():
     '''
     def __init__(self):
 
+        self.loft = None
 
     def GetResources(self):
         """
@@ -48,12 +49,46 @@ class EditIntervals():
                 'ToolTip' : 'Add / remove section intervals along a loft.',
                 'CmdType' : 'ForEdit'}
 
-    def Activated(self):
+    def update_callback(self, task):
         '''
-        EditIntervals activation method
+        Callback for return from task
         '''
 
-        panel = IntervalTask()
+        print('updating with: ', task.get_model())
+        setattr(self.loft.Proxy.Object, 'Interval_Schedule', task.get_model())
+
+    def _validate_selection(self):
+        '''
+        Validate the current selection as a single loft object
+        '''
+
+        _obj = Gui.Selection.getSelection()[0]
+
+        _is_valid = False
+
+        try:
+            _is_valid = _obj.Proxy.Type == '_ElementLoft'
+
+        except:
+            pass
+
+        if _is_valid:
+            return _obj
+
+        return None
+
+    def Activated(self):
+
+        self.loft = self._validate_selection()
+
+        if not self.loft:
+            print('Invalid selection')
+            return
+
+        panel = IntervalTask.IntervalTask(self.update_callback)
+
         Gui.Control.showDialog(panel)
 
-Gui.addEditIntervals('EditIntervals', EditIntervals())
+        panel.setup(self.loft.Proxy.Object.Interval_Schedule)
+
+Gui.addCommand('EditIntervals', EditIntervals())

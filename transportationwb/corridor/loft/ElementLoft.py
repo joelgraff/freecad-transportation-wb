@@ -31,14 +31,14 @@ import xml.etree.ElementTree as etree
 
 from transportationwb.ScriptedObjectSupport import Properties, QtEventFilter
 
-_CLASS_NAME = 'Loft'
+_CLASS_NAME = 'ElementLoft'
 _TYPE = 'Part::FeaturePython'
 
 __title__ = _CLASS_NAME + '.py'
 __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
-def createLoft(spline, sketch, object_name='', parent=None):
+def create(spline, sketch, object_name='', parent=None):
     '''
     Class construction method
     object_name - Optional. Name of new object.  Defaults to class name.
@@ -57,12 +57,12 @@ def createLoft(spline, sketch, object_name='', parent=None):
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
     units = Properties.get_units()
-    fpo = _Loft(_obj, spline, sketch, units)
-    _ViewProviderLoft(_obj.ViewObject)
+    fpo = _ElementLoft(_obj, spline, sketch, units)
+    _ViewProviderElementLoft(_obj.ViewObject)
 
     return fpo
 
-class _Loft(object):
+class _ElementLoft(object):
 
     def __init__(self, obj, spline, sketch, units):
         '''
@@ -71,7 +71,7 @@ class _Loft(object):
 
         obj.Proxy = self
         self.Enabled = False
-        self.Type = "_" + _TYPE
+        self.Type = '_' + _CLASS_NAME
         self.Object = obj
 
         #add class properties
@@ -135,71 +135,13 @@ class _Loft(object):
 
         self.regenerate()
 
-    def _spreadsheet_on_close(self):
-        '''
-        Callback to clean up and save spreadsheet results
-        '''
-
-        xml = self._sheet.Content
-
-        tree = etree.fromstring(xml)
-
-        result = {}
-
-        #iterate each cell in the cells group, saving the address and the value
-        for node in tree.findall('Cells'):
-
-            for cell in node.findall('Cell'):
-                result[node.get('address')] = node.get('content')
-
-        print(result)
-
-        App.ActiveDocument.removeObject(self.temp_sheet.Name)
-
-        QtEventFilter.remove(self.event_filter)
-        self.event_filter = None
-
-    def on_cell_click(self, index):
-
-        print('Clicked', index)
-        print('cell: ', index.row(), index.column(), index.data())
-
     def show_interval_schedule(self):
         '''
         Create a temporary spreadsheet for viewing and
         editing the schedule data
         '''
-
-        _sheet = App.ActiveDocument.addObject('Spreadsheet::Sheet', 'temp_sheet')
-        values = self.Object.Interval_Schedule
-
-        _sheet.set('A1', 'Station')
-        _sheet.set('B1', 'Interval (%s)' % Properties.get_units())
-
-        if not values:
-            _sheet.set('B2', str(self.Object.Interval))
-
-        else:
-            cell_values = [value.split(',') for value in values][0]
-
-            row = 1
-
-            for vals in cell_values:
-
-                col = 65
-                row += 1
-                str_row = str(row)
-
-                for val in vals:
-
-                    _sheet.set(chr(col) + str(row), val)
-                    col += 1
-
-        Gui.ActiveDocument.setEdit(_sheet)
-        self.event_filter = QtEventFilter.create('temp_sheet[*]', 'Destroy', self._spreadsheet_on_close)
-        QtEventFilter.trapCellClick('temp_sheet[*]', self.on_cell_click)
-
-        self.temp_sheeet = _sheet
+        pass
+        #EditIntervals().Activated()
 
     @staticmethod
     def _build_sections(spline, sketch, interval):
@@ -265,7 +207,7 @@ class _Loft(object):
 
         return comps
 
-class _ViewProviderLoft():
+class _ViewProviderElementLoft():
 
     def __init__(self, vobj):
         '''
@@ -310,5 +252,5 @@ class _ViewProviderLoft():
         '''
         Object-specific context menu items
         '''
-        action = menu.addAction("Schedule...")
-        action.triggered.connect(lambda: vobj.Object.Proxy.show_interval_schedule())
+        action = menu.addAction("Interval Schedule...")
+        action.triggered.connect(lambda: Gui.runCommand('EditIntervals'))

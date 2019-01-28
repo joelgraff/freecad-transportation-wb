@@ -324,7 +324,8 @@ class TransportationWorkbench (Workbench):
         self.alignment_fn_list = ["AddAlignment",
             "ImportVerticalCurve", "ImportHorizontalCurve",
             "GenerateHorizontalAlignment", "GenerateVerticalAlignment", "Generate3dAlignment"]
-        self.template_fn_list = ["GenerateLoft", 'ViewTemplateLibrary']
+        self.template_fn_list = ['GenerateElementLoft', 'ViewTemplateLibrary']
+        self.loft_fn_list = ['EditIntervals']
 
         self.toolbars = toolbars
         self.version = version
@@ -338,16 +339,24 @@ class TransportationWorkbench (Workbench):
         import transportationwb.corridor.alignment.GenerateHorizontalAlignment
         import transportationwb.corridor.alignment.GenerateVerticalAlignment
         import transportationwb.corridor.alignment.Generate3dAlignment
-        import transportationwb.corridor.loft.GenerateLoft
+        import transportationwb.corridor.loft.GenerateElementLoft
         import transportationwb.corridor.template.ViewTemplateLibrary
+        import transportationwb.corridor.loft.EditIntervals
         import transportationwb.TestCommand
 
         Gui.activateWorkbench("DraftWorkbench")
         Gui.activateWorkbench("SketcherWorkbench")
 
         self.appendToolbar("Transportation", self.general_fn_list)
-        self.appendToolbar("Transportation alignment", self.alignment_fn_list)
+        self.appendToolbar("Alignment", self.alignment_fn_list)
+        self.appendToolbar('Element Template', self.template_fn_list)
+        self.appendToolbar('Element Loft', self.loft_fn_list)
+
         self.appendMenu("Transportation", self.general_fn_list)
+        self.appendMenu('Alignment', self.alignment_fn_list)
+        self.appendMenu('Template', self.template_fn_list)
+        self.appendMenu('Loft', self.loft_fn_list)
+
 #-------------------
 
         # create toolbars
@@ -381,8 +390,9 @@ class TransportationWorkbench (Workbench):
             'ImportVerticalCurve', 'ImportHorizontalCurve',
             'GenerateHorizontalAlignment', 'GenerateVerticalAlignment', 'Generate3dAlignment']
 
-        self.template_menu = ['GenerateLoft', 'ViewTemplateLibrary']
-
+        self.template_menu = ['GenerateElementLoft', 'ViewTemplateLibrary']
+        self.loft_menu = ['EditIntervals']
+        
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(self.version))
 

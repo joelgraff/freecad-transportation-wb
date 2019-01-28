@@ -23,7 +23,7 @@
 
 from PySide import QtCore, QtGui
 
-class NewLoftDialog(QtGui.QDialog):
+class Dialog(QtGui.QDialog):
 
     def get_number(self, text):
         '''
@@ -79,11 +79,11 @@ class NewLoftDialog(QtGui.QDialog):
 
     def __init__(self, units, parent=None):
 
-        super(NewLoftDialog, self).__init__(parent)
+        super(Dialog, self).__init__(parent)
 
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
 
-        self.setWindowTitle(self.tr('Generate New Loft'))
+        self.setWindowTitle(self.tr('Generate New Element Loft'))
         self.setSizeGripEnabled(True)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
@@ -94,7 +94,7 @@ class NewLoftDialog(QtGui.QDialog):
         #self.setSizePolicy(max_policy)
 
         #loft name input
-        self.loft_name = QtGui.QLineEdit('Loft', self)
+        self.loft_name = QtGui.QLineEdit('ElementLoft', self)
         self.loft_name.setSizePolicy(pref_policy)
         form_layout.addRow(self.tr('Name'), self.loft_name)
 

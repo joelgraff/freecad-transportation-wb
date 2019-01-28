@@ -25,17 +25,22 @@
 DESCRIPTION
 '''
 
+import sys
 from PySide import QtGui, QtCore
 import operator
 import re
 
 class IntervalTask:
-    def __init__(self):
-        self.ui = '/home/shawty/.FreeCAD/Mod/freecad-transportation-wb/transportationwb/corridor/task_panel.ui'
+    def __init__(self, update_callback):
+
+        #hack to find the ui file... :/
+        path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/task_panel.ui'
+        self.ui = path
         self.form = None
+        self.update_callback = update_callback
 
     def accept(self):
-        print(self.form.table_view.model().dataset)
+        self.update_callback(self)
         return True
 
     def reject(self):
@@ -69,12 +74,21 @@ class IntervalTask:
 
         indices = self.form.table_view.selectionModel().selectedIndexes()
 
-        for index in indices:
+        if not indices:
+            self.form.table_view.model().insertRows(self.form.table_view.model().rowCount(), 1)
+            #select new index
 
-            if not index.isValid():
-                continue
+        else:
+            for index in indices:
 
-            self.form.table_view.model().insertRows(index.row(), 1)
+                if not index.isValid():
+                    continue
+
+                self.form.table_view.model().insertRows(index.row(), 1)
+
+        index = self.form.table_view.selectedRow(self.form.table_view.model().rowCount())
+        self.form.table_view.setCurrentIndex(index)
+        self.form.table_view.edit(index)
 
     def remove_item(self):
 
@@ -87,8 +101,19 @@ class IntervalTask:
 
             self.form.table_view.model().removeRows(index.row(), 1)
 
-    def setupUi(self):
+    def setup(self, data):
 
+        #convert the data to lists of lists
+
+        result = []
+
+        start = 0
+
+        for _i in range(0, len(data), 3):
+            result.append(data[_i:_i + 3])
+
+        print ('tuples: ', data)
+        print ('dataset: ', result)
         _mw = self.getMainWindow()
 
         form = _mw.findChild(QtGui.QWidget, 'TaskPanel')
@@ -97,10 +122,11 @@ class IntervalTask:
         form.remove_button = form.findChild(QtGui.QPushButton, 'remove_button')
 
         form.table_view = form.findChild(QtGui.QTableView, 'table_view')
-        form.table_view.setModel(TableModel())
+        form.table_view.setModel(TableModel(form.table_view, result))
+        form.table_view.setColumnHidden(2, True)
         form.table_view.setItemDelegate(TableModelDelegate())
+        form.table_view.clicked.connect(lambda: form.table_view.model().sort(2))
 
-        #form.table_view.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.form = form
 
         QtCore.QObject.connect(form.add_button, QtCore.SIGNAL('clicked()'), self.add_item)
@@ -119,7 +145,27 @@ class IntervalTask:
     def addItem(self):
         pass
 
+    def get_model(self):
+        '''
+        Returns the model data set with every element converted to string to external Loft object
+        '''
+
+        data = self.form.table_view.model().dataset
+
+        result = []
+
+        for _i in data:
+            result.extend([str(_x) for _x in _i])
+
+        return tuple(result)
+
 class TableModelDelegate(QtGui.QItemDelegate):
+
+    def __init__(self, parent=None):
+
+        QtGui.QItemDelegate.__init__(self, parent)
+
+        self._is_editing = False
 
     def createEditor(self, parent, option, index):
 
@@ -127,12 +173,29 @@ class TableModelDelegate(QtGui.QItemDelegate):
 
     def setEditorData(self, editor, index):
 
-        text = index.data(QtCore.Qt.EditRole) or index.data(QtCore.Qt.DisplayRole)
-        editor.setText(text)
+        self._is_editing = True
+
+        value = index.data(QtCore.Qt.EditRole) or index.data(QtCore.Qt.DisplayRole)
+
+        if editor.metaObject().className() == 'QSpinBox':
+            editor.setValue(value)
+
+        else:
+            editor.setText(value)
+
+    def setModelData(self, editor, model, index):
+
+        super(TableModelDelegate, self).setModelData(editor, model, index)
+
+        self._is_editing = False
+
+    def isEditing(self):
+
+        return self._is_editing
 
 class TableModel(QtCore.QAbstractTableModel):
 
-    def __init__(self, parent=None):
+    def __init__(self, table_view, data, parent=None):
         """
         Args:
             datain: a list of lists\n
@@ -143,10 +206,12 @@ class TableModel(QtCore.QAbstractTableModel):
         self.rex_station = re.compile('[0-9]+\+[0-9]{2}\.[0-9]{2,}')
         self.rex_near_station = re.compile('(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
 
-        self.dataset = [['0+00.00', 25], ['15+00.00', 10], ['20+00.00', 35], ['35+00.00', 50], ['60+00.00', 25]]
-        self.headerdata = ['Station', 'Interval']
+        self.dataset = data
+        self.headerdata = ['Station', 'Interval', 'Value']
 
-    def rowCount(self, parent):
+        self.table_view = table_view
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
         '''
         Number of rows currently in the model
         '''
@@ -156,14 +221,14 @@ class TableModel(QtCore.QAbstractTableModel):
 
         return 0
 
-    def columnCount(self, parent):
+    def columnCount(self, parent=QtCore.QModelIndex()):
         '''
         Number of columns currently in the model
         '''
         if self.dataset:
             return len(self.dataset[0])
 
-        return 0
+        return 3
 
     def data(self, index, role):
         '''
@@ -172,7 +237,7 @@ class TableModel(QtCore.QAbstractTableModel):
         if not index.isValid():
             return None
 
-        if role != QtCore.Qt.DisplayRole:
+        if not role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]:
             return None
 
         if not 0 <= index.row() < len(self.dataset):
@@ -197,9 +262,6 @@ class TableModel(QtCore.QAbstractTableModel):
         else:
             offset = str(value)
 
-        print('station ', station)
-        print('offset ', offset)
-
         offset = offset.split('.')
 
         #no decimals entered
@@ -217,7 +279,7 @@ class TableModel(QtCore.QAbstractTableModel):
         #truncate the offset to two decimal places
         offset[1] = offset[1][:2]
 
-        return station + '+' + offset[0] + '.' + offset[1]
+        return station + '+' + offset[0] + '.' + offset[1], value
 
     def setData(self, index, value, role):
         '''
@@ -229,11 +291,14 @@ class TableModel(QtCore.QAbstractTableModel):
 
         if index.isValid() and 0 <= index.row() < len(self.dataset):
 
+            raw_value = None
+
             if index.column() == 0:
 
                 #test to see if input is correctly formed
                 rex = self.rex_station.match(value)
 
+                #if not, look for a nearly correct form
                 if rex is None:
 
                     rex = self.rex_near_station.match(value)
@@ -243,7 +308,7 @@ class TableModel(QtCore.QAbstractTableModel):
                         return False
 
                     #value is nearly a valid station.  Fix it up.
-                    value = self.fixup_station(rex.group())
+                    value, raw_value = self.fixup_station(rex.group())
 
             else:
 
@@ -253,7 +318,17 @@ class TableModel(QtCore.QAbstractTableModel):
                 except:
                     return False
 
+            #set the value
             self.dataset[index.row()][index.column()] = value
+
+            #set the flaoting-point value of the station, if defined
+            if raw_value:
+                self.dataset[index.row()][2] = raw_value
+
+            #force a sort if not currently editing
+            if not self.table_view.itemDelegate().isEditing():
+                self.sort(2)
+
             self.dataChanged.emit(index, index)
 
             return True
@@ -264,6 +339,9 @@ class TableModel(QtCore.QAbstractTableModel):
         '''
         Headers to be displated
         '''
+
+        if col > 1:
+            return None
 
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return self.headerdata[col]
@@ -278,7 +356,7 @@ class TableModel(QtCore.QAbstractTableModel):
         self.beginInsertRows(QtCore.QModelIndex(), row, row + count - 1)
 
         for _x in range(count):
-            self.dataset.insert(row + _x, ['',''])
+            self.dataset.insert(row + _x, ['0+00.00', 0, 0])
 
         self.endInsertRows()
 
@@ -297,14 +375,17 @@ class TableModel(QtCore.QAbstractTableModel):
 
         return True
 
-    def sort(self, Ncol, order):
-        """
+    def sort(self, col, order=QtCore.Qt.AscendingOrder):
+        '''
         Sort table by given column number.
-        """
+        '''
+
         self.emit(QtCore.SIGNAL('layoutAboutToBeChanged()'))
-        self.dataset = sorted(self.dataset, key=operator.itemgetter(Ncol))
+        self.dataset = sorted(self.dataset, key=operator.itemgetter(col))
+
         if order == QtCore.Qt.DescendingOrder:
             self.dataset.reverse()
+
         self.emit(QtCore.SIGNAL('layoutChanged()'))
 
     def flags(self, index):

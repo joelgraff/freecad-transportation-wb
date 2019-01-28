@@ -25,9 +25,9 @@ import os
 import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtGui
-from transportationwb.corridor.loft import Loft, NewLoftDialog
+from transportationwb.corridor.loft import ElementLoft, NewElementLoftDialog
 
-class GenerateLoft():
+class GenerateElementLoft():
     '''
     Sweep generation class.
     Builds a sweep based on passed template and sweep path
@@ -46,7 +46,7 @@ class GenerateLoft():
 
         return {'Pixmap'  : icon_path,
                 'Accel'   : "Ctrl+Alt+G",
-                'MenuText': "Generate Loft",
+                'MenuText': "Generate Element Loft",
                 'ToolTip' : "Generate loft of template along a path",
                 'CmdType' : "ForEdit"}
 
@@ -56,11 +56,11 @@ class GenerateLoft():
         and return the Sweeps group object
         '''
 
-        parent = App.ActiveDocument.findObjects('App::DocumentObjectGroup', 'Lofts')
+        parent = App.ActiveDocument.findObjects('App::DocumentObjectGroup', 'Element Lofts')
         result = None
 
         if parent == []:
-            result = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Lofts')
+            result = App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Element Lofts')
             App.ActiveDocument.recompute()
         else:
             result = parent[0]
@@ -83,11 +83,11 @@ class GenerateLoft():
             print('Invalid loft properties')
             return
 
-        fpo = Loft.createLoft(
+        fpo = ElementLoft.create(
             self.loft_properties['alignment'],
             self.loft_properties['sketch'],
             self.loft_properties['name'],
-            App.ActiveDocument.Lofts
+            App.ActiveDocument.Element_Lofts
             )
 
         #_lg.set_stations(self.loft_properties['stations'])
@@ -131,7 +131,7 @@ class GenerateLoft():
             for obj in template_folder.OutList:
                 template_list.append(obj)
 
-        dialog = NewLoftDialog.NewLoftDialog('ft')
+        dialog = NewElementLoftDialog.Dialog('ft')
 
         #set the dialog properties
         dialog.set_alignment_list(align_list)
@@ -147,4 +147,4 @@ class GenerateLoft():
         #create the loft object, assign the data, and generate i
         self.generate_loft()
 
-Gui.addCommand('GenerateLoft', GenerateLoft())
+Gui.addCommand('GenerateElementLoft', GenerateElementLoft())

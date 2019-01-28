@@ -91,6 +91,6 @@ class NewProject():
 
         App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Templates')
         App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Alignments')
-        App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Lofts')
+        App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Element Lofts')
 
 Gui.addCommand('NewProject',NewProject())

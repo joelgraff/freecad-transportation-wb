@@ -22,11 +22,6 @@ class TestCommand():
                 'CmdType' : "ForEdit"}
 
     def Activated(self):
-
-        from transportationwb.corridor.loft import IntervalTask
-
-        panel = IntervalTask.IntervalTask()
-        Gui.Control.showDialog(panel)
-        panel.setupUi()
+        pass
 
 Gui.addCommand('TestCommand', TestCommand())
