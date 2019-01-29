@@ -168,7 +168,7 @@ class IntervalModel(QtCore.QAbstractTableModel):
             #set the value
             self.data_model[index.row()][index.column()] = value
 
-ssssssss            #force a sort if not currently editing
+         #force a sort if not currently editing
             if not self.table_view.itemDelegate().isEditing():
                 self.sort(2)
 
@@ -223,7 +223,6 @@ ssssssss            #force a sort if not currently editing
         Sort table by given column number.
         '''
 
-        print (self.data_model)
         self.emit(QtCore.SIGNAL('layoutAboutToBeChanged()'))
         self.data_model = sorted(self.data_model, key=operator.itemgetter(col))
 

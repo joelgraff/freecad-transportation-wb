@@ -58,7 +58,6 @@ class IntervalViewDelegate(QtGui.QStyledItemDelegate):
         #force a sort if data is set on the second column
         #assumption:  User is done adding / edditing an interval, so now it's safe to re-sort
         if index.column() == 1:
-            print('sorting...')
             model.sort(2)
 
     def isEditing(self):
