@@ -109,10 +109,8 @@ class IntervalTask:
 
         result = []
 
-        start = 0
-
         for _i in range(0, len(data), 3):
-            result.append(data[_i:_i + 3])
+            result.append([data[_i], float(data[_i + 1]), float(data[_i + 2])])
 
         print ('tuples: ', data)
         print ('dataset: ', result)
@@ -179,7 +177,7 @@ class TableModelDelegate(QtGui.QItemDelegate):
 
         value = index.data(QtCore.Qt.EditRole) or index.data(QtCore.Qt.DisplayRole)
 
-        if editor.metaObject().className() == 'QSpinBox':
+        if editor.metaObject().className() in ['QSpinBox', 'QDoubleSpinBox']:
             editor.setValue(value)
 
         else:
