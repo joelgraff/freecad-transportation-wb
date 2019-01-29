@@ -27,9 +27,8 @@ DESCRIPTION
 import FreeCAD as App
 import FreeCADGui as Gui
 import Part
-import xml.etree.ElementTree as etree
 
-from transportationwb.ScriptedObjectSupport import Properties, QtEventFilter
+from transportationwb.ScriptedObjectSupport import Properties
 
 _CLASS_NAME = 'ElementLoft'
 _TYPE = 'Part::FeaturePython'

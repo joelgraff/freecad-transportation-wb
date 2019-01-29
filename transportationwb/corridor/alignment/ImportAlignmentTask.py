@@ -22,7 +22,7 @@
 # **************************************************************************
 
 '''
-Task classes for manageing the ElementLoft interval schedule
+DESCRIPTION
 '''
 
 import sys
@@ -30,10 +30,9 @@ from PySide import QtGui, QtCore
 import operator
 import re
 
-class IntervalTask:
+class CLASS_NAME:
     def __init__(self, update_callback):
 
-        #hack to find the ui file... :/
         path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/task_panel.ui'
         self.ui = path
         self.form = None

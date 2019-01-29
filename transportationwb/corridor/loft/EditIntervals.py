@@ -24,7 +24,7 @@
 import os
 import FreeCAD as App
 import FreeCADGui as Gui
-from transportationwb.corridor.loft import IntervalTask
+from transportationwb.corridor.loft.tasks import IntervalTask
 
 class EditIntervals():
     '''
@@ -91,6 +91,6 @@ class EditIntervals():
 
         Gui.Control.showDialog(panel)
 
-        panel.setup(self.loft.Proxy.Object.Interval_Schedule)
+        panel.setup(self.loft.Proxy.Object.Interval_Schedule, ['Station', 'Interval', 'StationRaw'])
 
 Gui.addCommand('EditIntervals', EditIntervals())
