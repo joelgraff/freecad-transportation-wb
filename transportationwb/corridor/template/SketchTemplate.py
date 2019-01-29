@@ -28,13 +28,29 @@ def create(sketch_object, template_name):
 class _Sketch(object):
 
     def __init__(self, obj):
+
         obj.Proxy = self
         self.Type = self.__class__.__name__
-        self.Object = obj
+        self.Object = None
 
         _ViewProvider(obj.ViewObject)
 
-        Properties.add(self, 'LinkList', 'Lofts', 'List of dependent lofts', is_read_only=True, default_value=[])
+        Properties.add(obj, 'LinkList', 'Lofts', 'List of dependent lofts', is_read_only=True, default_value=[])
+
+        self.Object = obj
+
+    def __getstate__(self):
+        '''
+        State method for serialization
+        '''
+        return self.Type
+
+    def __setstate__(self, state):
+        '''
+        State method for serialization
+        '''
+        if state:
+            self.Type = state
 
     def duplicate(self, sketch):
         '''
@@ -78,7 +94,7 @@ class _ViewProvider():
 
     def execute(self, obj):
         obj.recompute()
-        self.myExecute(obj)
+        #self.myExecute(obj)
 
     def __init__(self, vobj):
         self.Object = vobj.Object
@@ -91,4 +107,4 @@ class _ViewProvider():
         return None
 
     def __setstate__(self, state):
-        return None        
+        return None

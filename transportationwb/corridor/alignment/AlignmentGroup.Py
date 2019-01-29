@@ -51,23 +51,22 @@ def createAlignment(parent, group_name):
 class _AlignmentGroup():
 
     def __init__(self, obj):
-        self.Enabled = False
-        self.Type = "_AlignmentGroup"
-        self.Object = obj
 
         obj.Proxy = self
+        self.Type = "_AlignmentGroup"
+        self.Object = None
 
-        Properties.add('', 'General.Units', 'Base units of alignment', 'English', False, ['English', 'Metric'])
-        Properties.add('Length', 'General.Start_Station', 'Starting station', 0.00)
-        Properties.add('Length', 'General.End_Station', 'Ending station', 0.00)
-        Properties.add('Length', 'General.Length', 'Length of baseline', 0.00, True)
-        Properties.add('Angle', 'General.Bearing', 'Initial bearing of alignment', 0.00)
-        Properties.add('String', 'General.Quadrant', 'Bearing quadrant', '')
-        Properties.add('Link', 'Location.Alignment', 'Reference alignment', '', True)
-        Properties.add('Length', 'Location.Primary', 'Station position along reference alignment', 0.00)
-        Properties.add('Length', 'Location.Secondary', 'Station position along local alignment', 0.00)
+        Properties.add(obj, '', 'General.Units', 'Base units of alignment', 'English', False, ['English', 'Metric'])
+        Properties.add(obj, 'Length', 'General.Start_Station', 'Starting station', 0.00)
+        Properties.add(obj, 'Length', 'General.End_Station', 'Ending station', 0.00)
+        Properties.add(obj, 'Length', 'General.Length', 'Length of baseline', 0.00, True)
+        Properties.add(obj, 'Angle', 'General.Bearing', 'Initial bearing of alignment', 0.00)
+        Properties.add(obj, 'String', 'General.Quadrant', 'Bearing quadrant', '')
+        Properties.add(obj, 'Link', 'Location.Alignment', 'Reference alignment', '', True)
+        Properties.add(obj, 'Length', 'Location.Primary', 'Station position along reference alignment', 0.00)
+        Properties.add(obj, 'Length', 'Location.Secondary', 'Station position along local alignment', 0.00)
 
-        self.Enabled = True
+        self.Object = obj
 
     def __getstate__(self):
         return self.Type

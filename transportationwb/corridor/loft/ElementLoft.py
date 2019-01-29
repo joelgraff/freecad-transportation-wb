@@ -70,18 +70,17 @@ class _ElementLoft(object):
         '''
 
         obj.Proxy = self
-        self.Enabled = False
         self.Type = '_' + _CLASS_NAME
-        self.Object = obj
+        self.Object = None
 
         #add class properties
-        Properties.add(self, 'StringList', 'Control_Schedule', 'Schedule for loft controls', [], is_read_only=False, is_hidden=True)
-        Properties.add(self, 'Link', 'Alignment', 'Linked alignment', spline)
-        Properties.add(self, 'Link', 'Template', 'Linked template', sketch)
-        Properties.add(self, 'Float', 'Interval', 'Section spacing interval', 100.0)
-        Properties.add(self, 'StringList', 'Interval_Schedule', 'Schedule for loft section intervals', [], is_hidden=False)
+        Properties.add(obj, 'StringList', 'Control_Schedule', 'Schedule for loft controls', [], is_read_only=False, is_hidden=True)
+        Properties.add(obj, 'Link', 'Alignment', 'Linked alignment', spline)
+        Properties.add(obj, 'Link', 'Template', 'Linked template', sketch)
+        Properties.add(obj, 'Float', 'Interval', 'Section spacing interval', 100.0)
+        Properties.add(obj, 'StringList', 'Interval_Schedule', 'Schedule for loft section intervals', [], is_hidden=False)
 
-        self.Enabled = True
+        self.Object = obj
 
     def onDocumentRestored(self, fp):
         '''
@@ -130,7 +129,7 @@ class _ElementLoft(object):
         '''
 
         #early execution protection
-        if not self.Enabled:
+        if not self.Object:
             return
 
         self.regenerate()

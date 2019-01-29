@@ -76,8 +76,9 @@ class IntervalTask:
         index = 0
 
         if not indices:
-            self.form.table_view.model().insertRows(self.form.table_view.model().rowCount(), 1)
-            index = self.form.table_view.model().index(self.form.table_view.model().rowCount(), 0)
+            row = self.form.table_view.model().rowCount()
+            self.form.table_view.model().insertRows(row, 1)
+            index = self.form.table_view.model().index(row, 0)
 
         else:
             for index in indices:
@@ -112,8 +113,6 @@ class IntervalTask:
         for _i in range(0, len(data), 3):
             result.append([data[_i], float(data[_i + 1]), float(data[_i + 2])])
 
-        print ('tuples: ', data)
-        print ('dataset: ', result)
         _mw = self.getMainWindow()
 
         form = _mw.findChild(QtGui.QWidget, 'TaskPanel')
@@ -188,6 +187,11 @@ class TableModelDelegate(QtGui.QItemDelegate):
         super(TableModelDelegate, self).setModelData(editor, model, index)
 
         self._is_editing = False
+
+        #force a sort if data is set on the second column
+        #assumption:  User is done adding / edditing an interval, so now it's safe to re-sort
+        if index.column() == 1:
+            model.sort(2)
 
     def isEditing(self):
 

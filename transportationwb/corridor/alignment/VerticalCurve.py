@@ -83,22 +83,22 @@ class _VerticalCurve():
 
         obj.Proxy = self
         self.Type = 'VerticalCurve'
+        self.Object = None
+
+        Properties.add(obj, 'Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
+        Properties.add(obj, 'Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
+        Properties.add(obj, 'Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
+        Properties.add(obj, 'Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
+        Properties.add(obj, 'Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
+        Properties.add(obj, 'Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
+        Properties.add(obj, 'Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
+        Properties.add(obj, 'Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)
+        Properties.add(obj, 'Length', 'General.Length', 'Length of the vertical curve', 0.00)
+        Properties.add(obj, 'Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
+        Properties.add(obj, 'Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
+        Properties.add(obj, 'Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
+
         self.Object = obj
-
-        Properties.add(self, 'Length', 'General.PC_Station', 'Station of the vertical Point of Curvature', 0.00, True)
-        Properties.add(self, 'Distance', 'General.PC_Elevation', 'Elevtaion of the vertical Point of Curvature', 0.00, True)
-        Properties.add(self, 'Length', 'General.PI_Station', 'Station of the vertical Point of Intersection', 0.00)
-        Properties.add(self, 'Distance', 'General.PI_Elevation', 'Elevtaion of the vertical Point of Intersection', 0.00)
-        Properties.add(self, 'Length', 'General.PT_Station', 'Station of the vertical Point of Tangency', 0.00, True)
-        Properties.add(self, 'Distance', 'General.PT_Elevation', 'Elevtaion of the vertical Point of Tangency', 0.00, True)
-        Properties.add(self, 'Float', 'General.Grade_In', 'Grade of tangent between VPC and VPI', 0.00)
-        Properties.add(self, 'Float', 'General.Grade_Out', 'Grade of tangent beteen VPI and VPT', 0.00)
-        Properties.add(self, 'Length', 'General.Length', 'Length of the vertical curve', 0.00)
-        Properties.add(self, 'Float', 'Characteristics.A', 'Absolute difference between grades', 0.00, True)
-        Properties.add(self, 'Length', 'Characteristics.K', 'Rate of Curvature', 0.00, True)
-        Properties.add(self, 'Bool', 'Characteristics.Equal_Tangent', 'Is this an Equal Tangent Curve?', True, True)
-
-        self.doRecalc = False
 
     def __getstate__(self):
         return self.Type
@@ -128,6 +128,9 @@ class _VerticalCurve():
         self.Object.K = lngth / self.Object.A
 
     def execute(self, fpy):
+
+        if not self.Object:
+            return
 
         self._recalc_curve()
 

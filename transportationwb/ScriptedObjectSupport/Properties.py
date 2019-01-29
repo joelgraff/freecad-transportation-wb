@@ -43,8 +43,6 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
     isReadOnly      Boolean property (read-only = True)
     '''
 
-    target = obj.Object
-
     tple = name.split('.')
 
     p_name = tple[0]
@@ -73,11 +71,11 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
         print('Invalid property type specified: ', p_type)
         return None
 
-    target.addProperty(p_type, p_name, p_group, desc)
+    obj.addProperty(p_type, p_name, p_group, desc)
 
     App.ActiveDocument.recompute()
 
-    prop = target.getPropertyByName(p_name)
+    prop = obj.getPropertyByName(p_name)
 
     if p_type in [
             'App::PropertyFloat'
@@ -92,7 +90,7 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
             'App::PropertyString',
             'App::PropertyStringList'
         ]:
-        setattr(target, p_name, default_value)
+        setattr(obj, p_name, default_value)
         #prop = default_value
     else:
         prop.Value = default_value
@@ -105,7 +103,7 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
     if is_hidden:
         editor_mode += 2
 
-    target.setEditorMode(p_name, editor_mode)
+    obj.setEditorMode(p_name, editor_mode)
 
     return prop
 

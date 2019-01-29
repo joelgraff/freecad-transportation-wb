@@ -83,22 +83,22 @@ class _HorizontalCurve():
 
         obj.Proxy = self
         self.Type = 'HorizontalCurve'
+        self.Object = None
+
+        Properties.add(obj, 'Angle', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
+        Properties.add(obj, 'String','General.Quadrant', 'Bearing quadrant of the PC tangent', '')
+        Properties.add(obj, 'Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
+        Properties.add(obj, 'Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
+        Properties.add(obj, 'Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
+        Properties.add(obj, 'Angle', 'General.Delta', 'Central angle of the curve', 0.00)
+        Properties.add(obj, 'String', 'General.Direction', 'Curve direction', '')
+        Properties.add(obj, 'Length', 'General.Radius', 'Curve radius', 0.00)
+        Properties.add(obj, 'Length', 'General.Length', 'Curve length', 0.00)
+        Properties.add(obj, 'Float', 'General.E', 'External distance', 0.00, True)
+        Properties.add(obj, 'Float', 'General.T', 'Tangent length', 0.00, True)
+        Properties.add(obj, 'Float', 'General.D', 'Degree of Curvature', True, True)
+
         self.Object = obj
-
-        Properties.add(self, 'Angle', 'General.Bearing', 'Angle of PC tangent at start of curve', 0.00)
-        Properties.add(self, 'String','General.Quadrant', 'Bearing quadrant of the PC tangent', '')
-        Properties.add(self, 'Length', 'General.PC_Station', 'Station of the Horizontal Point of Curvature', 0.00, True)
-        Properties.add(self, 'Length', 'General.PI_Station', 'Station of the Horizontal Point of Intersection', 0.00)
-        Properties.add(self, 'Length', 'General.PT_Station', 'Station of the Horizontal Point of Tangency', 0.00, True)
-        Properties.add(self, 'Angle', 'General.Delta', 'Central angle of the curve', 0.00)
-        Properties.add(self, 'String', 'General.Direction', 'Curve direction', '')
-        Properties.add(self, 'Length', 'General.Radius', 'Curve radius', 0.00)        
-        Properties.add(self, 'Length', 'General.Length', 'Curve length', 0.00)
-        Properties.add(self, 'Float', 'General.E', 'External distance', 0.00, True)
-        Properties.add(self, 'Float', 'General.T', 'Tangent length', 0.00, True)
-        Properties.add(self, 'Float', 'General.D', 'Degree of Curvature', True, True)
-
-        self.doRecalc = False
 
     def __getstate__(self):
         return self.Type
@@ -129,7 +129,10 @@ class _HorizontalCurve():
 
     def execute(self, fpy):
 
-        self._recalc_curve()
+        if not self.Object:
+            return
+
+        #self._recalc_curve()
 
 class _ViewProviderHorizontalCurve:
 

@@ -57,6 +57,8 @@ class EditIntervals():
         print('updating with: ', task.get_model())
         setattr(self.loft.Proxy.Object, 'Interval_Schedule', task.get_model())
 
+        App.ActiveDocument.recompute()
+
     def _validate_selection(self):
         '''
         Validate the current selection as a single loft object
