@@ -30,7 +30,7 @@ from PySide import QtGui, QtCore
 import operator
 import re
 
-class CLASS_NAME:
+class ImportAlignmentTask:
     def __init__(self, update_callback):
 
         path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/task_panel.ui'

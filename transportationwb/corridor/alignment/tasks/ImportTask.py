@@ -22,18 +22,18 @@
 # **************************************************************************
 
 '''
-Main class for the Edit Interval task
+DESCRIPTION
 '''
 
 import sys
 from PySide import QtGui, QtCore
-from transportationwb.corridor.loft.tasks.IntervalModel import IntervalModel as Model
-from transportationwb.corridor.loft.tasks.IntervalViewDelegate import IntervalViewDelegate as Delegate
+from transportationwb.corridor.alignment.tasks.ImportModel import ImportModel as Model
+from transportationwb.corridor.alignment.tasks.ImportViewDelegate import ImportViewDelegate as Delegate
 
-class IntervalTask:
+class ImportTask:
     def __init__(self, update_callback):
 
-        path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/loft/tasks/interval_task_panel.ui'
+        path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/task_panel.ui'
         self.ui = path
         self.form = None
         self.update_callback = update_callback
@@ -109,12 +109,12 @@ class IntervalTask:
         '''
         model_data = []
 
-        for _i in range(0, len(data), 2):
+        for _i in range(0, len(data), 3):
             model_data.append([Model.fixup_station(data[_i]), data[_i + 1], data[_i]])
 
         return model_data
 
-    def setup(self, data, headers):
+    def setup(self, data):
 
         #convert the data to lists of lists
 
@@ -128,9 +128,9 @@ class IntervalTask:
 
         model_data = self.build_model(data)
 
-        form.table_view.setModel(Model(form.table_view, model_data, headers))
+        form.table_view.setModel(Model(form.table_view, model_data))
         form.table_view.setColumnHidden(2, True)
-        form.table_view.setItemDelegate(Delegate())
+        form.table_view.setItemDelegate(Delegate.Import())
         form.table_view.clicked.connect(lambda: form.table_view.model().sort(2))
 
         self.form = form
@@ -156,14 +156,4 @@ class IntervalTask:
         Returns the model data set with every element converted to string to external Loft object
         '''
 
-        data = self.form.table_view.model().data_model
-
-        result = []
-
-        #truncate the formatted station column
-        #and store the reversed result so the float station is first
-        for _i in data:
-            trunc = [_x for _x in _i[1:]]
-            result.extend(trunc[::-1])
-
-        return result
+        return self.form.table_view.model().dataset
