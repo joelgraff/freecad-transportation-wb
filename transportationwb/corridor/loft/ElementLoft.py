@@ -74,11 +74,11 @@ class _ElementLoft(object):
         self.Object = None
 
         #add class properties
-        Properties.add(obj, 'StringList', 'Control_Schedule', 'Schedule for loft controls', [], is_read_only=False, is_hidden=True)
+        Properties.add(obj, 'StringList', 'Control_Schedule', 'Schedule for loft controls', [], is_read_only=True, is_hidden=False)
         Properties.add(obj, 'Link', 'Alignment', 'Linked alignment', spline)
         Properties.add(obj, 'Link', 'Template', 'Linked template', sketch)
         Properties.add(obj, 'Float', 'Interval', 'Section spacing interval', 100.0)
-        Properties.add(obj, 'StringList', 'Interval_Schedule', 'Schedule for loft section intervals', [], is_hidden=False)
+        Properties.add(obj, 'FloatList', 'Interval_Schedule', 'Schedule for loft section intervals', [], is_read_only=True, is_hidden=False)
 
         self.Object = obj
 

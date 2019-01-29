@@ -104,14 +104,20 @@ class IntervalTask:
 
             self.form.table_view.model().removeRows(index.row(), 1)
 
+    def build_model(self, data):
+        '''
+        Construct the table model from the loft object property data
+        '''
+        model_data = []
+
+        for _i in range(0, len(data), 3):
+            model_data.append([TableModel.fixup_station(data[_i]), data[_i + 1], data[_i]])
+
+        return model_data
+
     def setup(self, data):
 
         #convert the data to lists of lists
-
-        result = []
-
-        for _i in range(0, len(data), 3):
-            result.append([data[_i], float(data[_i + 1]), float(data[_i + 2])])
 
         _mw = self.getMainWindow()
 
@@ -119,9 +125,11 @@ class IntervalTask:
 
         form.add_button = form.findChild(QtGui.QPushButton, 'add_button')
         form.remove_button = form.findChild(QtGui.QPushButton, 'remove_button')
-
         form.table_view = form.findChild(QtGui.QTableView, 'table_view')
-        form.table_view.setModel(TableModel(form.table_view, result))
+
+        model_data = self.build_model(data)
+
+        form.table_view.setModel(TableModel(form.table_view, model_data))
         form.table_view.setColumnHidden(2, True)
         form.table_view.setItemDelegate(TableModelDelegate())
         form.table_view.clicked.connect(lambda: form.table_view.model().sort(2))
@@ -153,10 +161,13 @@ class IntervalTask:
 
         result = []
 
+        #truncate the formatted station column
+        #and store the reversed result so the float station is first
         for _i in data:
-            result.extend([str(_x) for _x in _i])
+            trunc = [_x for _x in _i[1:]]
+            result.extend(trunc[::-1])
 
-        return tuple(result)
+        return result
 
 class TableModelDelegate(QtGui.QItemDelegate):
 
@@ -198,6 +209,42 @@ class TableModelDelegate(QtGui.QItemDelegate):
         return self._is_editing
 
 class TableModel(QtCore.QAbstractTableModel):
+
+    @staticmethod
+    def fixup_station(value):
+        '''
+        Fix up a float value that is nearly a station
+        Return as a string
+        '''
+
+        station = '0'
+
+        #split the station and offset, if the station exists
+        if value >= 100.0:
+            station = str(int(value / 100.0))
+            offset = str(round(value - float(station) * 100.0, 2))
+
+        else:
+            offset = str(value)
+
+        offset = offset.split('.')
+
+        #no decimals entered
+        if len(offset) == 1:
+            offset.append('00')
+
+        #offset is less than ten feet
+        if len(offset[0]) == 1:
+            offset[0] = '0' + offset[0]
+
+        #only one decimal entered
+        if len(offset[1]) == 1:
+            offset[1] += '0'
+
+        #truncate the offset to two decimal places
+        offset[1] = offset[1][:2]
+
+        return station + '+' + offset[0] + '.' + offset[1], value
 
     def __init__(self, table_view, data, parent=None):
         """
@@ -249,42 +296,6 @@ class TableModel(QtCore.QAbstractTableModel):
 
         return self.dataset[index.row()][index.column()]
 
-    def fixup_station(self, text):
-        '''
-        Fix up a string that is nearly a station
-        '''
-
-        value = float(text.replace('+',''))
-
-        station = '0'
-
-        #split the station and offset, if the station exists
-        if value >= 100.0:
-            station = str(int(value / 100.0))
-            offset = str(round(value - float(station) * 100.0, 2))
-
-        else:
-            offset = str(value)
-
-        offset = offset.split('.')
-
-        #no decimals entered
-        if len(offset) == 1:
-            offset.append('00')
-
-        #offset is less than ten feet
-        if len(offset[0]) == 1:
-            offset[0] = '0' + offset[0]
-
-        #only one decimal entered
-        if len(offset[1]) == 1:
-            offset[1] += '0'
-
-        #truncate the offset to two decimal places
-        offset[1] = offset[1][:2]
-
-        return station + '+' + offset[0] + '.' + offset[1], value
-
     def setData(self, index, value, role):
         '''
         Update existing model data
@@ -312,7 +323,8 @@ class TableModel(QtCore.QAbstractTableModel):
                         return False
 
                     #value is nearly a valid station.  Fix it up.
-                    value, raw_value = self.fixup_station(rex.group())
+                    sta = float(rex.group().replace('+', ''))
+                    value, raw_value = self.fixup_station(sta)
 
             else:
 

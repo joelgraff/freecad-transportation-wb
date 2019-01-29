@@ -88,7 +88,8 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
             'App::PropertyLinkList',
             'App::PropertyLink',
             'App::PropertyString',
-            'App::PropertyStringList'
+            'App::PropertyStringList',
+            'App::PropertyFloatList'
         ]:
         setattr(obj, p_name, default_value)
         #prop = default_value
