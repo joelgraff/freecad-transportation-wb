@@ -29,7 +29,7 @@ from PySide import QtGui, QtCore
 
 class ImportViewDelegate(QtGui.QStyledItemDelegate):
 
-    combo_box_model = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
+    combo_box_model = ['Select...', 'Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
 
     def __init__(self, parent=None):
 

@@ -26,6 +26,7 @@ DESCRIPTION
 '''
 
 import sys
+import csv
 from PySide import QtGui, QtCore
 from transportationwb.corridor.alignment.tasks.ImportModel import ImportModel as Model
 from transportationwb.corridor.alignment.tasks.ImportViewDelegate import ImportViewDelegate as Delegate
@@ -103,18 +104,7 @@ class ImportTask:
 
             self.form.table_view.model().removeRows(index.row(), 1)
 
-    def build_model(self, data):
-        '''
-        Construct the table model from the loft object property data
-        '''
-        model_data = []
-
-        for _i in range(0, len(data), 3):
-            model_data.append([Model.fixup_station(data[_i]), data[_i + 1], data[_i]])
-
-        return model_data
-
-    def setup(self, data):
+    def setup(self):
 
         #convert the data to lists of lists
 
@@ -126,9 +116,16 @@ class ImportTask:
         form.remove_button = form.findChild(QtGui.QPushButton, 'remove_button')
         form.table_view = form.findChild(QtGui.QTableView, 'table_view')
 
-        model_data = self.build_model(data)
+        form.filename = form.findChild(QtGui.QLineEdit, 'filename')
+        form.pick_file = form.findChild(QtGui.QToolButton, 'pick_file')
+        form.headers = form.findChild(QtGui.QCheckBox, 'headers')
+        form.delimiter = form.findChild(QtGui.QLineEdit, 'delimiter')
 
-        form.table_view.setModel(Model(form.table_view, model_data))
+        #form.pick_file.clicked.commect()
+        #form.headers.clicked.connect()
+        #form.delimiter.???
+
+        form.table_view.setModel(Model(form.table_view, []))
         form.table_view.setColumnHidden(2, True)
         form.table_view.setItemDelegate(Delegate.Import())
         form.table_view.clicked.connect(lambda: form.table_view.model().sort(2))
