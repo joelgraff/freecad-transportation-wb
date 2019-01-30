@@ -24,13 +24,14 @@
 import os
 import FreeCAD as App
 import FreeCADGui as Gui
-
-class Command():
+from transportationwb.corridor.alignment.tasks.ImportTask import ImportTask
+class ImportAlignmentCmd():
     '''
-    Command Description
+    Initiates the ImportAlignmentTask class for 2D horizontal and vertical curves
     '''
     def __init__(self):
-        pass
+
+        self.alignment_data = None
 
     def GetResources(self):
         """
@@ -42,30 +43,31 @@ class Command():
         icon_path += "../../../icons/new_alignment.svg"
 
         return {'Pixmap'  : icon_path,
-                'Accel'   : '',
-                'MenuText': '',
-                'ToolTip' : '',
+                'Accel'   : 'Ctrl+Shift+A',
+                'MenuText': 'Import Alignment',
+                'ToolTip' : 'Import a horizontal or vertical alignment from CSV',
                 'CmdType' : 'ForEdit'}
 
-    def _validate_selection(self):
+    def _update_callback(self, alignment_data):
         '''
-        Validate the selected items in the Gui before operating on them
+        Update callback called when task activities are completed / accepted
         '''
 
-        _items = Gui.Selection.getSelection()
+        #run create alignment command from here
 
-        return _items
+        print('return!')
 
     def Activated(self):
         '''
         Command activation method
         '''
-        result = self._validate_selection()
 
-        if not result:
-            print('Invalid selection')
-            return
+        panel = ImportTask(self._update_callback)
+
+        Gui.Control.showDialog(panel)
+
+        panel.setup(self._update_callback)        
 
         return
 
-Gui.addCommand('Command', Command())
+Gui.addCommand('ImportAlignmentCmd', ImportAlignmentCmd())
