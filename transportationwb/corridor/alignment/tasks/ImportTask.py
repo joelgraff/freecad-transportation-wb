@@ -104,6 +104,61 @@ class ImportTask:
 
             self.form.table_view.model().removeRows(index.row(), 1)
 
+    def choose_file(self):
+        '''
+        Open the file picker dialog and open the file that the user chooses
+        '''
+
+        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Select CSV', sys.path[0], self.tr('CSV Files (*.csv)'))
+
+        self.form.pick_file.setText(file_name)
+
+    def examine_file(self):
+        '''
+        Examine the CSV file path indicated in the QLineEdit, testing for headers and delimiter
+        and populating the QTableView
+        '''
+
+        file_path = self.form.filename.text()
+
+        stream = None
+
+        try:
+            stream = open(file_path)
+            stream.close()
+
+        except OSError:
+            dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, 'Unable to open file ', file_path)
+            dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+            dialog.exec_()
+            return
+        
+        sniffer = csv.Sniffer()
+
+        with open(file_path) as stream:
+
+            first_bytes = stream(1024)
+            stream.seek(0)
+
+            dialect = sniffer.sniff(first_bytes)
+            self.form.delimiter.setText(dialect.delimiter)
+
+            check_state = QtCore.Qt.Checked
+
+            if not sniffer.has_header(first_bytes):
+                check_state = QtCore.Qt.Unchecked
+
+            self.form.headers.setCheckState(check_state)
+
+            stream.seek(0)
+
+            csv_reader = csv.reader(stream, dialect.delimiter)
+
+            #populate table view...
+            #for row in csv_reader:
+            #row[x]
+
+
     def setup(self):
 
         #convert the data to lists of lists
@@ -121,7 +176,8 @@ class ImportTask:
         form.headers = form.findChild(QtGui.QCheckBox, 'headers')
         form.delimiter = form.findChild(QtGui.QLineEdit, 'delimiter')
 
-        #form.pick_file.clicked.commect()
+        form.pick_file.clicked.connect(lambda: self.choose_file())
+        form.filename.textChanged.connect(lambda: self.examine_file())
         #form.headers.clicked.connect()
         #form.delimiter.???
 
