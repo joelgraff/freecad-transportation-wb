@@ -24,7 +24,7 @@
 import os
 import FreeCAD as App
 import FreeCADGui as Gui
-from transportationwb.corridor.alignment.tasks.ImportTask import ImportTask
+from transportationwb.corridor.alignment.tasks.ImportAlignmentTask import ImportAlignmentTask
 class ImportAlignmentCmd():
     '''
     Initiates the ImportAlignmentTask class for 2D horizontal and vertical curves
@@ -62,11 +62,11 @@ class ImportAlignmentCmd():
         Command activation method
         '''
 
-        panel = ImportTask(self._update_callback)
+        panel = ImportAlignmentTask(self._update_callback)
 
         Gui.Control.showDialog(panel)
 
-        panel.setup(self._update_callback)        
+        panel.setup()
 
         return
 

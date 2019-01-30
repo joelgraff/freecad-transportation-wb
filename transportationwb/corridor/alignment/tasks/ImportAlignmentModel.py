@@ -30,10 +30,11 @@ import operator
 
 from PySide import QtCore
 
-class TaskModel(QtCore.QAbstractTableModel):
+class ImportAlignmentModel(QtCore.QAbstractTableModel):
 
-    rex_station = re.compile('[0-9]+\+[0-9]{2}\.[0-9]{2,}')
-    rex_near_station = re.compile('(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
+    rex_station = re.compile(r'[0-9]+\+[0-9]{2}\.[0-9]{2,}')
+    rex_near_station = re.compile(r'(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
+    default_flags = QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
     @staticmethod
     def validate_station(value):
@@ -42,12 +43,12 @@ class TaskModel(QtCore.QAbstractTableModel):
         '''
 
         #test to see if input is correctly formed
-        rex = TaskModel.rex_station.match(value)
+        rex = ImportAlignmentModel.rex_station.match(value)
 
         #if not, look for a nearly correct form
         if rex is None:
 
-            rex = TaskModel.rex_near_station.match(value)
+            rex = ImportAlignmentModel.rex_near_station.match(value)
 
             #not a valid station.  Abort
             if rex is None:
@@ -55,7 +56,7 @@ class TaskModel(QtCore.QAbstractTableModel):
 
             #value is nearly a valid station.  Fix it up.
             sta = float(rex.group().replace('+', ''))
-            value = TaskModel.fixup_station(sta)
+            value = ImportAlignmentModel.fixup_station(sta)
 
         return value
 
@@ -95,7 +96,7 @@ class TaskModel(QtCore.QAbstractTableModel):
 
         return station + '+' + offset[0] + '.' + offset[1]
 
-    def __init__(self, table_view, data, headers, parent=None):
+    def __init__(self, table_view, headers, data, parent=None):
 
         QtCore.QAbstractTableModel.__init__(self, parent)
 
@@ -103,6 +104,16 @@ class TaskModel(QtCore.QAbstractTableModel):
         self.headers = headers
 
         self.table_view = table_view
+
+    def set_model_data(self, headers, data):
+        '''
+        Set the headers as a list of values
+        Set the data model as a list of rows(lists)
+        '''
+        self.headers = headers
+        self.data_model = data[1:]
+
+        self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         '''
@@ -123,7 +134,7 @@ class TaskModel(QtCore.QAbstractTableModel):
             return len(self.data_model[0])
 
         #default
-        return 3
+        return 0
 
     def data(self, index, role):
         '''
@@ -144,6 +155,10 @@ class TaskModel(QtCore.QAbstractTableModel):
         '''
         Update existing model data
         '''
+        self.data_model[index.row()][index.column()] = value
+        self.dataChanged.emit(index, index)
+
+        return True
 
         if role != QtCore.Qt.EditRole:
             return False
@@ -159,7 +174,7 @@ class TaskModel(QtCore.QAbstractTableModel):
             else:
 
                 try:
-                    test = float(value)
+                    value = float(value)
 
                 except:
                     return False
@@ -169,7 +184,7 @@ class TaskModel(QtCore.QAbstractTableModel):
 
             #set the flaoting-point value of the station, if defined
             if raw_value:
-                self.data_model[index.row()][2] = float(value.replace('+',''))
+                self.data_model[index.row()][2] = float(value.replace('+', ''))
 
             #force a sort if not currently editing
             if not self.table_view.itemDelegate().isEditing():
@@ -186,7 +201,7 @@ class TaskModel(QtCore.QAbstractTableModel):
         Headers to be displated
         '''
 
-        if col > 1:
+        if not self.headers:
             return None
 
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -202,7 +217,7 @@ class TaskModel(QtCore.QAbstractTableModel):
         self.beginInsertRows(QtCore.QModelIndex(), row, row + count - 1)
 
         for _x in range(count):
-            self.data_model.insert(row + _x, ['0+00.00', 0, 0])
+            self.data_model.insert(row + _x, [''] * len(self.ColumnCount()))
 
         self.endInsertRows()
 
@@ -226,14 +241,13 @@ class TaskModel(QtCore.QAbstractTableModel):
         Sort table by given column number.
         '''
 
-        self.emit(QtCore.SIGNAL('layoutAboutToBeChanged()'))
-        self.data_model = sorted(self.data_model, key=operator.itemgetter(col))
-
-        if order == QtCore.Qt.DescendingOrder:
-            self.data_model.reverse()
-
-        self.emit(QtCore.SIGNAL('layoutChanged()'))
+        return
 
     def flags(self, index):
 
-        return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        flags = ImportAlignmentModel.default_flags
+
+        if index.row() > 0:
+            flags = flags & ~QtCore.Qt.ItemIsEditable
+
+        return flags

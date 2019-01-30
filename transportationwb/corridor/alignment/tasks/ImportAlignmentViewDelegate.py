@@ -27,7 +27,7 @@ QItemStyledDelegate class for Task QTableView
 
 from PySide import QtGui, QtCore
 
-class ImportViewDelegate(QtGui.QStyledItemDelegate):
+class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
 
     combo_box_model = ['Select...', 'Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
 
@@ -35,19 +35,42 @@ class ImportViewDelegate(QtGui.QStyledItemDelegate):
 
         QtGui.QStyledItemDelegate.__init__(self, parent)
         self._is_editing = False
+        self.combo_box = None
+
+    #def initStyleOption(self, option, index):
+
+    #    super(ImportAlignmentViewDelegate, self).initStyleOption(option, index)
+
+    #    if index.row() > 0:
+    #        option.backgroundBrush = QtGui.QColor(128, 128, 128)
+
+    def paint(self, painter, option, index):
+
+        painter.save()
+
+        painter.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+        painter.setBrush(QtCore.Qt.red)
+        painter.drawRect(option.rect)
+
+        if index.isValid():
+            painter.setPen(QtGui.QPen(QtCore.Qt.black))
+            value = index.data(QtCore.Qt.DisplayRole)
+            painter.drawText(option.rect, QtCore.Qt.AlignCenter, value)
+
+        painter.restore()
 
     def createEditor(self, parent, option, index):
 
         if index.row() > 0:
-            return super(ImportViewDelegate, self).createEditor(parent, option, index)
+            return super(ImportAlignmentViewDelegate, self).createEditor(parent, option, index)
 
         self.combo_box = QtGui.QComboBox(parent)
-        self.comboBox.addItems(ImportViewDelegate.combo_box_model)
+        self.combo_box.addItems(ImportAlignmentViewDelegate.combo_box_model)
 
         value = index.data(QtCore.Qt.DisplayRole)
 
         #iterate the combo_box_model items, testing to see if they are found in the current index data
-        contains_value = [a in value for a in ImportViewDelegate.combo_box_model]
+        contains_value = [a in value for a in ImportAlignmentViewDelegate.combo_box_model]
 
         indices = [i for i, x in enumerate(contains_value) if i]
 
@@ -69,7 +92,7 @@ class ImportViewDelegate(QtGui.QStyledItemDelegate):
 
     def setModelData(self, editor, model, index):
 
-        super(ImportViewDelegate, self).setModelData(editor, model, index)
+        super(ImportAlignmentViewDelegate, self).setModelData(editor, model, index)
 
         self._is_editing = False
 

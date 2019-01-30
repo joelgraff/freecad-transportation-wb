@@ -34,8 +34,8 @@ class IntervalModel(QtCore.QAbstractTableModel):
     '''
     Model for Interval task
     '''
-    rex_station = re.compile('[0-9]+\+[0-9]{2}\.[0-9]{2,}')
-    rex_near_station = re.compile('(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
+    rex_station = re.compile(r'[0-9]+\+[0-9]{2}\.[0-9]{2,}')
+    rex_near_station = re.compile(r'(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
 
     @staticmethod
     def validate_station(value):
@@ -160,7 +160,7 @@ class IntervalModel(QtCore.QAbstractTableModel):
             else:
 
                 try:
-                    test = float(value)
+                    value = float(value)
 
                 except:
                     return False
@@ -232,5 +232,7 @@ class IntervalModel(QtCore.QAbstractTableModel):
         self.emit(QtCore.SIGNAL('layoutChanged()'))
 
     def flags(self, index):
-
+        '''
+        Qt Item flags
+        '''
         return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable

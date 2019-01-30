@@ -27,14 +27,18 @@ DESCRIPTION
 
 import sys
 import csv
-from PySide import QtGui, QtCore
-from transportationwb.corridor.alignment.tasks.ImportModel import ImportModel as Model
-from transportationwb.corridor.alignment.tasks.ImportViewDelegate import ImportViewDelegate as Delegate
 
-class ImportTask:
+from PySide import QtGui, QtCore
+
+import FreeCAD as App
+
+from transportationwb.corridor.alignment.tasks.ImportAlignmentModel import ImportAlignmentModel as Model
+from transportationwb.corridor.alignment.tasks.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
+
+class ImportAlignmentTask:
     def __init__(self, update_callback):
 
-        path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/task_panel.ui'
+        path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/alignment/tasks/import_alignment_task_panel.ui'
         self.ui = path
         self.form = None
         self.update_callback = update_callback
@@ -109,9 +113,14 @@ class ImportTask:
         Open the file picker dialog and open the file that the user chooses
         '''
 
-        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Select CSV', sys.path[0], self.tr('CSV Files (*.csv)'))
+        open_path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/alignment/'
 
-        self.form.pick_file.setText(file_name)
+        file_name = QtGui.QFileDialog.getOpenFileName(self.form, 'Select CSV', open_path, self.form.tr('CSV Files (*.csv)'))
+
+        if not file_name[0]:
+            return
+
+        self.form.file_path.setText(file_name[0])
 
     def examine_file(self):
         '''
@@ -119,7 +128,7 @@ class ImportTask:
         and populating the QTableView
         '''
 
-        file_path = self.form.filename.text()
+        file_path = self.form.file_path.text()
 
         stream = None
 
@@ -135,9 +144,9 @@ class ImportTask:
         
         sniffer = csv.Sniffer()
 
-        with open(file_path) as stream:
+        with open(file_path, encoding="utf-8-sig") as stream:
 
-            first_bytes = stream(1024)
+            first_bytes = stream.read(1024)
             stream.seek(0)
 
             dialect = sniffer.sniff(first_bytes)
@@ -152,12 +161,14 @@ class ImportTask:
 
             stream.seek(0)
 
-            csv_reader = csv.reader(stream, dialect.delimiter)
+            csv_reader = csv.reader(stream, dialect)
 
             #populate table view...
-            #for row in csv_reader:
-            #row[x]
+            data = [row for row in csv_reader]
 
+            print('data set: ', data)
+            self.form.table_model = Model(self.form.table_view, data[0], data)
+            self.form.table_view.setModel(self.form.table_model)
 
     def setup(self):
 
@@ -171,25 +182,22 @@ class ImportTask:
         form.remove_button = form.findChild(QtGui.QPushButton, 'remove_button')
         form.table_view = form.findChild(QtGui.QTableView, 'table_view')
 
-        form.filename = form.findChild(QtGui.QLineEdit, 'filename')
+        form.file_path = form.findChild(QtGui.QLineEdit, 'filename')
         form.pick_file = form.findChild(QtGui.QToolButton, 'pick_file')
         form.headers = form.findChild(QtGui.QCheckBox, 'headers')
         form.delimiter = form.findChild(QtGui.QLineEdit, 'delimiter')
 
         form.pick_file.clicked.connect(lambda: self.choose_file())
-        form.filename.textChanged.connect(lambda: self.examine_file())
+        form.file_path.textChanged.connect(lambda: self.examine_file())
         #form.headers.clicked.connect()
         #form.delimiter.???
 
-        form.table_view.setModel(Model(form.table_view, []))
-        form.table_view.setColumnHidden(2, True)
-        form.table_view.setItemDelegate(Delegate.Import())
+        form.table_model = Model(form.table_view, [], [])
+
+        form.table_view.setModel(Model(form.table_model, [], []))
+        form.table_view.setItemDelegate(Delegate())
         form.table_view.clicked.connect(lambda: form.table_view.model().sort(2))
-
         self.form = form
-
-        QtCore.QObject.connect(form.add_button, QtCore.SIGNAL('clicked()'), self.add_item)
-        QtCore.QObject.connect(form.remove_button, QtCore.SIGNAL('clicked()'), self.remove_item)
 
     def getMainWindow(self):
 
