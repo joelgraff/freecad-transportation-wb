@@ -49,11 +49,11 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
         painter.save()
 
         painter.setPen(QtGui.QPen(QtCore.Qt.NoPen))
-        painter.setBrush(QtCore.Qt.red)
+        painter.setBrush(QtGui.QColor(215, 215, 215))
         painter.drawRect(option.rect)
 
         if index.isValid():
-            painter.setPen(QtGui.QPen(QtCore.Qt.black))
+            painter.setPen(QtGui.QPen(QtGui.QColor(128, 128, 128)))
             value = index.data(QtCore.Qt.DisplayRole)
             painter.drawText(option.rect, QtCore.Qt.AlignCenter, value)
 

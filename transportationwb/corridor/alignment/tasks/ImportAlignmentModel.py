@@ -105,16 +105,6 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
 
         self.table_view = table_view
 
-    def set_model_data(self, headers, data):
-        '''
-        Set the headers as a list of values
-        Set the data model as a list of rows(lists)
-        '''
-        self.headers = headers
-        self.data_model = data[1:]
-
-        self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
-
     def rowCount(self, parent=QtCore.QModelIndex()):
         '''
         Number of rows currently in the model
@@ -208,33 +198,6 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
             return self.headers[col]
 
         return None
-
-    def insertRows(self, row, count, index=QtCore.QModelIndex()):
-        '''
-        Insert row into model
-        '''
-
-        self.beginInsertRows(QtCore.QModelIndex(), row, row + count - 1)
-
-        for _x in range(count):
-            self.data_model.insert(row + _x, [''] * len(self.ColumnCount()))
-
-        self.endInsertRows()
-
-        return True
-
-    def removeRows(self, row, count, index=QtCore.QModelIndex()):
-        '''
-        Remove row from model
-        '''
-
-        self.beginRemoveRows(QtCore.QModelIndex(), row, row + count - 1)
-
-        self.data_model = self.data_model[:row] + self.data_model[row + count:]
-
-        self.endRemoveRows()
-
-        return True
 
     def sort(self, col, order=QtCore.Qt.AscendingOrder):
         '''

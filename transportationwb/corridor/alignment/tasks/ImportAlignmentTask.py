@@ -166,10 +166,23 @@ class ImportAlignmentTask:
             #populate table view...
             data = [row for row in csv_reader]
 
-            print('data set: ', data)
-            self.form.table_model = Model(self.form.table_view, data[0], data)
+            header = data[0]
+
+            if self.form.headers.isChecked():
+                data = data[1:]
+            else:
+                header = ['Column ' + str(_i) for _i in range(0, len(data[0]))]
+
+            self.form.table_model = Model(self.form.table_view, header, data)
             self.form.table_view.setModel(self.form.table_model)
 
+    def headers_onclick(self, i):
+        '''
+        Callback to toggle header checkbox and re-load the csv file
+        '''
+
+        return
+        #self.examine_file
     def setup(self):
 
         #convert the data to lists of lists
@@ -187,9 +200,9 @@ class ImportAlignmentTask:
         form.headers = form.findChild(QtGui.QCheckBox, 'headers')
         form.delimiter = form.findChild(QtGui.QLineEdit, 'delimiter')
 
-        form.pick_file.clicked.connect(lambda: self.choose_file())
-        form.file_path.textChanged.connect(lambda: self.examine_file())
-        #form.headers.clicked.connect()
+        form.pick_file.clicked.connect(self.choose_file)
+        form.file_path.textChanged.connect(self.examine_file)
+        form.headers.stateChanged.connect(self.headers_onclick)
         #form.delimiter.???
 
         form.table_model = Model(form.table_view, [], [])
@@ -197,6 +210,7 @@ class ImportAlignmentTask:
         form.table_view.setModel(Model(form.table_model, [], []))
         form.table_view.setItemDelegate(Delegate())
         form.table_view.clicked.connect(lambda: form.table_view.model().sort(2))
+
         self.form = form
 
     def getMainWindow(self):
