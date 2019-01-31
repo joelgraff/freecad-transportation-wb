@@ -36,6 +36,9 @@ from transportationwb.corridor.alignment.tasks.ImportAlignmentModel import Impor
 from transportationwb.corridor.alignment.tasks.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
 
 class ImportAlignmentTask:
+
+    combo_model = ['Select...', 'Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
+
     def __init__(self, update_callback):
 
         path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/alignment/tasks/import_alignment_task_panel.ui'
@@ -193,6 +196,9 @@ class ImportAlignmentTask:
             table_model = Model('csv', header[:], data)
             self.form.table_view.setModel(table_model)
 
+            for item in ImportAlignmentTask.combo_model:
+                pass
+                
             matcher_model = Model('matcher', [], [header[:], header[:]])
 
             self.form.header_matcher.setModel(matcher_model)

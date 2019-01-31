@@ -29,14 +29,13 @@ from PySide import QtGui, QtCore
 
 class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
 
-    model = ['Select...', 'Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
-
-    def __init__(self, parent=None):
+    def __init__(self, model, parent=None):
 
         QtGui.QStyledItemDelegate.__init__(self, parent)
         self._is_editing = False
         self.combo_box = None
-        
+        self.model = model[:]
+
     def paint(self, painter, option, index):
 
         painter.save()
@@ -59,10 +58,9 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
 
         self.combo_box = QtGui.QComboBox(parent)
 
-        local_model = ImportAlignmentViewDelegate.model
-        local_model[0] = index.sibling(1, index.column()).data(QtCore.Qt.DisplayRole)
+        self.model[0] = index.sibling(1, index.column()).data(QtCore.Qt.DisplayRole)
 
-        self.combo_box.addItems(local_model)
+        self.combo_box.addItems(self.model)
 
         value = index.data(QtCore.Qt.DisplayRole)
 
