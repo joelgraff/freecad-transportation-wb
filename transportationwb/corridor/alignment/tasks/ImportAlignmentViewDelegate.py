@@ -56,21 +56,15 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
         if index.row() > 0:
             return super(ImportAlignmentViewDelegate, self).createEditor(parent, option, index)
 
-        self.combo_box = QtGui.QComboBox(parent)
-
         self.model[0] = index.sibling(1, index.column()).data(QtCore.Qt.DisplayRole)
+
+        self.combo_box = QtGui.QComboBox(parent)
 
         self.combo_box.addItems(self.model)
 
         value = index.data(QtCore.Qt.DisplayRole)
 
-        #iterate the combo_box_model items, testing to see if they are found in the current index data
-        contains_value = [a in value for a in ImportAlignmentViewDelegate.model]
-
-        indices = [i for i, x in enumerate(contains_value) if i]
-
-        if indices:
-            self.combo_box.setCurrentIndex(contains_value[indices[0]])
+        self.combo_box.setCurrentIndex(self.combo_box.findText(value))
 
         return self.combo_box
 

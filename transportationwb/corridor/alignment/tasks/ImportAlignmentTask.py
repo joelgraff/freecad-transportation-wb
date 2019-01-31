@@ -196,16 +196,26 @@ class ImportAlignmentTask:
             table_model = Model('csv', header[:], data)
             self.form.table_view.setModel(table_model)
 
-            for item in ImportAlignmentTask.combo_model:
-                pass
+            top_row = []
+
+            for _i in header[:]:
+                _i2 = _i.lower()
+                result = _i
+
+                for _j in ImportAlignmentTask.combo_model:
+                    if _j.lower() in _i2:
+                        result = _j
+                        break
+                    
+                top_row.append(result)
                 
-            matcher_model = Model('matcher', [], [header[:], header[:]])
+            matcher_model = Model('matcher', [], [top_row, header[:]])
 
             self.form.header_matcher.setModel(matcher_model)
             self.form.header_matcher.hideRow(1)
-            self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0)*2)
-            self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0)*2)
-            self.form.header_matcher.setItemDelegate(Delegate())
+            self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0))
+            self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0))
+            self.form.header_matcher.setItemDelegate(Delegate(ImportAlignmentTask.combo_model))
 
             self.form.table_view.horizontalScrollBar().valueChanged.connect(self.form.header_matcher.horizontalScrollBar().setValue)
 
