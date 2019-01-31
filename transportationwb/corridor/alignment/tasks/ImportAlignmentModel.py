@@ -137,3 +137,4 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
             flags = flags & ~QtCore.Qt.ItemIsEditable
 
         return flags
+        

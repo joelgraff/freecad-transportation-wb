@@ -48,8 +48,22 @@ class ImportAlignmentTask:
         self.dialect = None
 
     def accept(self):
-        self.update_callback(self)
-        return True
+
+        result = self.validate_headers(self.form.header_matcher.model().data_model[0])
+
+        if not result:
+            self.update_callback(self)
+        else:
+            msg = 'Conflicting or duplicate header items:\n'
+
+            for items in result:
+                msg += ','.join(items) + '\n'
+
+            dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, msg.decode())
+            dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+            dialog.exec_()
+
+        return not result
 
     def reject(self):
         return True
@@ -111,6 +125,39 @@ class ImportAlignmentTask:
                 continue
 
             self.form.table_view.model().removeRows(index.row(), 1)
+
+    def validate_headers(self, headers):
+        '''
+        Returns an empty list if header selections are valid,
+        list of conflicing header tuples otherwise
+        Northing / Easting cannot be selected with Distance / Bearing
+        Radius cannot be selected with Degree
+        '''
+
+        print (headers)
+        nedb = ['Northing', 'Easting', 'Distance', 'Bearing']
+
+        bools = [_i in nedb for _i in headers]
+
+        print(bools)
+        conflicts = []
+
+        items = list(set([_i for _i in headers if headers.count(_i) > 1]))
+
+        print(items)
+        if items:
+            conflicts.append(items)
+
+        items = []
+    
+        for idx, tf in enumerate(bools):
+            if tf:
+                items.append(nedb[idx])
+
+        if items:
+            conflicts.append(items)
+
+        return conflicts
 
     def choose_file(self):
         '''
@@ -196,28 +243,36 @@ class ImportAlignmentTask:
             table_model = Model('csv', header[:], data)
             self.form.table_view.setModel(table_model)
 
-            top_row = []
 
-            for _i in header[:]:
-                _i2 = _i.lower()
-                result = _i
+        self.populate_views(header)
 
-                for _j in ImportAlignmentTask.combo_model:
-                    if _j.lower() in _i2:
-                        result = _j
-                        break
-                    
-                top_row.append(result)
-                
-            matcher_model = Model('matcher', [], [top_row, header[:]])
+    def populate_views(self, header):
+        '''
+        Populate the table views with the data acquired from open_file
+        '''
 
-            self.form.header_matcher.setModel(matcher_model)
-            self.form.header_matcher.hideRow(1)
-            self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0))
-            self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0))
-            self.form.header_matcher.setItemDelegate(Delegate(ImportAlignmentTask.combo_model))
+        top_row = []
 
-            self.form.table_view.horizontalScrollBar().valueChanged.connect(self.form.header_matcher.horizontalScrollBar().setValue)
+        for _i in header[:]:
+            _i2 = _i.lower()
+            result = _i
+
+            for _j in ImportAlignmentTask.combo_model:
+                if _j.lower() in _i2:
+                    result = _j
+                    break
+            
+            top_row.append(result)
+            
+        matcher_model = Model('matcher', [], [top_row, header[:]])
+
+        self.form.header_matcher.setModel(matcher_model)
+        self.form.header_matcher.hideRow(1)
+        self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0))
+        self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0))
+        self.form.header_matcher.setItemDelegate(Delegate(ImportAlignmentTask.combo_model))
+
+        self.form.table_view.horizontalScrollBar().valueChanged.connect(self.form.header_matcher.horizontalScrollBar().setValue)
 
     def setup(self):
 

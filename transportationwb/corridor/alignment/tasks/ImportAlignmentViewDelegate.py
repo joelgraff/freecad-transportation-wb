@@ -70,7 +70,6 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
 
     def setEditorData(self, editor, index):
 
-
         self._is_editing = True
 
         value = index.data(QtCore.Qt.EditRole) or index.data(QtCore.Qt.DisplayRole)
