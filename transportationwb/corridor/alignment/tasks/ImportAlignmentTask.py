@@ -37,7 +37,7 @@ from transportationwb.corridor.alignment.tasks.ImportAlignmentViewDelegate impor
 
 class ImportAlignmentTask:
 
-    combo_model = ['Select...', 'Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
+    combo_model = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'ID', 'Parent', 'Parent_Eq', 'Child_Eq', 'Datum']
 
     def __init__(self, update_callback):
 
@@ -129,28 +129,65 @@ class ImportAlignmentTask:
         Radius cannot be selected with Degree
         '''
 
+        #key headers to test for
         nedb = ['Northing', 'Easting', 'Distance', 'Bearing']
 
+        #list of valid headers from the user input
+        valid_items = [_i for _i in headers if _i in nedb]
+
+        #boolean list of indices in nedb which are found in the headers
         bools = [_i in headers for _i in nedb]
 
+        ne_bools = bools[:2]
+        db_bools = bools[2:]
+
+        #resulting message
         result = ''
 
-        items = list(set([_i for _i in headers if headers.count(_i) > 1]))
-        
-        if items:
+        #------------
+        #----TESTS---
+        #------------
 
-            duplicates = [i in nedb for i in items]
+        #test for duplicates
+        dupes = list(set([_i for _i in valid_items if valid_items.count(_i) > 1]))
 
-            for idx, tf in enumerate(duplicates):
-                if tf:
-                    result += ",".join(items) + '\n'
+        if dupes:
 
-        if result:
-            result = 'Duplicates: ' + result
+            result += 'Duplicates: ' + ','.join(dupes) + '\n'
 
-        lt_conflict = ''
+        #test to seee if both northing / easting or distance / bearing are specified
+        if not (all(_i for _i in ne_bools) or all(_i for _i in db_bools)):
+
+            result += 'Incomplete Northing/Easting or Bearing/Distance\n'
+
+        #test for conflicting headers
+        lt = '/'.join(nedb[:2][_i] for _i, _v in enumerate(ne_bools) if _v)
+        rt = '/'.join(nedb[2:][_i] for _i, _v in enumerate(db_bools) if _v)
+
+        if lt and rt:
+
+            result += lt + ' conflicts with ' + rt + '\n'
+
+        #test to see if both curve radius and degree have been specified
+        if all(_i in valid_items for _i in ['Radius', 'Degree']):
+
+            result += 'Radius conflicts with Degree'
+
+        return result
+
+
+
+
+        #test to see if both bearing / distance and northing / easting is specified
+        ne_idx = [_i for _i, _v in enumerate(ne_bools) if _v]
+        db_idx = [_i for _i, _v in enumerate(db_bools) if _v]
+
+        lt = '/'.join([nedb[:2][_i] for _i in ne_idx])
+        rt = '/'.join([nedb[2:][_i] for _i in db_idx])
 
         for idx, tf in enumerate(bools[:2]):
+
+            has_both_ne = has_both_ne and tf
 
             if tf:
                 if lt_conflict:
@@ -159,21 +196,18 @@ class ImportAlignmentTask:
 
         rt_conflict = ''
 
+        has_both_db = True
+
         for idx, tf in enumerate(bools[2:]):
+
+            has_both_db = has_both_db and tf
 
             if tf:
                 if rt_conflict:
                     rt_conflict += '/'
                 rt_conflict += nedb[idx+2]
 
-        if lt_conflict and rt_conflict:
-            result += lt_conflict + ' conflicts with ' + rt_conflict + '\n'
 
-        if 'Radius' in headers:
-            if 'Degree' in headers:
-                result += 'Radius conflicts with Degree'
-
-        return result
 
     def choose_file(self):
         '''
