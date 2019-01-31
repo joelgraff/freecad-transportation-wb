@@ -36,74 +36,13 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
     rex_near_station = re.compile(r'(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
     default_flags = QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-    @staticmethod
-    def validate_station(value):
-        '''
-        Validate station data as correctly-formed
-        '''
-
-        #test to see if input is correctly formed
-        rex = ImportAlignmentModel.rex_station.match(value)
-
-        #if not, look for a nearly correct form
-        if rex is None:
-
-            rex = ImportAlignmentModel.rex_near_station.match(value)
-
-            #not a valid station.  Abort
-            if rex is None:
-                return None
-
-            #value is nearly a valid station.  Fix it up.
-            sta = float(rex.group().replace('+', ''))
-            value = ImportAlignmentModel.fixup_station(sta)
-
-        return value
-
-    @staticmethod
-    def fixup_station(value):
-        '''
-        Fix up a float value that is nearly a station
-        Return as a string
-        '''
-
-        station = '0'
-
-        #split the station and offset, if the station exists
-        if value >= 100.0:
-            station = str(int(value / 100.0))
-            offset = str(round(value - float(station) * 100.0, 2))
-
-        else:
-            offset = str(value)
-
-        offset = offset.split('.')
-
-        #no decimals entered
-        if len(offset) == 1:
-            offset.append('00')
-
-        #offset is less than ten feet
-        if len(offset[0]) == 1:
-            offset[0] = '0' + offset[0]
-
-        #only one decimal entered
-        if len(offset[1]) == 1:
-            offset[1] += '0'
-
-        #truncate the offset to two decimal places
-        offset[1] = offset[1][:2]
-
-        return station + '+' + offset[0] + '.' + offset[1]
-
-    def __init__(self, table_view, headers, data, parent=None):
+    def __init__(self, nam, headers, data, parent=None):
 
         QtCore.QAbstractTableModel.__init__(self, parent)
 
         self.data_model = data
         self.headers = headers
-
-        self.table_view = table_view
+        self.model_name = nam
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         '''
@@ -145,6 +84,7 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
         '''
         Update existing model data
         '''
+
         self.data_model[index.row()][index.column()] = value
         self.dataChanged.emit(index, index)
 
@@ -172,14 +112,6 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
             #set the value
             self.data_model[index.row()][index.column()] = value
 
-            #set the flaoting-point value of the station, if defined
-            if raw_value:
-                self.data_model[index.row()][2] = float(value.replace('+', ''))
-
-            #force a sort if not currently editing
-            if not self.table_view.itemDelegate().isEditing():
-                self.sort(2)
-
             self.dataChanged.emit(index, index)
 
             return True
@@ -191,6 +123,8 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
         Headers to be displated
         '''
 
+        print('model ', self.model_name)
+
         if not self.headers:
             return None
 
@@ -198,13 +132,6 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
             return self.headers[col]
 
         return None
-
-    def sort(self, col, order=QtCore.Qt.AscendingOrder):
-        '''
-        Sort table by given column number.
-        '''
-
-        return
 
     def flags(self, index):
 

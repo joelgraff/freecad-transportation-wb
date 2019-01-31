@@ -190,14 +190,18 @@ class ImportAlignmentTask:
             else:
                 header = ['Column ' + str(_i) for _i in range(0, len(data[0]))]
 
-            self.form.table_model = Model(self.form.table_view, header, data)
-            self.form.table_view.setModel(self.form.table_model)
+            header2 = header[:]
 
-            matcher_model = Model(self.form.table_view, [], [header])
+            table_model = Model('csv', header[:], data)
+            self.form.table_view.setModel(table_model)
+
+            matcher_data = [header[:]] * 2
+            matcher_model = Model('matcher', [], matcher_data)
 
             self.form.header_matcher.setModel(matcher_model)
-            self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0))
-            self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0))
+            #self.form.header_matcher.hideRow(1)
+            self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0)*2)
+            self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0)*2)
             self.form.header_matcher.setItemDelegate(Delegate())
 
             self.form.table_view.horizontalScrollBar().valueChanged.connect(self.form.header_matcher.horizontalScrollBar().setValue)
@@ -224,12 +228,6 @@ class ImportAlignmentTask:
         form.file_path.textChanged.connect(self.examine_file)
         form.headers.stateChanged.connect(self.open_file)
         form.delimiter.editingFinished.connect(self.open_file)
-
-        form.table_model = Model(form.table_view, [], [])
-
-        form.table_view.setModel(Model(form.table_model, [], []))
-        form.table_view.setItemDelegate(Delegate())
-        form.table_view.clicked.connect(lambda: form.table_view.model().sort(2))
 
         self.form = form
 

@@ -29,21 +29,14 @@ from PySide import QtGui, QtCore
 
 class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
 
-    combo_box_model = ['Select...', 'Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
+    model = ['Select...', 'Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
 
     def __init__(self, parent=None):
 
         QtGui.QStyledItemDelegate.__init__(self, parent)
         self._is_editing = False
         self.combo_box = None
-
-    #def initStyleOption(self, option, index):
-
-    #    super(ImportAlignmentViewDelegate, self).initStyleOption(option, index)
-
-    #    if index.row() > 0:
-    #        option.backgroundBrush = QtGui.QColor(128, 128, 128)
-
+        
     def paint(self, painter, option, index):
 
         painter.save()
@@ -65,12 +58,16 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
             return super(ImportAlignmentViewDelegate, self).createEditor(parent, option, index)
 
         self.combo_box = QtGui.QComboBox(parent)
-        self.combo_box.addItems(ImportAlignmentViewDelegate.combo_box_model)
+
+        local_model = ImportAlignmentViewDelegate.model
+        local_model[0] = index.sibling(1, index.column()).data(QtCore.Qt.DisplayRole)
+
+        self.combo_box.addItems(local_model)
 
         value = index.data(QtCore.Qt.DisplayRole)
 
         #iterate the combo_box_model items, testing to see if they are found in the current index data
-        contains_value = [a in value for a in ImportAlignmentViewDelegate.combo_box_model]
+        contains_value = [a in value for a in ImportAlignmentViewDelegate.model]
 
         indices = [i for i, x in enumerate(contains_value) if i]
 
@@ -81,18 +78,27 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
 
     def setEditorData(self, editor, index):
 
+
         self._is_editing = True
 
         value = index.data(QtCore.Qt.EditRole) or index.data(QtCore.Qt.DisplayRole)
 
-        if editor.metaObject().className() in ['QSpinBox', 'QDoubleSpinBox', 'QComboBox']:
+        editor_class = editor.metaObject().className()
+
+        if editor_class == 'QComboBox':
+            return
+
+        if editor_class in ['QSpinBox', 'QDoubleSpinBox']:
             editor.setValue(value)
+        elif editor_class == 'QComboBox':
+            editor.setCurrentIndex()
         else:
             editor.setText(value)
 
     def setModelData(self, editor, model, index):
 
-        super(ImportAlignmentViewDelegate, self).setModelData(editor, model, index)
+        QtGui.QStyledItemDelegate(self).setModelData(editor, model, index)
+        #super(ImportAlignmentViewDelegate, self).setModelData(editor, model, index)
 
         self._is_editing = False
 
