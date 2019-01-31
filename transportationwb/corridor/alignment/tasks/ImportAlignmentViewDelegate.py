@@ -56,8 +56,6 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
         if index.row() > 0:
             return super(ImportAlignmentViewDelegate, self).createEditor(parent, option, index)
 
-        #self.model[0] = index.sibling(1, index.column()).data(QtCore.Qt.DisplayRole)
-
         self.combo_box = QtGui.QComboBox(parent)
 
         self.combo_box.addItems(self.model)

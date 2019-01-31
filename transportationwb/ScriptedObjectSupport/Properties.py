@@ -63,7 +63,9 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
             'FloatList',
             'Bool',
             'String',
-            'StringList'
+            'StringList',
+            'Vector',
+            'VectorList'
         ]:
         p_type = 'App::Property' + p_type
 
@@ -89,7 +91,9 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
             'App::PropertyLink',
             'App::PropertyString',
             'App::PropertyStringList',
-            'App::PropertyFloatList'
+            'App::PropertyFloatList',
+            'App::PropertyVector',
+            'App::PropertyVecitorList'
         ]:
         setattr(obj, p_name, default_value)
         #prop = default_value

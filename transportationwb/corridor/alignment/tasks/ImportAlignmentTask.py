@@ -46,19 +46,23 @@ class ImportAlignmentTask:
         self.form = None
         self.update_callback = update_callback
         self.dialect = None
+        self.vector_model = None
 
     def accept(self):
 
+        #returns a message string for notification
         result = self.validate_headers(self.form.header_matcher.model().data_model[0])
 
+        #no message returned = success
         if not result:
-            self.update_callback(self)
-        else:
-            dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, 'Duplicate / Conflicting Headers', result)
-            dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-            dialog.exec_()
+            self.import_model()
+            return True
 
-        return not result
+        dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, 'Duplicate / Conflicting Headers', result)
+        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        dialog.exec_()
+
+        return False
 
     def reject(self):
         return True
@@ -86,40 +90,6 @@ class ImportAlignmentTask:
 
     def helpRequested(self):
         pass
-
-    def add_item(self):
-
-        indices = self.form.table_view.selectionModel().selectedIndexes()
-        index = 0
-
-        if not indices:
-            row = self.form.table_view.model().rowCount()
-            self.form.table_view.model().insertRows(row, 1)
-            index = self.form.table_view.model().index(row, 0)
-
-        else:
-            for index in indices:
-
-                if not index.isValid():
-                    continue
-
-                self.form.table_view.model().insertRows(index.row(), 1)
-
-            index = indices[0]
-
-        self.form.table_view.setCurrentIndex(index)
-        self.form.table_view.edit(index)
-
-    def remove_item(self):
-
-        indices = self.form.table_view.selectionModel().selectedIndexes()
-
-        for index in indices:
-
-            if not index.isValid():
-                continue
-
-            self.form.table_view.model().removeRows(index.row(), 1)
 
     def validate_headers(self, headers):
         '''
@@ -174,40 +144,6 @@ class ImportAlignmentTask:
             result += 'Radius conflicts with Degree'
 
         return result
-
-
-
-
-        #test to see if both bearing / distance and northing / easting is specified
-        ne_idx = [_i for _i, _v in enumerate(ne_bools) if _v]
-        db_idx = [_i for _i, _v in enumerate(db_bools) if _v]
-
-        lt = '/'.join([nedb[:2][_i] for _i in ne_idx])
-        rt = '/'.join([nedb[2:][_i] for _i in db_idx])
-
-        for idx, tf in enumerate(bools[:2]):
-
-            has_both_ne = has_both_ne and tf
-
-            if tf:
-                if lt_conflict:
-                    lt_conflict += '/'
-                lt_conflict += nedb[idx]
-
-        rt_conflict = ''
-
-        has_both_db = True
-
-        for idx, tf in enumerate(bools[2:]):
-
-            has_both_db = has_both_db and tf
-
-            if tf:
-                if rt_conflict:
-                    rt_conflict += '/'
-                rt_conflict += nedb[idx+2]
-
-
 
     def choose_file(self):
         '''
@@ -359,12 +295,47 @@ class ImportAlignmentTask:
 
         raise RuntimeError('No main window found')
 
-    def addItem(self):
-        pass
-
     def get_model(self):
         '''
         Returns the model data set with every element converted to string to external Loft object
         '''
 
-        return self.form.table_view.model().dataset
+        result = ''
+
+        return result
+
+    def import_model(self):
+        '''
+        Import the model based on valid user-specified headers for the provided csv
+        '''
+
+        headers = self.form.header_matcher.model().data_model[0]
+        csv_headers = self.form.header_matcher.model().data_model[1]
+
+        #replace all non-valid headers in the result with blanks
+        result = [_v if _v in ImportAlignmentTask.combo_model else '' for _v in headers]
+
+        #get the vector coordinate indices, storing positional indices in x and y, and arc indices in z
+        pos_x = [_i for _i, _v in enumerate(result) if _v in ['Easting', 'Distance']][0]
+        pos_y = [_i for _i, _v in enumerate(result) if _v in ['Northing', 'Bearing']][0]
+        arc_z = [_i for _i, _v in enumerate(result) if _v in ['Degree', 'Radius']][0]
+
+        self.vector_model = []
+
+        #open the CSV file and parse, retrieving only the columns which correspond to valid data
+        with open(self.form.file_path.text(), encoding="utf-8-sig") as stream:
+
+            stream.seek(0)
+
+            csv_reader = csv.reader(stream, self.dialect)
+
+            #acquire the data
+            data = [row for row in csv_reader]
+
+        #skip the first row if it's the header row
+        if self.form.headers.isChecked():
+            data = data[1:]
+
+        #record the x,y,z coordinates correlating to the curve position and radius
+        for row in data:
+            self.vector_model.append(App.Vector(float(row[pos_x]), float(row[pos_y]), float(row[arc_z])))
