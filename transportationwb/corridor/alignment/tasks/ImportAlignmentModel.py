@@ -95,8 +95,6 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
 
         if index.isValid() and 0 <= index.row() < len(self.data_model):
 
-            raw_value = None
-
             #test for valid data types on a per-column basis
             if index.column() == 0:
                 value = self.validate_station(value)
@@ -122,8 +120,6 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
         '''
         Headers to be displated
         '''
-
-        print('model ', self.model_name)
 
         if not self.headers:
             return None

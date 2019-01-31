@@ -190,16 +190,13 @@ class ImportAlignmentTask:
             else:
                 header = ['Column ' + str(_i) for _i in range(0, len(data[0]))]
 
-            header2 = header[:]
-
             table_model = Model('csv', header[:], data)
             self.form.table_view.setModel(table_model)
 
-            matcher_data = [header[:]] * 2
-            matcher_model = Model('matcher', [], matcher_data)
+            matcher_model = Model('matcher', [], [header[:], header[:]])
 
             self.form.header_matcher.setModel(matcher_model)
-            #self.form.header_matcher.hideRow(1)
+            self.form.header_matcher.hideRow(1)
             self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0)*2)
             self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0)*2)
             self.form.header_matcher.setItemDelegate(Delegate())
