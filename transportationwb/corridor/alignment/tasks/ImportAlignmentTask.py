@@ -54,12 +54,7 @@ class ImportAlignmentTask:
         if not result:
             self.update_callback(self)
         else:
-            msg = 'Conflicting or duplicate header items:\n'
-
-            for items in result:
-                msg += ','.join(items) + '\n'
-
-            dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, msg.decode())
+            dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, 'Duplicate / Conflicting Headers', result)
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
             dialog.exec_()
 
@@ -134,30 +129,51 @@ class ImportAlignmentTask:
         Radius cannot be selected with Degree
         '''
 
-        print (headers)
         nedb = ['Northing', 'Easting', 'Distance', 'Bearing']
 
-        bools = [_i in nedb for _i in headers]
+        bools = [_i in headers for _i in nedb]
 
-        print(bools)
-        conflicts = []
+        result = ''
 
         items = list(set([_i for _i in headers if headers.count(_i) > 1]))
-
-        print(items)
+        
         if items:
-            conflicts.append(items)
 
-        items = []
-    
-        for idx, tf in enumerate(bools):
+            duplicates = [i in nedb for i in items]
+
+            for idx, tf in enumerate(duplicates):
+                if tf:
+                    result += ",".join(items) + '\n'
+
+        if result:
+            result = 'Duplicates: ' + result
+
+        lt_conflict = ''
+
+        for idx, tf in enumerate(bools[:2]):
+
             if tf:
-                items.append(nedb[idx])
+                if lt_conflict:
+                    lt_conflict += '/'
+                lt_conflict += nedb[idx]
 
-        if items:
-            conflicts.append(items)
+        rt_conflict = ''
 
-        return conflicts
+        for idx, tf in enumerate(bools[2:]):
+
+            if tf:
+                if rt_conflict:
+                    rt_conflict += '/'
+                rt_conflict += nedb[idx+2]
+
+        if lt_conflict and rt_conflict:
+            result += lt_conflict + ' conflicts with ' + rt_conflict + '\n'
+
+        if 'Radius' in headers:
+            if 'Degree' in headers:
+                result += 'Radius conflicts with Degree'
+
+        return result
 
     def choose_file(self):
         '''
