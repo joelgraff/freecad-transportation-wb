@@ -42,6 +42,7 @@ class ImportAlignmentTask:
         self.ui = path
         self.form = None
         self.update_callback = update_callback
+        self.dialect = None
 
     def accept(self):
         self.update_callback(self)
@@ -149,8 +150,8 @@ class ImportAlignmentTask:
             first_bytes = stream.read(1024)
             stream.seek(0)
 
-            dialect = sniffer.sniff(first_bytes)
-            self.form.delimiter.setText(dialect.delimiter)
+            self.dialect = sniffer.sniff(first_bytes)
+            self.form.delimiter.setText(self.dialect.delimiter)
 
             check_state = QtCore.Qt.Checked
 
@@ -159,9 +160,25 @@ class ImportAlignmentTask:
 
             self.form.headers.setCheckState(check_state)
 
+        self.open_file()
+
+    def open_file(self):
+        '''
+        Open the file for previewing
+        '''
+
+        if not self.dialect:
+            self.examine_file()
+
+        if self.dialect.delimiter != self.form.delimiter.text():
+            self.dialect.delimiter = self.form.delimiter.text()
+
+
+        with open(self.form.file_path.text(), encoding="utf-8-sig") as stream:
+
             stream.seek(0)
 
-            csv_reader = csv.reader(stream, dialect)
+            csv_reader = csv.reader(stream, self.dialect)
 
             #populate table view...
             data = [row for row in csv_reader]
@@ -176,13 +193,15 @@ class ImportAlignmentTask:
             self.form.table_model = Model(self.form.table_view, header, data)
             self.form.table_view.setModel(self.form.table_model)
 
-    def headers_onclick(self, i):
-        '''
-        Callback to toggle header checkbox and re-load the csv file
-        '''
+            matcher_model = Model(self.form.table_view, [], [header])
 
-        return
-        #self.examine_file
+            self.form.header_matcher.setModel(matcher_model)
+            self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0))
+            self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0))
+            self.form.header_matcher.setItemDelegate(Delegate())
+
+            self.form.table_view.horizontalScrollBar().valueChanged.connect(self.form.header_matcher.horizontalScrollBar().setValue)
+
     def setup(self):
 
         #convert the data to lists of lists
@@ -194,6 +213,7 @@ class ImportAlignmentTask:
         form.add_button = form.findChild(QtGui.QPushButton, 'add_button')
         form.remove_button = form.findChild(QtGui.QPushButton, 'remove_button')
         form.table_view = form.findChild(QtGui.QTableView, 'table_view')
+        form.header_matcher = form.findChild(QtGui.QTableView, 'header_matcher')
 
         form.file_path = form.findChild(QtGui.QLineEdit, 'filename')
         form.pick_file = form.findChild(QtGui.QToolButton, 'pick_file')
@@ -202,8 +222,8 @@ class ImportAlignmentTask:
 
         form.pick_file.clicked.connect(self.choose_file)
         form.file_path.textChanged.connect(self.examine_file)
-        form.headers.stateChanged.connect(self.headers_onclick)
-        #form.delimiter.???
+        form.headers.stateChanged.connect(self.open_file)
+        form.delimiter.editingFinished.connect(self.open_file)
 
         form.table_model = Model(form.table_view, [], [])
 

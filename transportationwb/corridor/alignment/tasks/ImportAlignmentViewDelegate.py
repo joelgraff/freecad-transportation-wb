@@ -85,7 +85,7 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
 
         value = index.data(QtCore.Qt.EditRole) or index.data(QtCore.Qt.DisplayRole)
 
-        if editor.metaObject().className() in ['QSpinBox', 'QDoubleSpinBox']:
+        if editor.metaObject().className() in ['QSpinBox', 'QDoubleSpinBox', 'QComboBox']:
             editor.setValue(value)
         else:
             editor.setText(value)
