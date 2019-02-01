@@ -34,11 +34,9 @@ import FreeCAD as App
 
 from transportationwb.corridor.alignment.tasks.ImportAlignmentModel import ImportAlignmentModel as Model
 from transportationwb.corridor.alignment.tasks.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
-from transportationwb.corridor.alignment import Alignment
+from transportationwb.corridor.alignment import HorizontalAlignment
 
 class ImportAlignmentTask:
-
-    combo_model = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'ID', 'Parent_ID', 'Back', 'Forward', 'Datum_North', 'Datum_East']
 
     def __init__(self, update_callback):
 
@@ -47,10 +45,7 @@ class ImportAlignmentTask:
         self.form = None
         self.update_callback = update_callback
         self.dialect = None
-        self.vector_model = None
-        self.vector_types = None
-        self.meta_data_dict = {el:'' for el in ImportAlignmentTask.combo_model[6:]}
-        self.meta_data = []
+        self.alignment_type = 'Horizontal'
         self.alignment_data = []
 
     def accept(self):
@@ -63,11 +58,11 @@ class ImportAlignmentTask:
 
             self.import_model()
 
-            for _i in range(len(self.meta_data)):
+            for _i in range(len(self.alignment_data)):
 
-                Alignment(self.meta_data[_i], self.vector_model[_i], self.vector_types)
+                HorizontalAlignment.create(self.alignment_data)
 
-            self.update_callback({'types': self.vector_types, 'data': self.vector_model, 'metadata': self.meta_data})
+            #self.update_callback({'types': self.vector_types, 'data': self.vector_model, 'metadata': self.meta_data})
 
             return True
 
@@ -143,19 +138,6 @@ class ImportAlignmentTask:
         if not (all(_i for _i in ne_bools) or all(_i for _i in db_bools)):
 
             result += 'Incomplete Northing/Easting or Bearing/Distance\n'
-
-        #test for conflicting headers
-        lt = '/'.join(nedb[:2][_i] for _i, _v in enumerate(ne_bools) if _v)
-        rt = '/'.join(nedb[2:][_i] for _i, _v in enumerate(db_bools) if _v)
-
-        if lt and rt:
-
-            result += lt + ' conflicts with ' + rt + '\n'
-
-        #test to see if both curve radius and degree have been specified
-        if all(_i in valid_items for _i in ['Radius', 'Degree']):
-
-            result += 'Radius conflicts with Degree'
 
         return result
 
@@ -250,7 +232,7 @@ class ImportAlignmentTask:
         '''
         Populate the table views with the data acquired from open_file
         '''
-        model = ImportAlignmentTask.combo_model[:]
+        model = HorizontalAlignment.Headers.complete
 
         lower_header = [_x.lower() for _x in header]
         lower_model = [_x.lower() for _x in model]
@@ -279,7 +261,7 @@ class ImportAlignmentTask:
         self.form.header_matcher.hideRow(1)
         self.form.header_matcher.setMinimumHeight(self.form.header_matcher.rowHeight(0))
         self.form.header_matcher.setMaximumHeight(self.form.header_matcher.rowHeight(0))
-        self.form.header_matcher.setItemDelegate(Delegate(ImportAlignmentTask.combo_model))
+        self.form.header_matcher.setItemDelegate(Delegate(model))
 
         self.form.table_view.horizontalScrollBar().valueChanged.connect(self.form.header_matcher.horizontalScrollBar().setValue)
 
@@ -318,28 +300,18 @@ class ImportAlignmentTask:
 
         raise RuntimeError('No main window found')
 
-    def get_model(self):
-        '''
-        Returns the model data set with every element converted to string to external Loft object
-        '''
-
-        result = ''
-
-        return result
-
     def import_model(self):
         '''
         Import the csv data
         '''
-        data = []
 
         #build list of headers and corresponding data index
         headers = self.form.header_matcher.model().data_model[0]
-        valid_headers = [_v if _v in self.combo_model else '' for _v in headers]
-        header_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in self.combo_model]
+        horiz_headers = HorizontalAlignment.Headers.complete
+        valid_headers = [_v if _v in horiz_headers else '' for _v in headers]
+        header_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in horiz_headers]
 
         id_index = headers.index('ID')
-
 
         #build the data set as a list
         with open(self.form.file_path.text(), encoding="utf-8-sig") as stream:
@@ -366,79 +338,3 @@ class ImportAlignmentTask:
                 dct = {}
 
             self.alignment_data.append(dct_list)
-
-            print(self.alignment_data)
-
-    def import_model_dep(self):
-        '''
-        Import the model based on valid user-specified headers for the provided csv
-        '''
-
-        headers = self.form.header_matcher.model().data_model[0]
-        csv_headers = self.form.header_matcher.model().data_model[1]
-
-        #replace all non-valid headers in the result with blanks
-        valid_headers = [_v if _v in self.combo_model else '' for _v in headers]
-
-        type_lists = [['Easting', 'Distance'], ['Northing', 'Bearing'], ['Degree', 'Radius']]
-
-        #save a list of the vector types corresponding to the coordinate in the App.Vector
-        self.vector_types = [_v for type_list in type_lists for _v in type_list if _v in valid_headers]
-
-        #get the vector coordinate indices, storing positional indices in x and y, and arc indices in z
-        pos_x = [_i for _i, _v in enumerate(valid_headers) if _v in ['Easting', 'Distance']][0]
-        pos_y = [_i for _i, _v in enumerate(valid_headers) if _v in ['Northing', 'Bearing']][0]
-        arc_z = [_i for _i, _v in enumerate(valid_headers) if _v in ['Degree', 'Radius']][0]
-
-        self.vector_model = []
-
-        #build the data set as a list
-        with open(self.form.file_path.text(), encoding="utf-8-sig") as stream:
-
-            data = [row for row in csv.reader(stream, self.dialect)]
-
-        #skip the first row if it's the header row
-        if self.form.headers.isChecked():
-            data = data[1:]
-
-        #create indices for csv headers
-        data_headers = self.combo_model[:6]
-        metadata_headers = self.combo_model[6:]
-
-        csv_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in self.combo_model]
-        #create indices for metadata that's provided in the csv
-        metadata_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in metadata_list]
-
-        #record the x,y,z coordinates correlating to the curve position and radius
-        object_idx = 0
-        alignment_data = []
-
-        dct = None
-
-        #iterate the rows and build the model data
-        for row in data:
-
-            for tpl in metadata_indices:
-
-                meta_data = row[tpl[0]]
-
-                if meta_data:
-
-                    if dct is None:
-                        dct = {key: value[:] for key, value in  self.meta_data_dict.items()}
-
-                    dct[tpl[1]] = meta_data
-
-            if dct:
-                self.meta_data.append(dct)
-                dct = None
-
-            if len(self.meta_data) - 1 > object_idx:
-
-                self.vector_model.append(alignment_data[:])
-                alignment_data = []
-                object_idx += 1
-
-            alignment_data.append(App.Vector(float(row[pos_x]), float(row[pos_y]), float(row[arc_z])))
-
-        self.vector_model.append(alignment_data[:])
