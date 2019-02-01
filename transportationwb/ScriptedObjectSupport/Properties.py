@@ -77,6 +77,8 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
 
     App.ActiveDocument.recompute()
 
+    p_name = p_name.replace(' ', '_')
+
     prop = obj.getPropertyByName(p_name)
 
     if p_type in [
@@ -93,7 +95,7 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
             'App::PropertyStringList',
             'App::PropertyFloatList',
             'App::PropertyVector',
-            'App::PropertyVecitorList'
+            'App::PropertyVectorList'
         ]:
         setattr(obj, p_name, default_value)
         #prop = default_value

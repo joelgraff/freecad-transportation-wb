@@ -58,9 +58,10 @@ class ImportAlignmentTask:
 
             self.import_model()
 
-            for _i in range(len(self.alignment_data)):
+            #for _i in range(len(self.alignment_data)):
+            for _i in self.alignment_data:
 
-                HorizontalAlignment.create(self.alignment_data)
+                HorizontalAlignment.create(_i)
 
             #self.update_callback({'types': self.vector_types, 'data': self.vector_model, 'metadata': self.meta_data})
 
@@ -233,7 +234,7 @@ class ImportAlignmentTask:
         Populate the table views with the data acquired from open_file
         '''
         model = HorizontalAlignment.Headers.complete
-
+        print(model)
         lower_header = [_x.lower() for _x in header]
         lower_model = [_x.lower() for _x in model]
         

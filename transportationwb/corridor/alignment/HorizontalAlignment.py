@@ -75,8 +75,8 @@ def create(data, units='English', object_name='', parent=None):
 class Headers():
 
     meta = ['ID', 'Parent_ID', 'Back', 'Forward']
-    data = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
-    complete = meta.extend(data)
+    data = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'Direction']
+    complete = meta + data
 
 class _Alignment():
 
@@ -160,8 +160,8 @@ class _Alignment():
             if item['ID']:
                 obj.ID = item['ID']
 
-            if item['Parent ID']:
-                obj.Parent_ID = item['Parent ID']
+            if item['Parent_ID']:
+                obj.Parent_ID = item['Parent_ID']
 
             #alignment and intersection station equations
             if item['Back'] and item['Forward']:
@@ -175,7 +175,7 @@ class _Alignment():
 
                     _eqn = App.Vector(_bk, _fwd, 0.0)
 
-                    if item['Parent ID']:
+                    if item['Parent_ID']:
                         obj.Intersection_Equation = _eqn
                     else:
                         obj.Alignment_Equations.append(_eqn)
@@ -247,7 +247,7 @@ class _Alignment():
         '''
 
         self.assign_meta_data(data)
-        self.get_geometry_data(data)
+        self.assign_geometry_data(data)
 
         #split the dataset into metadata and curve data
         #parse the metadata, looking for errors
