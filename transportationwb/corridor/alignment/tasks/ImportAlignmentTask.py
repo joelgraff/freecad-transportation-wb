@@ -34,10 +34,11 @@ import FreeCAD as App
 
 from transportationwb.corridor.alignment.tasks.ImportAlignmentModel import ImportAlignmentModel as Model
 from transportationwb.corridor.alignment.tasks.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
+from transportationwb.corridor.alignment import Alignment
 
 class ImportAlignmentTask:
 
-    combo_model = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'ID', 'Parent_ID', 'Parent_Eq', 'Child_Eq', 'Datum']
+    combo_model = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'ID', 'Parent_ID', 'Back', 'Forward', 'Datum_North', 'Datum_East']
 
     def __init__(self, update_callback):
 
@@ -50,6 +51,7 @@ class ImportAlignmentTask:
         self.vector_types = None
         self.meta_data_dict = {el:'' for el in ImportAlignmentTask.combo_model[6:]}
         self.meta_data = []
+        self.alignment_data = []
 
     def accept(self):
 
@@ -58,10 +60,18 @@ class ImportAlignmentTask:
 
         #no message returned = success
         if not result:
+
             self.import_model()
+
+            for _i in range(len(self.meta_data)):
+
+                Alignment(self.meta_data[_i], self.vector_model[_i], self.vector_types)
+
             self.update_callback({'types': self.vector_types, 'data': self.vector_model, 'metadata': self.meta_data})
+
             return True
 
+        #message returned - notify user
         dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, 'Duplicate / Conflicting Headers', result)
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.exec_()
@@ -319,6 +329,48 @@ class ImportAlignmentTask:
 
     def import_model(self):
         '''
+        Import the csv data
+        '''
+        data = []
+
+        #build list of headers and corresponding data index
+        headers = self.form.header_matcher.model().data_model[0]
+        valid_headers = [_v if _v in self.combo_model else '' for _v in headers]
+        header_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in self.combo_model]
+
+        id_index = headers.index('ID')
+
+
+        #build the data set as a list
+        with open(self.form.file_path.text(), encoding="utf-8-sig") as stream:
+
+            #dictionary and list containing the dataset for a single alignment
+            dct_list = []
+            dct = {}
+
+            for row in csv.reader(stream, self.dialect):
+
+                if row[id_index]:
+
+                    if dct_list:
+                        self.alignment_data.append(dct_list)
+
+                    dct_list = []
+
+                for tpl in header_indices:
+
+                    dct[tpl[1]] = row[tpl[0]]
+
+                dct_list.append(dct)
+
+                dct = {}
+
+            self.alignment_data.append(dct_list)
+
+            print(self.alignment_data)
+
+    def import_model_dep(self):
+        '''
         Import the model based on valid user-specified headers for the provided csv
         '''
 
@@ -326,10 +378,9 @@ class ImportAlignmentTask:
         csv_headers = self.form.header_matcher.model().data_model[1]
 
         #replace all non-valid headers in the result with blanks
-        valid_headers = [_v if _v in ImportAlignmentTask.combo_model else '' for _v in headers]
+        valid_headers = [_v if _v in self.combo_model else '' for _v in headers]
 
         type_lists = [['Easting', 'Distance'], ['Northing', 'Bearing'], ['Degree', 'Radius']]
-        metadata_list = ['ID', 'Parent_ID', 'Parent_Eq', 'Child_Eq', 'Datum']
 
         #save a list of the vector types corresponding to the coordinate in the App.Vector
         self.vector_types = [_v for type_list in type_lists for _v in type_list if _v in valid_headers]
@@ -350,6 +401,11 @@ class ImportAlignmentTask:
         if self.form.headers.isChecked():
             data = data[1:]
 
+        #create indices for csv headers
+        data_headers = self.combo_model[:6]
+        metadata_headers = self.combo_model[6:]
+
+        csv_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in self.combo_model]
         #create indices for metadata that's provided in the csv
         metadata_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in metadata_list]
 

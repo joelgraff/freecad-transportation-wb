@@ -27,7 +27,7 @@ Alignment object for managing 2D (Horizontal and Vertical) and 3D alignments
 '''
 import FreeCAD as App
 import Part
-from transportationwb import ScriptedObjectSupport.Properties as Properties
+from transportationwb.ScriptedObjectSupport import Properties
 
 _CLASS_NAME = 'Alignment'
 _TYPE = 'Part::FeaturePython'
@@ -36,7 +36,7 @@ __title__ = _CLASS_NAME + '.py'
 __author__ = "AUTHOR_NAME"
 __url__ = "https://www.freecadweb.org"
 
-def create(object_name='', data, parent=None):
+def create(data, object_name='', parent=None):
     '''
     Class construction method
     object_name - Optional. Name of new object.  Defaults to class name.
@@ -85,7 +85,7 @@ class _Alignment():
         Properties.add(obj, 'String', 'Parent ID', 'ID of alignment parent', '')
         Properties.add(obj, 'Vector', 'Equation', 'Station equation for intersection with parent', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
-        Proeprties.add(obj, 'VectorList', 'Data', 'Curve data defining the alignment', [])
+        Properties.add(obj, 'VectorList', 'Data', 'Curve data defining the alignment', [])
 
     def __getstate__(self):
         '''
