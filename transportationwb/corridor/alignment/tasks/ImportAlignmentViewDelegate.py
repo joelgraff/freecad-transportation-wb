@@ -34,7 +34,8 @@ class ImportAlignmentViewDelegate(QtGui.QStyledItemDelegate):
         QtGui.QStyledItemDelegate.__init__(self, parent)
         self._is_editing = False
         self.combo_box = None
-        self.model = model[:]
+        self.model = ['']
+        self.model.extend(model)
 
     def paint(self, painter, option, index):
 

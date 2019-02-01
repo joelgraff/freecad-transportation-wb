@@ -37,7 +37,7 @@ from transportationwb.corridor.alignment.tasks.ImportAlignmentViewDelegate impor
 
 class ImportAlignmentTask:
 
-    combo_model = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'ID', 'Parent', 'Parent_Eq', 'Child_Eq', 'Datum']
+    combo_model = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'ID', 'Parent_ID', 'Parent_Eq', 'Child_Eq', 'Datum']
 
     def __init__(self, update_callback):
 
@@ -47,6 +47,9 @@ class ImportAlignmentTask:
         self.update_callback = update_callback
         self.dialect = None
         self.vector_model = None
+        self.vector_types = None
+        self.meta_data_dict = {el:'' for el in ImportAlignmentTask.combo_model[6:]}
+        self.meta_data = []
 
     def accept(self):
 
@@ -56,6 +59,7 @@ class ImportAlignmentTask:
         #no message returned = success
         if not result:
             self.import_model()
+            self.update_callback({'types': self.vector_types, 'data': self.vector_model, 'metadata': self.meta_data})
             return True
 
         dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, 'Duplicate / Conflicting Headers', result)
@@ -236,19 +240,28 @@ class ImportAlignmentTask:
         '''
         Populate the table views with the data acquired from open_file
         '''
+        model = ImportAlignmentTask.combo_model[:]
 
-        top_row = []
+        lower_header = [_x.lower() for _x in header]
+        lower_model = [_x.lower() for _x in model]
+        
+        #get indices in model that are exact matches in header
+        model_indices = [_i for _i, _v in enumerate(lower_model) if _v in lower_header]
+        header_indices = [_i for _i, _v in enumerate(lower_header) if _v in lower_model]
 
-        for _i in header[:]:
-            _i2 = _i.lower()
-            result = _i
+        pairs = []
 
-            for _j in ImportAlignmentTask.combo_model:
-                if _j.lower() in _i2:
-                    result = _j
-                    break
-            
-            top_row.append(result)
+        for _i in model_indices:
+
+            for _j in header_indices:
+
+                if lower_model[_i] == lower_header[_j]:
+                    pairs.append([_i, _j])
+
+        top_row = [''] * len(header)
+
+        for tpl in pairs:
+            top_row[tpl[1]] = model[tpl[0]]
             
         matcher_model = Model('matcher', [], [top_row, header[:]])
 
@@ -313,29 +326,63 @@ class ImportAlignmentTask:
         csv_headers = self.form.header_matcher.model().data_model[1]
 
         #replace all non-valid headers in the result with blanks
-        result = [_v if _v in ImportAlignmentTask.combo_model else '' for _v in headers]
+        valid_headers = [_v if _v in ImportAlignmentTask.combo_model else '' for _v in headers]
+
+        type_lists = [['Easting', 'Distance'], ['Northing', 'Bearing'], ['Degree', 'Radius']]
+        metadata_list = ['ID', 'Parent_ID', 'Parent_Eq', 'Child_Eq', 'Datum']
+
+        #save a list of the vector types corresponding to the coordinate in the App.Vector
+        self.vector_types = [_v for type_list in type_lists for _v in type_list if _v in valid_headers]
 
         #get the vector coordinate indices, storing positional indices in x and y, and arc indices in z
-        pos_x = [_i for _i, _v in enumerate(result) if _v in ['Easting', 'Distance']][0]
-        pos_y = [_i for _i, _v in enumerate(result) if _v in ['Northing', 'Bearing']][0]
-        arc_z = [_i for _i, _v in enumerate(result) if _v in ['Degree', 'Radius']][0]
+        pos_x = [_i for _i, _v in enumerate(valid_headers) if _v in ['Easting', 'Distance']][0]
+        pos_y = [_i for _i, _v in enumerate(valid_headers) if _v in ['Northing', 'Bearing']][0]
+        arc_z = [_i for _i, _v in enumerate(valid_headers) if _v in ['Degree', 'Radius']][0]
 
         self.vector_model = []
 
-        #open the CSV file and parse, retrieving only the columns which correspond to valid data
+        #build the data set as a list
         with open(self.form.file_path.text(), encoding="utf-8-sig") as stream:
 
-            stream.seek(0)
-
-            csv_reader = csv.reader(stream, self.dialect)
-
-            #acquire the data
-            data = [row for row in csv_reader]
+            data = [row for row in csv.reader(stream, self.dialect)]
 
         #skip the first row if it's the header row
         if self.form.headers.isChecked():
             data = data[1:]
 
+        #create indices for metadata that's provided in the csv
+        metadata_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in metadata_list]
+
         #record the x,y,z coordinates correlating to the curve position and radius
+        object_idx = 0
+        alignment_data = []
+
+        dct = None
+
+        #iterate the rows and build the model data
         for row in data:
-            self.vector_model.append(App.Vector(float(row[pos_x]), float(row[pos_y]), float(row[arc_z])))
+
+            for tpl in metadata_indices:
+
+                meta_data = row[tpl[0]]
+
+                if meta_data:
+
+                    if dct is None:
+                        dct = {key: value[:] for key, value in  self.meta_data_dict.items()}
+
+                    dct[tpl[1]] = meta_data
+
+            if dct:
+                self.meta_data.append(dct)
+                dct = None
+
+            if len(self.meta_data) - 1 > object_idx:
+
+                self.vector_model.append(alignment_data[:])
+                alignment_data = []
+                object_idx += 1
+
+            alignment_data.append(App.Vector(float(row[pos_x]), float(row[pos_y]), float(row[arc_z])))
+
+        self.vector_model.append(alignment_data[:])
