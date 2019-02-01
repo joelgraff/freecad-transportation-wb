@@ -58,10 +58,20 @@ class ImportAlignmentTask:
 
             self.import_model()
 
+            errors = []
             #for _i in range(len(self.alignment_data)):
             for _i in self.alignment_data:
 
-                HorizontalAlignment.create(_i)
+                result = HorizontalAlignment.create(_i).errors
+
+                if result:
+                    errors += result
+
+            if errors:
+                print('Errors encountered during alignment creation:\n')
+
+                for _e in errors:
+                    print(_e)
 
             #self.update_callback({'types': self.vector_types, 'data': self.vector_model, 'metadata': self.meta_data})
 
@@ -234,7 +244,7 @@ class ImportAlignmentTask:
         Populate the table views with the data acquired from open_file
         '''
         model = HorizontalAlignment.Headers.complete
-        print(model)
+
         lower_header = [_x.lower() for _x in header]
         lower_model = [_x.lower() for _x in model]
         
@@ -319,9 +329,15 @@ class ImportAlignmentTask:
 
             #dictionary and list containing the dataset for a single alignment
             dct_list = []
-            dct = {}
+
+            skip_header_row = self.form.headers.isChecked()
 
             for row in csv.reader(stream, self.dialect):
+
+                if skip_header_row:
+
+                    skip_header_row = False
+                    continue
 
                 if row[id_index]:
 
@@ -330,12 +346,12 @@ class ImportAlignmentTask:
 
                     dct_list = []
 
+                dct = dict.fromkeys(horiz_headers, '')
+
                 for tpl in header_indices:
 
                     dct[tpl[1]] = row[tpl[0]]
 
                 dct_list.append(dct)
-
-                dct = {}
 
             self.alignment_data.append(dct_list)

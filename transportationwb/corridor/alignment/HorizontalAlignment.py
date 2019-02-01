@@ -62,8 +62,8 @@ def create(data, units='English', object_name='', parent=None):
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
     result = _Alignment(_obj)
-
     result.set_data(data)
+    result.Object.Label = 'HA_' + result.Object.ID
 
     if not units == 'English':
         result.set_units(units)
@@ -93,6 +93,23 @@ class _Alignment():
 
         return _const_val / value
 
+    @staticmethod
+    def get_abs_bearing(angle, direction):
+        '''
+        Convert a supplied angle in decimal form and it's associated direction
+        to an absolute bearing from true north.
+
+        If direction is empty, returns angle
+        If direction = L/R, angle is rotated CCW / CW from north
+        If direction is NW,SW,NE,SE, angle is rotated E/W from N/S
+        '''
+
+        if not direction:
+            return angle
+        
+        multiplier = 1.0
+
+        if direction
     def __init__(self, obj):
         '''
         Main class intialization
@@ -209,16 +226,18 @@ class _Alignment():
             _db = [item['Distance'], item['Bearing']]
             _rd = [item['Radius'], item['Degree']]
 
+            geo_vector = App.Vector(0.0, 0.0, 0.0)
+
             #parse degree of curve / radius values
             if _rd[0]:
                 try:
-                    _rd[0] = float(_rd[0])
+                    geo_vector.z = float(_rd[0])
                 except:
                     self.errors.append('Invalid radius: %s' % _rd[0])
 
             elif _rd[1]:
                 try:
-                    _rd[1] = self.doc_to_radius(float(_rd[1]))
+                    geo_vector.z = self.doc_to_radius(float(_rd[1]))
                 except:
                     self.errors.append('Invalid degree of curve: %s' % _rd[1])
 
@@ -230,16 +249,38 @@ class _Alignment():
                 #get the last point in the geometry for the datum, unless empty
                 datum = self.Object.Datum
 
+                try:
+                    _db[0] = float(_db[0])
+                    _db[1] = float(_db[1])
+
+                except:
+                    self.errors.append('(Distance, Bearing) Invalid: (%s, %s)' % tuple(_db))
+                    break
+
+                #successful conversion of distance bearing to floats
+                #get last geometry point and calculate the northing / easting of the new PI
+
                 if self.Object.Geometry:
                     datum = self.Object.Geometry[-1]
 
-                
+                bearing = get_abs_bearing(_db[1])
+
+                #set values to geo_vector
+
             #parse northing / easting values
             if any(_ne) and not all(_ne):
                 self.errors.append('(Easting, Northing) Incomplete: ( %s, %s)' % tuple(_ne))
 
             elif all(_ne):
-                self.Object.Geometry.append(App.Vector(_ne[1], _ne[0]))
+
+                try:
+                    geo_vector.y = float(_ne[0])
+                    geo_vector.x = float(_ne[1])
+
+                except:
+                    self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
+
+            self.Object.Geometry.append(geo_vector)
 
     def set_data(self, data):
         '''
@@ -249,10 +290,6 @@ class _Alignment():
         self.assign_meta_data(data)
         self.assign_geometry_data(data)
 
-        #split the dataset into metadata and curve data
-        #parse the metadata, looking for errors
-        #assign the metadata values to the object properties
-        #parse the curve data, looking for errors
         #parse the curve data, converting parameters to Northing/Easting/Radius format
 
     def execute(self, obj):
