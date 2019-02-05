@@ -28,7 +28,6 @@ Alignment object for managing 2D (Horizontal and Vertical) and 3D alignments
 import math
 
 import FreeCAD as App
-import Part
 from transportationwb.ScriptedObjectSupport import Properties
 
 _CLASS_NAME = 'Alignment'
@@ -93,23 +92,6 @@ class _Alignment():
 
         return _const_val / value
 
-    @staticmethod
-    def get_abs_bearing(angle, direction):
-        '''
-        Convert a supplied angle in decimal form and it's associated direction
-        to an absolute bearing from true north.
-
-        If direction is empty, returns angle
-        If direction = L/R, angle is rotated CCW / CW from north
-        If direction is NW,SW,NE,SE, angle is rotated E/W from N/S
-        '''
-
-        if not direction:
-            return angle
-        
-        multiplier = 1.0
-
-        if direction
     def __init__(self, obj):
         '''
         Main class intialization
@@ -213,6 +195,33 @@ class _Alignment():
                 except:
                     self.errors.append('Invalid datum station for object ' + item['ID'] + ': %s' %item['Forward'])
 
+    def get_position(self, prev_pos, db_list):
+        '''
+        Get the position based on the previous position and the distance / bearing float list
+        '''
+
+        quadrant = 1
+        bearing = db_list[1]
+        distance = db_list[0]
+
+        quad_radians = math.radians(90.0)
+        
+        while bearing >= quad_radians:
+            bearing -= quad_radians
+            quadrant += 1
+
+        #assume quadrant one
+        _dx = math.sin(bearing) * distance
+        _dy = math.cos(bearing) * distance
+
+        if quadrant in [3,4]:
+            _dx *= -1
+
+        if quadrant in [2,3]:
+            _dy *= -1
+
+        return App.Vector(prev_pos.x + _dx, prev_pos.y + _dy, 0.0)
+
     def assign_geometry_data(self, data):
         '''
         Iterate the dataset, extracting geometric data
@@ -222,6 +231,7 @@ class _Alignment():
         '''
         for item in data:
 
+            print(item)
             _ne = [item['Northing'], item['Easting']]
             _db = [item['Distance'], item['Bearing']]
             _rd = [item['Radius'], item['Degree']]
@@ -240,6 +250,8 @@ class _Alignment():
                     geo_vector.z = self.doc_to_radius(float(_rd[1]))
                 except:
                     self.errors.append('Invalid degree of curve: %s' % _rd[1])
+            else:
+                self.errors.append('Missing Radius / Degree of Curvature')
 
             #parse bearing / distance values
             if any(_db) and not all(_db):
@@ -251,21 +263,19 @@ class _Alignment():
 
                 try:
                     _db[0] = float(_db[0])
-                    _db[1] = float(_db[1])
+                    _db[1] = math.radians(float(_db[1]))
 
                 except:
                     self.errors.append('(Distance, Bearing) Invalid: (%s, %s)' % tuple(_db))
-                    break
-
-                #successful conversion of distance bearing to floats
+            
+                #successful conversion of distance/bearing to floats
                 #get last geometry point and calculate the northing / easting of the new PI
 
                 if self.Object.Geometry:
                     datum = self.Object.Geometry[-1]
 
-                bearing = get_abs_bearing(_db[1])
-
                 #set values to geo_vector
+                geo_vector = self.get_position(datum, _db)
 
             #parse northing / easting values
             if any(_ne) and not all(_ne):
@@ -280,6 +290,7 @@ class _Alignment():
                 except:
                     self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
 
+            print('appending: ', geo_vector)
             self.Object.Geometry.append(geo_vector)
 
     def set_data(self, data):
@@ -287,11 +298,11 @@ class _Alignment():
         Curve data as a list of tuple('label', 'data')
         '''
 
+        #parse the curve data, converting parameters to Northing/Easting/Radius format
         self.assign_meta_data(data)
         self.assign_geometry_data(data)
 
-        #parse the curve data, converting parameters to Northing/Easting/Radius format
-
+        #print('geometry: ', self.Object.Geometry)
     def execute(self, obj):
         '''
         Class execute for recompute calls

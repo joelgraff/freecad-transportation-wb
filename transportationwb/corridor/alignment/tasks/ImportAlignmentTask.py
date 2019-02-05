@@ -339,6 +339,7 @@ class ImportAlignmentTask:
                     skip_header_row = False
                     continue
 
+                #if we encounter a row with an id, that marks the end of the previous alignment
                 if row[id_index]:
 
                     if dct_list:
