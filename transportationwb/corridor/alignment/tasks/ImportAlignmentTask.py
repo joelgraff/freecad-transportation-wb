@@ -311,27 +311,57 @@ class ImportAlignmentTask:
 
         raise RuntimeError('No main window found')
 
+    @staticmethod
+    def is_empty_dict(dct):
+        '''
+        Returns true if all key values are empty
+        '''
+
+        for key, value in dct.items():
+            if value:
+                return False
+
+        return True
+
     def import_model(self):
         '''
         Import the csv data
         '''
 
-        #build list of headers and corresponding data index
+        #dictionary keys for the dictionary data that is used for alignment construction
+        meta_keys = HorizontalAlignment.Headers.meta
+        data_keys = HorizontalAlignment.Headers.data
+
+        #get headers imported from file
         headers = self.form.header_matcher.model().data_model[0]
-        horiz_headers = HorizontalAlignment.Headers.complete
-        valid_headers = [_v if _v in horiz_headers else '' for _v in headers]
-        header_indices = [(_i, _v) for _i, _v in enumerate(valid_headers) if _v in horiz_headers]
+
+        #find those headers in the pre-defined header lists, preserving blanks for unused columns
+        meta_headers = [_v if _v in meta_keys else '' for _v in headers]
+        data_headers = [_v if _v in data_keys else '' for _v in headers]
+
+        #generate indexed lists of the headers
+        meta_indices = [(_i, _v) for _i, _v in enumerate(meta_headers) if _v in headers]
+        data_indices = [(_i, _v) for _i, _v in enumerate(data_headers) if _v in headers]
+
+        #reduce lists by removing empty columns, preserving original index values of the headers
+        meta_indices = [_x for _x in meta_indices if _x[1]]
+        data_indices = [_x for _x in data_indices if _x[1]]
 
         id_index = headers.index('ID')
+        parent_id_index = headers.index('Parent_ID')
+        sta_eq_headers = ['Back', 'Forward']
 
         #build the data set as a list
         with open(self.form.file_path.text(), encoding="utf-8-sig") as stream:
 
-            #dictionary and list containing the dataset for a single alignment
-            dct_list = []
-
             skip_header_row = self.form.headers.isChecked()
 
+            #dictionaries which may persist across multiple row ierations within an alignment
+            alignment_dict = dict.fromkeys(['meta', 'station', 'data'], [])
+            eq_dict = dict.fromkeys(['Back_Parent_ID', 'Back', 'Forward'], '')
+            meta_dict = dict.fromkeys(meta_keys, '')
+
+            #each row represents a PI, a station equation, or metadata for the alignment
             for row in csv.reader(stream, self.dialect):
 
                 if skip_header_row:
@@ -339,20 +369,63 @@ class ImportAlignmentTask:
                     skip_header_row = False
                     continue
 
-                #if we encounter a row with an id, that marks the end of the previous alignment
+                #if we encounter a row with an id, this marks the end of the previous alignment
                 if row[id_index]:
 
-                    if dct_list:
-                        self.alignment_data.append(dct_list)
+                    #save the meta data, the current alignment object, if defined, and clear it
+                    if not self.is_empty_dict(alignment_dict):
 
-                    dct_list = []
+                        alignment_dict['meta'] = meta_dict
+                        
+                        self.alignment_data.append(alignment_dict)
 
-                dct = dict.fromkeys(horiz_headers, '')
+                        alignment_dict = dict.fromkeys(['meta', 'station', 'data'], [])
+                        meta_dict = dict.fromkeys(meta_keys, '')
 
-                for tpl in header_indices:
+                    #parse the metadata row into the metadata dictioanry and add it to the alignment
+                    for tpl in meta_indices:
 
-                    dct[tpl[1]] = row[tpl[0]]
+                        key = tpl[1]
+                        value = row[tpl[0]]
 
-                dct_list.append(dct)
+                        #save stations as station equations
+                        if key in sta_eq_headers:
 
-            self.alignment_data.append(dct_list)
+                            if value:
+                                eq_dict[key] = value
+
+                                #back stations could reference the parent id.
+                                if key == 'Back':
+                                    eq_dict['Back_Parent_ID'] = row[parent_id_index]
+
+                        meta_dict[tpl[1]] = row[tpl[0]]
+
+                #otherwise, parse the row as PI alignment data
+                else:
+
+                    #build the PI dictionary to capture data from the row
+                    pi_dict = dict.fromkeys(data_keys, '')
+
+                    for tpl in data_indices:
+
+                        key = tpl[1]
+                        value = row[tpl[0]]
+
+                        if key in sta_eq_headers:
+                            if value:
+                                eq_dict[key] = value
+                        else:
+                            pi_dict[key] = value
+
+                    #save the station equation, if found
+                    if eq_dict['Back'] and eq_dict['Forward']:
+
+                        alignment_dict['station'].append(eq_dict)
+                        eq_dict = dict.fromkeys(['Back_Parent_ID', 'Back', 'Forward'], '')
+
+                    alignment_dict['data'].append(pi_dict)
+
+            #last step - write metadata to alignment dicitonary and save it
+            alignment_dict['meta'] = meta_dict
+
+            self.alignment_data.append(alignment_dict)

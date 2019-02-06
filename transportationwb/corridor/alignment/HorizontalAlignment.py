@@ -73,8 +73,22 @@ def create(data, units='English', object_name='', parent=None):
 
 class Headers():
 
-    meta = ['ID', 'Parent_ID', 'Back', 'Forward']
-    data = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'Direction']
+    # Metadata headers include:
+    #   ID - The ID of the alignment
+    #   Parent_ID - The ID of the parent alignment (optional)
+    #   Forward - The dataum station for the start of the alignment
+    #   Northing / Easting - The datum planar coordinates
+    #
+    # Data headers include:
+    #   Northing / Easting - The planar coordinates of the curve PI
+    #   Bearing - The bearing of the tangent from the previous PI
+    #   Distance - The distance between the current PU and the prvious PI
+    #   Radius / Degree - The radius or degree of curvature for the curve
+    #   Back / Forward - Station equation.  May be specified in absence of other data.
+    #       Starting station defined with first PI by providing a 'forward' value.
+
+    meta = ['ID', 'Parent_ID', 'Northing', 'Easting', 'Back', 'Forward']
+    data = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'Back', 'Forward']
     complete = meta + data
 
 class _Alignment():
@@ -154,16 +168,14 @@ class _Alignment():
         obj = self.Object
 
         #data is stored in a list of dictionaries
-        for item in data:
+        if data['ID']:
+            obj.ID = data['ID']
 
-            if item['ID']:
-                obj.ID = item['ID']
+        if data['Parent_ID']:
+            obj.Parent_ID = data['Parent_ID']
 
-            if item['Parent_ID']:
-                obj.Parent_ID = item['Parent_ID']
-
-            #alignment and intersection station equations
-            if item['Back'] and item['Forward']:
+        #alignment and intersection station equations
+        if item['Back'] and item['Forward']:
 
                 _bk = 0.0
                 _fwd = 0.0
@@ -184,16 +196,16 @@ class _Alignment():
                     _err2 = 'Values: %s (back); %s (forward)' % (item['Back'], item['Forward'])
                     self.errors.append(_err1 + _err2)
 
-            #alignment datum/starting station
-            elif not item['Back'] and item['Forward']:
+        #alignment datum/starting station
+        elif not item['Back'] and item['Forward']:
 
-                _fwd = 0.0
+            _fwd = 0.0
 
-                try:
-                    _fwd = float(item['Forward'])
-                    obj.Alignment.Equations.append(App.Vector(-1.0, _fwd, 0.0))
-                except:
-                    self.errors.append('Invalid datum station for object ' + item['ID'] + ': %s' %item['Forward'])
+            try:
+                _fwd = float(item['Forward'])
+                obj.Alignment.Equations.append(App.Vector(-1.0, _fwd, 0.0))
+            except:
+                self.errors.append('Invalid datum station for object ' + item['ID'] + ': %s' %item['Forward'])
 
     def get_position(self, prev_pos, db_list):
         '''
@@ -299,8 +311,8 @@ class _Alignment():
         '''
 
         #parse the curve data, converting parameters to Northing/Easting/Radius format
-        self.assign_meta_data(data)
-        self.assign_geometry_data(data)
+        self.assign_meta_data(data['meta'])
+        self.assign_geometry_data(data['data'])
 
         #print('geometry: ', self.Object.Geometry)
     def execute(self, obj):
