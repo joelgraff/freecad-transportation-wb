@@ -113,17 +113,3 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
     obj.setEditorMode(p_name, editor_mode)
 
     return prop
-
-def get_units(string_format=0):
-    '''
-    Return the units (feet / meters) of active document
-
-    format - format of string (0 = abbreviated, 1 = singular, 2 = plural)
-    '''
-    english = ['ft', 'foot', 'feet']
-    metric = ['m', 'meter', 'meters']
-
-    if App.ParamGet('User parameter:BaseApp/Preferences/Units').GetInt('UserSchema') == 7:
-        return english[string_format]
-
-    return metric[string_format]

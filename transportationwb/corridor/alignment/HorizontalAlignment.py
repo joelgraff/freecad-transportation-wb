@@ -28,7 +28,7 @@ Alignment object for managing 2D (Horizontal and Vertical) and 3D alignments
 import math
 
 import FreeCAD as App
-from transportationwb.ScriptedObjectSupport import Properties
+from transportationwb.ScriptedObjectSupport import Properties, Units
 
 _CLASS_NAME = 'Alignment'
 _TYPE = 'Part::FeaturePython'
@@ -94,17 +94,21 @@ class Headers():
 class _Alignment():
 
     @staticmethod
-    def doc_to_radius(value):
+    def doc_to_radius(value, is_metric=False, station_length=0):
         '''
         Converts degree of curve value to radius
+        Assumes a default 100 feet for english units and 1000 meters for metric.
+        Custom station lengths can be defined using the station_length parameter
         '''
 
-        _const_val = (180.0 * 100.0) / math.pi
+        if station_length == 0:
 
-        if self.Object.Units == 'English':
-            _const_val = (180.0 * 304.80) / math.pi
+            station_length = 100.0
 
-        return _const_val / value
+            if is_metric:
+                station_length = 1000.0
+
+        return (180.0 * station_length) / (math.pi * value)
 
     def __init__(self, obj):
         '''
@@ -174,38 +178,44 @@ class _Alignment():
         if data['Parent_ID']:
             obj.Parent_ID = data['Parent_ID']
 
-        #alignment and intersection station equations
-        if item['Back'] and item['Forward']:
+        sta_tpl = (data['Back'], data['Forward'])
 
-                _bk = 0.0
-                _fwd = 0.0
+        #intersection station equation if back/forward and parent_id are defined
+        if all(sta_tpl) and data['Parent_ID']:
 
-                try:
-                    _bk = float(item['Back'])
-                    _fwd = float(item['Forward'])
+            _bk = 0.0
+            _fwd = 0.0
 
-                    _eqn = App.Vector(_bk, _fwd, 0.0)
+            try:
+                _bk = float(data['Back'])
+                _fwd = float(data['Forward'])
 
-                    if item['Parent_ID']:
-                        obj.Intersection_Equation = _eqn
-                    else:
-                        obj.Alignment_Equations.append(_eqn)
+            except:
+                _err1 = 'Invalid station equation for object ' + data['ID'] + ':\n'
+                _err2 = 'Values: %s (back); %s (forward)' % sta_tpl
+                self.errors.append(_err1 + _err2)
+                return
 
-                except:
-                    _err1 = 'Invalid station equation for object ' + item['ID'] + ':\n'
-                    _err2 = 'Values: %s (back); %s (forward)' % (item['Back'], item['Forward'])
-                    self.errors.append(_err1 + _err2)
+            obj.Intersection_Equation = App.Vector(_bk, _fwd, 0.0)
 
-        #alignment datum/starting station
-        elif not item['Back'] and item['Forward']:
+        #alignment datum/starting station if only Forward is defined (parent ID is irrelevant)
+        elif sta_tpl[1] and not sta_tpl[0]:
 
             _fwd = 0.0
 
             try:
-                _fwd = float(item['Forward'])
-                obj.Alignment.Equations.append(App.Vector(-1.0, _fwd, 0.0))
+                _fwd = float(data['Forward'])
+
             except:
-                self.errors.append('Invalid datum station for object ' + item['ID'] + ': %s' %item['Forward'])
+                self.errors.append('Invalid datum station for object ' + data['ID'] + ': %s' % data['Forward'])
+                return
+
+            obj.Alignment_Equations.append(App.Vector(-1.0, _fwd, 0.0))
+
+        #only back is specified, or both are without a parent ID
+        elif any(sta_tpl):
+
+            self.errors.append('Invalid station equation for object ' + data['ID'] + ': %s (Back), %s (Forward)' % sta_tpl)
 
     def get_position(self, prev_pos, db_list):
         '''
@@ -244,9 +254,19 @@ class _Alignment():
         for item in data:
 
             print(item)
-            _ne = [item['Northing'], item['Easting']]
-            _db = [item['Distance'], item['Bearing']]
-            _rd = [item['Radius'], item['Degree']]
+
+            _ne = []
+            _db = []
+            _rd = []
+
+            try:
+                _ne = [item['Northing'], item['Easting']]
+                _db = [item['Distance'], item['Bearing']]
+                _rd = [item['Radius'], item['Degree']]
+
+            except:
+                self.errors.append('Inivalid geometric data: %s' % item)
+                continue
 
             geo_vector = App.Vector(0.0, 0.0, 0.0)
 

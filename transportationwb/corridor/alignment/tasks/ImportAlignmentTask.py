@@ -47,6 +47,7 @@ class ImportAlignmentTask:
         self.dialect = None
         self.alignment_type = 'Horizontal'
         self.alignment_data = []
+        self.errors = []
 
     def accept(self):
 
@@ -58,8 +59,14 @@ class ImportAlignmentTask:
 
             self.import_model()
 
+            if self.errors:
+
+                print('Errors encountered during import:\n')
+                for _e in self.errors:
+                    print(_e)
+
             errors = []
-            #for _i in range(len(self.alignment_data)):
+
             for _i in self.alignment_data:
 
                 result = HorizontalAlignment.create(_i).errors
@@ -357,8 +364,8 @@ class ImportAlignmentTask:
             skip_header_row = self.form.headers.isChecked()
 
             #dictionaries which may persist across multiple row ierations within an alignment
-            alignment_dict = dict.fromkeys(['meta', 'station', 'data'], [])
-            eq_dict = dict.fromkeys(['Back_Parent_ID', 'Back', 'Forward'], '')
+            alignment_dict = {'meta': [], 'station': [], 'data': []}
+            eq_dict = {'Back_Parent_ID': '', 'Back': '', 'Forward': ''}
             meta_dict = dict.fromkeys(meta_keys, '')
 
             #each row represents a PI, a station equation, or metadata for the alignment
@@ -369,6 +376,7 @@ class ImportAlignmentTask:
                     skip_header_row = False
                     continue
 
+                print('Evaluating row: %s ...' % row)
                 #if we encounter a row with an id, this marks the end of the previous alignment
                 if row[id_index]:
 
@@ -379,7 +387,7 @@ class ImportAlignmentTask:
                         
                         self.alignment_data.append(alignment_dict)
 
-                        alignment_dict = dict.fromkeys(['meta', 'station', 'data'], [])
+                        alignment_dict = {'meta': [], 'station': [], 'data': []}
                         meta_dict = dict.fromkeys(meta_keys, '')
 
                     #parse the metadata row into the metadata dictioanry and add it to the alignment
@@ -400,6 +408,8 @@ class ImportAlignmentTask:
 
                         meta_dict[tpl[1]] = row[tpl[0]]
 
+                    print('...SAVED META: ', meta_dict)
+
                 #otherwise, parse the row as PI alignment data
                 else:
 
@@ -411,6 +421,8 @@ class ImportAlignmentTask:
                         key = tpl[1]
                         value = row[tpl[0]]
 
+                        print ('(%s: %s' % (key, value))
+
                         if key in sta_eq_headers:
                             if value:
                                 eq_dict[key] = value
@@ -421,9 +433,24 @@ class ImportAlignmentTask:
                     if eq_dict['Back'] and eq_dict['Forward']:
 
                         alignment_dict['station'].append(eq_dict)
-                        eq_dict = dict.fromkeys(['Back_Parent_ID', 'Back', 'Forward'], '')
 
-                    alignment_dict['data'].append(pi_dict)
+                        print ('...SAVED STA_EQ: ', eq_dict)
+                        eq_dict = {'Back_Parent_ID': '', 'Back': '', 'Forward': ''}
+
+                        continue
+
+                    #(northing / easting) or (bearing / distance) must be specified, along with
+                    #either radius or degree of curve
+                    if (
+                        all([pi_dict['Northing'], pi_dict['Easting']]) or
+                        all([pi_dict['Bearing'], pi_dict['Distance']])
+                        ) and (pi_dict['Radius'] or pi_dict['Degree']):
+
+                            alignment_dict['data'].append(pi_dict)
+                            print ('...SAVED DATA: ', pi_dict)
+
+                    else:
+                        self.errors.append('Invalid geometry in line: %s ' % row)
 
             #last step - write metadata to alignment dicitonary and save it
             alignment_dict['meta'] = meta_dict
