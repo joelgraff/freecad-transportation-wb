@@ -35,6 +35,7 @@ import FreeCAD as App
 from transportationwb.corridor.alignment.tasks.ImportAlignmentModel import ImportAlignmentModel as Model
 from transportationwb.corridor.alignment.tasks.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
 from transportationwb.corridor.alignment import HorizontalAlignment
+from transportationwb.ScriptedObjectSupport import Utils
 
 class ImportAlignmentTask:
 
@@ -69,7 +70,7 @@ class ImportAlignmentTask:
 
             for _i in self.alignment_data:
 
-                result = HorizontalAlignment.create(_i).errors
+                result = HorizontalAlignment.create(_i, _i['meta']['ID'] + ' Horiz').errors
 
                 if result:
                     errors += result
@@ -79,8 +80,6 @@ class ImportAlignmentTask:
 
                 for _e in errors:
                     print(_e)
-
-            #self.update_callback({'types': self.vector_types, 'data': self.vector_model, 'metadata': self.meta_data})
 
             return True
 
@@ -356,6 +355,7 @@ class ImportAlignmentTask:
 
         id_index = headers.index('ID')
         parent_id_index = headers.index('Parent_ID')
+
         sta_eq_headers = ['Back', 'Forward']
 
         #build the data set as a list
@@ -376,7 +376,6 @@ class ImportAlignmentTask:
                     skip_header_row = False
                     continue
 
-                print('Evaluating row: %s ...' % row)
                 #if we encounter a row with an id, this marks the end of the previous alignment
                 if row[id_index]:
 
@@ -400,15 +399,13 @@ class ImportAlignmentTask:
                         if key in sta_eq_headers:
 
                             if value:
-                                eq_dict[key] = value
+                                eq_dict[key] = Utils.scrub_stationing(value)
 
                                 #back stations could reference the parent id.
                                 if key == 'Back':
                                     eq_dict['Back_Parent_ID'] = row[parent_id_index]
 
                         meta_dict[tpl[1]] = row[tpl[0]]
-
-                    print('...SAVED META: ', meta_dict)
 
                 #otherwise, parse the row as PI alignment data
                 else:
@@ -421,11 +418,9 @@ class ImportAlignmentTask:
                         key = tpl[1]
                         value = row[tpl[0]]
 
-                        print ('(%s: %s' % (key, value))
-
                         if key in sta_eq_headers:
                             if value:
-                                eq_dict[key] = value
+                                eq_dict[key] = Utils.scrub_stationing(value)
                         else:
                             pi_dict[key] = value
 
@@ -433,8 +428,6 @@ class ImportAlignmentTask:
                     if eq_dict['Back'] and eq_dict['Forward']:
 
                         alignment_dict['station'].append(eq_dict)
-
-                        print ('...SAVED STA_EQ: ', eq_dict)
                         eq_dict = {'Back_Parent_ID': '', 'Back': '', 'Forward': ''}
 
                         continue
@@ -447,12 +440,12 @@ class ImportAlignmentTask:
                         ) and (pi_dict['Radius'] or pi_dict['Degree']):
 
                             alignment_dict['data'].append(pi_dict)
-                            print ('...SAVED DATA: ', pi_dict)
 
                     else:
                         self.errors.append('Invalid geometry in line: %s ' % row)
 
             #last step - write metadata to alignment dicitonary and save it
+
             alignment_dict['meta'] = meta_dict
 
             self.alignment_data.append(alignment_dict)

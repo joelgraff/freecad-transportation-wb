@@ -22,7 +22,7 @@
 # **************************************************************************
 
 '''
-Helper functions for scripted object properties
+Constant class definition
 '''
 
 __title__ = "Const.py"

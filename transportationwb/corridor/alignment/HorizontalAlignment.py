@@ -28,7 +28,7 @@ Alignment object for managing 2D (Horizontal and Vertical) and 3D alignments
 import math
 
 import FreeCAD as App
-from transportationwb.ScriptedObjectSupport import Properties, Units
+from transportationwb.ScriptedObjectSupport import Properties, Units, Utils
 
 _CLASS_NAME = 'Alignment'
 _TYPE = 'Part::FeaturePython'
@@ -37,7 +37,7 @@ __title__ = _CLASS_NAME + '.py'
 __author__ = "AUTHOR_NAME"
 __url__ = "https://www.freecadweb.org"
 
-def create(data, units='English', object_name='', parent=None):
+def create(data, object_name='', units='English', parent=None):
     '''
     Class construction method
     object_name - Optional. Name of new object.  Defaults to class name.
@@ -62,7 +62,6 @@ def create(data, units='English', object_name='', parent=None):
 
     result = _Alignment(_obj)
     result.set_data(data)
-    result.Object.Label = 'HA_' + result.Object.ID
 
     if not units == 'English':
         result.set_units(units)
@@ -93,24 +92,7 @@ class Headers():
 
 class _Alignment():
 
-    @staticmethod
-    def doc_to_radius(value, is_metric=False, station_length=0):
-        '''
-        Converts degree of curve value to radius
-        Assumes a default 100 feet for english units and 1000 meters for metric.
-        Custom station lengths can be defined using the station_length parameter
-        '''
-
-        if station_length == 0:
-
-            station_length = 100.0
-
-            if is_metric:
-                station_length = 1000.0
-
-        return (180.0 * station_length) / (math.pi * value)
-
-    def __init__(self, obj):
+    def __init__(self, obj, label=''):
         '''
         Main class intialization
         '''
@@ -120,6 +102,11 @@ class _Alignment():
         self.errors = []
 
         obj.Proxy = self
+
+        obj.Label = label
+
+        if not label:
+            obj.Label = obj.name
 
         #add class properties
         Properties.add(obj, 'String', 'ID', 'ID of alignment', '')
@@ -180,6 +167,19 @@ class _Alignment():
 
         sta_tpl = (data['Back'], data['Forward'])
 
+        #a datum has been defined as a northing and easting
+        if all((data['Northing'], data['Easting'])):
+
+            try:
+                _north = float(data['Northing'])
+                _east = float(data['Easting'])
+
+            except:
+                _err = 'Invalid Northing / Easting datum defined: (%s, %s)' % (_north, _east)
+                self.errors.append(_err)
+
+            self.Object.Datum = App.Vector(_north, _east, 0.0)
+
         #intersection station equation if back/forward and parent_id are defined
         if all(sta_tpl) and data['Parent_ID']:
 
@@ -217,43 +217,17 @@ class _Alignment():
 
             self.errors.append('Invalid station equation for object ' + data['ID'] + ': %s (Back), %s (Forward)' % sta_tpl)
 
-    def get_position(self, prev_pos, db_list):
-        '''
-        Get the position based on the previous position and the distance / bearing float list
-        '''
-
-        quadrant = 1
-        bearing = db_list[1]
-        distance = db_list[0]
-
-        quad_radians = math.radians(90.0)
-        
-        while bearing >= quad_radians:
-            bearing -= quad_radians
-            quadrant += 1
-
-        #assume quadrant one
-        _dx = math.sin(bearing) * distance
-        _dy = math.cos(bearing) * distance
-
-        if quadrant in [3,4]:
-            _dx *= -1
-
-        if quadrant in [2,3]:
-            _dy *= -1
-
-        return App.Vector(prev_pos.x + _dx, prev_pos.y + _dy, 0.0)
-
-    def assign_geometry_data(self, data):
+    def assign_geometry_data(self, datum, data):
         '''
         Iterate the dataset, extracting geometric data
         Validate data
         Create separate items for each curve / tangent
         Assign Northing / Easting datums
         '''
-        for item in data:
 
-            print(item)
+        _geometry = [datum]
+
+        for item in data:
 
             _ne = []
             _db = []
@@ -279,7 +253,7 @@ class _Alignment():
 
             elif _rd[1]:
                 try:
-                    geo_vector.z = self.doc_to_radius(float(_rd[1]))
+                    geo_vector.z = Utils.doc_to_radius(float(_rd[1]))
                 except:
                     self.errors.append('Invalid degree of curve: %s' % _rd[1])
             else:
@@ -299,15 +273,12 @@ class _Alignment():
 
                 except:
                     self.errors.append('(Distance, Bearing) Invalid: (%s, %s)' % tuple(_db))
-            
+
                 #successful conversion of distance/bearing to floats
-                #get last geometry point and calculate the northing / easting of the new PI
 
-                if self.Object.Geometry:
-                    datum = self.Object.Geometry[-1]
-
-                #set values to geo_vector
-                geo_vector = self.get_position(datum, _db)
+                #set values to geo_vector, adding the previous position to the new one
+                geo_vector = Utils.distance_bearing_to_coordinates(_db[0], _db[1])
+                geo_vector = _geometry[-1].add(geo_vector)
 
             #parse northing / easting values
             if any(_ne) and not all(_ne):
@@ -323,18 +294,41 @@ class _Alignment():
                     self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
 
             print('appending: ', geo_vector)
-            self.Object.Geometry.append(geo_vector)
+
+            _geometry.append(geo_vector)
+
+        self.Object.Geometry = _geometry
+
+    def get_parent_datum(self):
+        '''
+        Return the object datum as northing / easting, relative to
+        it's intersection with it's parent, if assigned
+        '''
+
+        result = App.Vector(0.0, 0.0, 0.0)
+
+        if not self.Object.Parent_ID:
+            return result
+
+        if self.Object.Intersection_Equation:
+            return result
+
+        objs = App.ActiveDocument.getObjectsByLabel(self.Object.Parent_ID + ' Horiz')
+
+        if not objs:
+            return result
+
+        return objs[0].get_coordinate_at_station(self.Object.Intersection_Equation[0])
 
     def set_data(self, data):
         '''
-        Curve data as a list of tuple('label', 'data')
+        Assign curve data to object, parsing and converting to coordinate form
         '''
 
-        #parse the curve data, converting parameters to Northing/Easting/Radius format
         self.assign_meta_data(data['meta'])
-        self.assign_geometry_data(data['data'])
+        datum = self.get_parent_datum()
+        self.assign_geometry_data(datum, data['data'])
 
-        #print('geometry: ', self.Object.Geometry)
     def execute(self, obj):
         '''
         Class execute for recompute calls

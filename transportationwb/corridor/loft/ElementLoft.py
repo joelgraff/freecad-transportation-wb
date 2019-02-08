@@ -55,15 +55,14 @@ def create(spline, sketch, object_name='', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    units = Properties.get_units()
-    fpo = _ElementLoft(_obj, spline, sketch, units)
+    fpo = _ElementLoft(_obj, spline, sketch)
     _ViewProviderElementLoft(_obj.ViewObject)
 
     return fpo
 
 class _ElementLoft(object):
 
-    def __init__(self, obj, spline, sketch, units):
+    def __init__(self, obj, spline, sketch):
         '''
         Main class intialization
         '''

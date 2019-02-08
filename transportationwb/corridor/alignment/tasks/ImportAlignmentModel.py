@@ -32,8 +32,6 @@ from PySide import QtCore
 
 class ImportAlignmentModel(QtCore.QAbstractTableModel):
 
-    rex_station = re.compile(r'[0-9]+\+[0-9]{2}\.[0-9]{2,}')
-    rex_near_station = re.compile(r'(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
     default_flags = QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
     def __init__(self, nam, headers, data, parent=None):
