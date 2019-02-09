@@ -28,10 +28,12 @@ Alignment object for managing 2D (Horizontal and Vertical) and 3D alignments
 import math
 
 import FreeCAD as App
+import Draft
+
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils
 
 _CLASS_NAME = 'Alignment'
-_TYPE = 'Part::FeaturePython'
+_TYPE = 'Part::Part2DObjectPython'
 
 __title__ = _CLASS_NAME + '.py'
 __author__ = "AUTHOR_NAME"
@@ -60,22 +62,22 @@ def create(data, object_name='', units='English', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    result = _Alignment(_obj)
+    result = _HorizontalAlignment(_obj)
     result.set_data(data)
 
     if not units == 'English':
         result.set_units(units)
 
-    _ViewProviderAlignment(_obj.ViewObject)
+    _ViewProviderHorizontalAlignment(_obj.ViewObject)
 
     return result
 
-class Headers():
+class HorizontalHeaders():
 
     # Metadata headers include:
     #   ID - The ID of the alignment
     #   Parent_ID - The ID of the parent alignment (optional)
-    #   Forward - The dataum station for the start of the alignment
+    #   Back/Forward - The dataum station for the start of the alignment, or parent / child station for intersection equations
     #   Northing / Easting - The datum planar coordinates
     #
     # Data headers include:
@@ -90,12 +92,14 @@ class Headers():
     data = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'Back', 'Forward']
     complete = meta + data
 
-class _Alignment():
+class _HorizontalAlignment():
 
     def __init__(self, obj, label=''):
         '''
         Main class intialization
         '''
+
+        self.no_execute = True
 
         self.Type = "_" + _CLASS_NAME
         self.Object = obj
@@ -106,7 +110,7 @@ class _Alignment():
         obj.Label = label
 
         if not label:
-            obj.Label = obj.name
+            obj.Label = obj.Name
 
         #add class properties
         Properties.add(obj, 'String', 'ID', 'ID of alignment', '')
@@ -116,6 +120,8 @@ class _Alignment():
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Geometry', 'Geometry defining the alignment', [])
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
+
+        delattr(self, 'no_execute')
 
     def __getstate__(self):
         '''
@@ -325,45 +331,33 @@ class _Alignment():
         Assign curve data to object, parsing and converting to coordinate form
         '''
 
+        self.no_execute = True
+
         self.assign_meta_data(data['meta'])
         datum = self.get_parent_datum()
         self.assign_geometry_data(datum, data['data'])
+
+        delattr(self, 'no_execute')
 
     def execute(self, obj):
         '''
         Class execute for recompute calls
         '''
-        pass
 
-class _ViewProviderAlignment(object):
+        if hasattr(self, 'no_execute'):
+            return
 
-    def __init__(self, vobj):
-        '''
-        View Provider initialization
-        '''
-        self.Object = vobj.Object
+        #ob = App.ActiveDocument.addObject("Part::Part2DObjectPython", 'test')
+        _obj = obj #App.ActiveDocument.addObject("Part::Part2DObjectPython", 'test')
+        res = Draft._BSpline(_obj)
 
-    def getIcon(self):
-        '''
-        Object icon
-        '''
-        return ''
+        _obj.Closed = False
+        _obj.Points = [App.Vector(0.0, 0.0, 0.0), App.Vector(0.0, 1000.0, 0.0), App.Vector(1000.0, 1000.0, 0.0), App.Vector(1000.0, 0.0, 0.0)]
 
-    def attach(self, vobj):
-        '''
-        View Provider Scene subgraph
-        '''
-        pass
+        #_obj.View
+        #Draft._ViewProviderWire(_obj.ViewObject)
+        res.execute(_obj)
+        print('executed object ', _obj.Name)
+        #obj.Shape = ob
 
-    def __getstate__(self):
-        '''
-        State method for serialization
-        '''
-        return None
-
-    def __setstate__(self,state):
-
-        '''
-        State method for serialization
-        '''
-        return None
+_ViewProviderHorizontalAlignment = Draft._ViewProviderWire
