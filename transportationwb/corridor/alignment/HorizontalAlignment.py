@@ -39,6 +39,10 @@ __title__ = _CLASS_NAME + '.py'
 __author__ = "AUTHOR_NAME"
 __url__ = "https://www.freecadweb.org"
 
+meta_fields = ['ID', 'Northing', 'Easting']
+data_fields = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
+station_fields = ['Parent_ID', 'Back', 'Forward']
+
 def create(data, object_name='', units='English', parent=None):
     '''
     Class construction method
@@ -72,7 +76,7 @@ def create(data, object_name='', units='English', parent=None):
 
     return result
 
-class HorizontalHeaders():
+class _HorizontalAlignment():
 
     # Metadata headers include:
     #   ID - The ID of the alignment
@@ -87,12 +91,6 @@ class HorizontalHeaders():
     #   Radius / Degree - The radius or degree of curvature for the curve
     #   Back / Forward - Station equation.  May be specified in absence of other data.
     #       Starting station defined with first PI by providing a 'forward' value.
-
-    meta = ['ID', 'Parent_ID', 'Northing', 'Easting', 'Back', 'Forward']
-    data = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'Back', 'Forward']
-    complete = meta + data
-
-class _HorizontalAlignment():
 
     def __init__(self, obj, label=''):
         '''
@@ -167,6 +165,11 @@ class _HorizontalAlignment():
         #data is stored in a list of dictionaries
         if data['ID']:
             obj.ID = data['ID']
+
+    def assign_station_data(self, data):
+        '''
+        Assign the station and intersection equation data
+        '''
 
         if data['Parent_ID']:
             obj.Parent_ID = data['Parent_ID']
@@ -334,6 +337,7 @@ class _HorizontalAlignment():
         self.no_execute = True
 
         self.assign_meta_data(data['meta'])
+        self.assign_station_data(data['station'])
         datum = self.get_parent_datum()
         self.assign_geometry_data(datum, data['data'])
 
@@ -347,17 +351,11 @@ class _HorizontalAlignment():
         if hasattr(self, 'no_execute'):
             return
 
-        #ob = App.ActiveDocument.addObject("Part::Part2DObjectPython", 'test')
-        _obj = obj #App.ActiveDocument.addObject("Part::Part2DObjectPython", 'test')
-        res = Draft._BSpline(_obj)
+        res = Draft._BSpline(obj)
 
-        _obj.Closed = False
-        _obj.Points = [App.Vector(0.0, 0.0, 0.0), App.Vector(0.0, 1000.0, 0.0), App.Vector(1000.0, 1000.0, 0.0), App.Vector(1000.0, 0.0, 0.0)]
+        obj.Closed = False
+        obj.Points = obj.Geometry
 
-        #_obj.View
-        #Draft._ViewProviderWire(_obj.ViewObject)
-        res.execute(_obj)
-        print('executed object ', _obj.Name)
-        #obj.Shape = ob
+        res.execute(obj)
 
 _ViewProviderHorizontalAlignment = Draft._ViewProviderWire
