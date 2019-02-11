@@ -279,6 +279,10 @@ class _HorizontalAlignment():
 
                 #set values to geo_vector, adding the previous position to the new one
                 geo_vector = Utils.distance_bearing_to_coordinates(_db[0], _db[1])
+
+                if not Units.is_metric_doc():
+                    geo_vector.multiply(304.8)
+
                 geo_vector = _geometry[-1].add(geo_vector)
 
             #parse northing / easting values
@@ -294,13 +298,16 @@ class _HorizontalAlignment():
                 except:
                     self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
 
+
+                print (geo_vector)
+
             _geometry.append(geo_vector)
 
         self.Object.Geometry = _geometry
 
-    def get_datum(self):
+    def get_intersection_coordinates(self):
         '''
-        Return the object datum as northing / easting
+        Return the object intersection point with it's parent alignment
         '''
 
         result = App.Vector(0.0, 0.0, 0.0)
@@ -310,33 +317,33 @@ class _HorizontalAlignment():
         print ('Int_Eqn: ', int_eq)
 
         if not self.Object.Parent_ID:
-            return result
+            return None
 
         if not self.Object.Intersection_Equation:
-            return result
+            return None
 
         objs = App.ActiveDocument.getObjectsByLabel(self.Object.Parent_ID + '_Horiz')
 
         if not objs:
-            return result
+            return None
 
-        parent_coord = self._get_coordinate_at_station(int_eq[0], objs[0].Alignment_Equations)
-
-        print ('intersection coordinate: ', parent_coord)
+        parent_coord = self._get_coordinate_at_station(int_eq[0], objs[0])
 
         start_sta = 0.0
 
-        #if the first alignment equation back is 0, it's the starting station
-        if sta_eqs:
-            if sta_eqs[0][0] == 0.0:
-                start_sta = sta_eqs[0][1]
+        #if the first equation's Back is 0.0, the Forward is the starting station
+        if sta_eqs[0][0] == 0.0:
+            start_sta = sta_eqs[0][1]
 
-        distance = int_eq[0] - start_sta
-        slope = self.Object.Geometry[0][1] / self.Object.Geometry[0][0]
+        distance = int_eq[1] - start_sta
 
-        _x = math.sqrt((distance * distance) / 1 + slope)
-        _y = slope * _x
-        child_coord = App.Vector(_x, _y, 0.0)
+        child_coord = self.Object.Points[0]
+
+        if distance > 0.0:
+
+            child_coord = self.Object.Shape.discretize(Distance=distance)[1]
+
+        return(parent_coord, child_coord)
 
     def set_data(self, data):
         '''
@@ -348,18 +355,38 @@ class _HorizontalAlignment():
         self.assign_meta_data(data['meta'])
         self.assign_station_data(data['station'])
 
-        datum = self.get_datum()
+        datum = App.Vector(0.0, 0.0, 0.0)
 
-        print('DATUM: ', datum)
         self.assign_geometry_data(datum, data['data'])
 
         delattr(self, 'no_execute')
 
-    def _get_coordinate_at_station(self, station, equations):
+        if not self.Object.Parent_ID:
+            return
+
+        self.execute(self.Object)
+
+        self.no_execute = True
+
+        coordinates = self.get_intersection_coordinates()
+
+        if not coordinates:
+            return
+
+        #subtract the child coordinate's intersection point from the parent's
+        delta = coordinates[0].sub(coordinates[1])
+
+        #add the delta to the placement base to get the new placement
+        self.Object.Placement.Base = self.Object.Placement.Base.add(delta)
+
+        delattr(self, 'no_execute')
+
+    def _get_coordinate_at_station(self, station, parent):
         '''
         Return the distance along an alignment from the passed station as a float
         '''
 
+        equations = parent.Alignment_Equations
         print(equations)
 
         #default starting station unles otherwise specified
@@ -378,11 +405,14 @@ class _HorizontalAlignment():
             #iterate the equation list, locating the passed station
             for _eqn in equations[start_index:]:
 
-                if start_sta <= station <= _eqn[1]:
+                #does station fall between previous forward and current back?
+                if start_sta <= station <= _eqn[0]:
                     break
 
-                distance += _eqn[1] - start_sta
+                #otherwise, accumulate the total distance between the previous forward and current back
+                distance += _eqn[0] - start_sta
 
+                #set the starting station to the current forward
                 start_sta = _eqn[1]
 
         distance += station - start_sta
@@ -412,8 +442,8 @@ class _HorizontalAlignment():
         if hasattr(self, 'no_execute'):
             return
 
-        res = Draft._BSpline(obj)
-        #res = Draft._Wire(obj)
+        #res = Draft._BSpline(obj)
+        res = Draft._Wire(obj)
 
         obj.Closed = False
         obj.Points = obj.Geometry

@@ -48,6 +48,13 @@ def get_doc_units():
 
     return metric
 
+def is_metric_doc():
+    '''
+    Returns true if the passed document is using metric units
+    '''
+
+    return 'm' in get_doc_units()
+
 
 class UnitNames(Const):
     '''
