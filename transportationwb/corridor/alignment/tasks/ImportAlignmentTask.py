@@ -399,7 +399,7 @@ class ImportAlignmentTask:
 
             #Parent_ID means it's an intersection equation
             if has_field['Parent_ID']:
-                self.station_dict[eqn_type] = stations
+                self.station_dict[key] = stations
 
             else:
                 #if only forward is defined, it's the datum station

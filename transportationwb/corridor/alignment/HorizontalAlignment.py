@@ -262,7 +262,7 @@ class _HorizontalAlignment():
 
                 try:
                     _db[0] = float(_db[0])
-                    _db[1] = math.radians(float(_db[1]))
+                    _db[1] = float(_db[1])
 
                 except:
                     self.errors.append('(Distance, Bearing) Invalid: (%s, %s)' % tuple(_db))
@@ -285,8 +285,6 @@ class _HorizontalAlignment():
 
                 except:
                     self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
-
-            print('appending: ', geo_vector)
 
             _geometry.append(geo_vector)
 
@@ -335,7 +333,8 @@ class _HorizontalAlignment():
         if hasattr(self, 'no_execute'):
             return
 
-        res = Draft._BSpline(obj)
+        #res = Draft._BSpline(obj)
+        res = Draft._Wire(obj)
 
         obj.Closed = False
         obj.Points = obj.Geometry
