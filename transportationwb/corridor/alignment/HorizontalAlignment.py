@@ -28,14 +28,20 @@ Alignment object for managing 2D (Horizontal and Vertical) and 3D alignments
 import math
 
 import FreeCAD as App
+import Draft
+
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils
 
 _CLASS_NAME = 'Alignment'
-_TYPE = 'Part::FeaturePython'
+_TYPE = 'Part::Part2DObjectPython'
 
 __title__ = _CLASS_NAME + '.py'
 __author__ = "AUTHOR_NAME"
 __url__ = "https://www.freecadweb.org"
+
+meta_fields = ['ID', 'Northing', 'Easting']
+data_fields = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
+station_fields = ['Parent_ID', 'Back', 'Forward']
 
 def create(data, object_name='', units='English', parent=None):
     '''
@@ -60,22 +66,22 @@ def create(data, object_name='', units='English', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    result = _Alignment(_obj)
+    result = _HorizontalAlignment(_obj)
     result.set_data(data)
 
     if not units == 'English':
         result.set_units(units)
 
-    _ViewProviderAlignment(_obj.ViewObject)
+    _ViewProviderHorizontalAlignment(_obj.ViewObject)
 
     return result
 
-class Headers():
+class _HorizontalAlignment():
 
     # Metadata headers include:
     #   ID - The ID of the alignment
     #   Parent_ID - The ID of the parent alignment (optional)
-    #   Forward - The dataum station for the start of the alignment
+    #   Back/Forward - The dataum station for the start of the alignment, or parent / child station for intersection equations
     #   Northing / Easting - The datum planar coordinates
     #
     # Data headers include:
@@ -86,16 +92,12 @@ class Headers():
     #   Back / Forward - Station equation.  May be specified in absence of other data.
     #       Starting station defined with first PI by providing a 'forward' value.
 
-    meta = ['ID', 'Parent_ID', 'Northing', 'Easting', 'Back', 'Forward']
-    data = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'Back', 'Forward']
-    complete = meta + data
-
-class _Alignment():
-
     def __init__(self, obj, label=''):
         '''
         Main class intialization
         '''
+
+        self.no_execute = True
 
         self.Type = "_" + _CLASS_NAME
         self.Object = obj
@@ -106,16 +108,18 @@ class _Alignment():
         obj.Label = label
 
         if not label:
-            obj.Label = obj.name
+            obj.Label = obj.Name
 
         #add class properties
         Properties.add(obj, 'String', 'ID', 'ID of alignment', '')
         Properties.add(obj, 'String', 'Parent ID', 'ID of alignment parent', '')
-        Properties.add(obj, 'Vector', 'Intersection Equation', 'Station equation for intersection with parent', App.Vector(0.0, 0.0, 0.0))
+        Properties.add(obj, 'Vector', 'Intersection Equation', 'Station equation for intersections with parent alignment', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Alignment Equations', 'Station equation along the alignment', [])
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Geometry', 'Geometry defining the alignment', [])
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
+
+        delattr(self, 'no_execute')
 
     def __getstate__(self):
         '''
@@ -158,64 +162,53 @@ class _Alignment():
 
         obj = self.Object
 
-        #data is stored in a list of dictionaries
         if data['ID']:
             obj.ID = data['ID']
 
-        if data['Parent_ID']:
-            obj.Parent_ID = data['Parent_ID']
+        if data['Northing'] and data['Easting']:
+            obj.Datum = App.Vector(float(data['Easting']), float(data['Northing']), 0.0)
 
-        sta_tpl = (data['Back'], data['Forward'])
+    def assign_station_data(self, data):
+        '''
+        Assign the station and intersection equation data
+        '''
 
-        #a datum has been defined as a northing and easting
-        if all((data['Northing'], data['Easting'])):
+        obj = self.Object
 
-            try:
-                _north = float(data['Northing'])
-                _east = float(data['Easting'])
+        for key in data.keys():
 
-            except:
-                _err = 'Invalid Northing / Easting datum defined: (%s, %s)' % (_north, _east)
-                self.errors.append(_err)
+            print(key)
+            if key == 'equations':
 
-            self.Object.Datum = App.Vector(_north, _east, 0.0)
+                for _eqn in data['equations']:
 
-        #intersection station equation if back/forward and parent_id are defined
-        if all(sta_tpl) and data['Parent_ID']:
+                    back = -1
+                    forward = -1
 
-            _bk = 0.0
-            _fwd = 0.0
+                    try:
+                        back = float(_eqn[0])
+                        forward = float(_eqn[1])
 
-            try:
-                _bk = float(data['Back'])
-                _fwd = float(data['Forward'])
+                    except:
+                        self.errors.append('Unable to convert station equation (Back: %s, Forward: %s)' % (_eqn[0], _eqn[1]))
+                        continue
 
-            except:
-                _err1 = 'Invalid station equation for object ' + data['ID'] + ':\n'
-                _err2 = 'Values: %s (back); %s (forward)' % sta_tpl
-                self.errors.append(_err1 + _err2)
-                return
+                    obj.Alignment_Equations.append(App.Vector(back, forward, 0.0))
 
-            obj.Intersection_Equation = App.Vector(_bk, _fwd, 0.0)
+            else:
 
-        #alignment datum/starting station if only Forward is defined (parent ID is irrelevant)
-        elif sta_tpl[1] and not sta_tpl[0]:
+                back = data[key][0]
+                forward = data[key][1]
 
-            _fwd = 0.0
+                try:
+                    back = float(back)
+                    forward = float(forward)
 
-            try:
-                _fwd = float(data['Forward'])
-
-            except:
-                self.errors.append('Invalid datum station for object ' + data['ID'] + ': %s' % data['Forward'])
-                return
-
-            obj.Alignment_Equations.append(App.Vector(-1.0, _fwd, 0.0))
-
-        #only back is specified, or both are without a parent ID
-        elif any(sta_tpl):
-
-            self.errors.append('Invalid station equation for object ' + data['ID'] + ': %s (Back), %s (Forward)' % sta_tpl)
+                except:
+                    self.errors.append('Unable to convert intersection equation with parent %s: (Back: %s, Forward: %s' % (key, data[key][0], data[key][1]))
+                
+                obj.Parent_ID = key
+                obj.Intersection_Equation = App.Vector(back, forward, 0.0)
 
     def assign_geometry_data(self, datum, data):
         '''
@@ -269,7 +262,7 @@ class _Alignment():
 
                 try:
                     _db[0] = float(_db[0])
-                    _db[1] = math.radians(float(_db[1]))
+                    _db[1] = float(_db[1])
 
                 except:
                     self.errors.append('(Distance, Bearing) Invalid: (%s, %s)' % tuple(_db))
@@ -293,8 +286,6 @@ class _Alignment():
                 except:
                     self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
 
-            print('appending: ', geo_vector)
-
             _geometry.append(geo_vector)
 
         self.Object.Geometry = _geometry
@@ -307,17 +298,20 @@ class _Alignment():
 
         result = App.Vector(0.0, 0.0, 0.0)
 
+        print ('Int_Eqn: ', self.Object.Intersection_Equation)
         if not self.Object.Parent_ID:
             return result
 
-        if self.Object.Intersection_Equation:
+        if not self.Object.Intersection_Equation:
             return result
 
-        objs = App.ActiveDocument.getObjectsByLabel(self.Object.Parent_ID + ' Horiz')
+        print ('getting parent ', self.Object.Parent_ID + '_Horiz')
+        objs = App.ActiveDocument.getObjectsByLabel(self.Object.Parent_ID + '_Horiz')
 
         if not objs:
             return result
 
+        print('getting coordinate for ', objs[0].Label)
         return objs[0].get_coordinate_at_station(self.Object.Intersection_Equation[0])
 
     def set_data(self, data):
@@ -325,45 +319,79 @@ class _Alignment():
         Assign curve data to object, parsing and converting to coordinate form
         '''
 
+        self.no_execute = True
+
         self.assign_meta_data(data['meta'])
+        self.assign_station_data(data['station'])
+
         datum = self.get_parent_datum()
+
+        print('DATUM: ', datum)
         self.assign_geometry_data(datum, data['data'])
+
+        delattr(self, 'no_execute')
+
+    def _get_coordinate_at_station(self, station):
+        '''
+        Return the distance along an alignment from the passed station as a float
+        '''
+
+        _eqns = self.Object.Alignment_Equations
+
+        #default starting station unles otherwise specified
+        start_sta = 0.0
+
+        start_index = 0
+
+        #if the first equation's back value is zero, it's forward value is the starting station
+        if _eqns[0][0] == 0.0:
+            start_sta = _eqns[0][1]
+            start_index = 1
+
+        distance = 0
+
+        #iterate the equation list, locating the passed station
+        for _eqn in _eqns[start_index:]:
+
+            if start_sta <= station <= _eqn[1]:
+                break
+
+            distance += _eqn[1] - start_sta
+
+            start_sta = _eqn[1]
+
+        result = distance + station - start_sta
+
+        #station bound checks
+        if result > self.Object.Shape.Length:
+            return None
+
+        if result < 0.0:
+            return None
+
+        #discretize valid distance
+        result = self.Object.Shape.discretize(Distance=distance)[1]
+
+        if len(result) < 2:
+            print('failed to discretize')
+            return None
+
+        return result
 
     def execute(self, obj):
         '''
         Class execute for recompute calls
         '''
-        pass
 
-class _ViewProviderAlignment(object):
+        if hasattr(self, 'no_execute'):
+            return
 
-    def __init__(self, vobj):
-        '''
-        View Provider initialization
-        '''
-        self.Object = vobj.Object
+        res = Draft._BSpline(obj)
+        #res = Draft._Wire(obj)
 
-    def getIcon(self):
-        '''
-        Object icon
-        '''
-        return ''
+        obj.Closed = False
+        obj.Points = obj.Geometry
 
-    def attach(self, vobj):
-        '''
-        View Provider Scene subgraph
-        '''
-        pass
+        res.execute(obj)
 
-    def __getstate__(self):
-        '''
-        State method for serialization
-        '''
-        return None
-
-    def __setstate__(self,state):
-
-        '''
-        State method for serialization
-        '''
-        return None
+_ViewProviderHorizontalAlignment = Draft._ViewProviderWire
