@@ -12,7 +12,7 @@ if App.Gui:
 
 def createTestFpo():
 
-    obj = App.ActiveDocument.addObject("App::FeaturePython", OBJECT_TYPE)
+    obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", OBJECT_TYPE)
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
 
@@ -45,6 +45,10 @@ class _TestFPO():
         if state:
             self.Type = state
 
+    def CustomFunction(self):
+
+        print ('CUSTOM FUNCTION')
+
     def add_property(self, prop_type, prop_name, prop_desc):
 
         return self.Object.addProperty(prop_type, prop_name, OBJECT_TYPE, QT_TRANSLATE_NOOP("App::Property", prop_desc))
@@ -72,6 +76,8 @@ class _TestFPO():
     def execute(self, fpy):
 
         print("execute")
+
+        self.CustomFunction()
 
         Gui.updateGui()
 

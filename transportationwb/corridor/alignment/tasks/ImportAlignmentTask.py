@@ -76,6 +76,8 @@ class ImportAlignmentTask:
                 if result:
                     errors += result
 
+                App.ActiveDocument.recompute()
+
             if errors:
                 print('Errors encountered during alignment creation:\n')
 
@@ -369,6 +371,9 @@ class ImportAlignmentTask:
             key = tpl[1]
             value = row[tpl[0]]
 
+            if key == 'ID':
+                value = value.replace(' ', '_')
+
             if value:
                 self.meta_dict[key] = value
 
@@ -396,8 +401,9 @@ class ImportAlignmentTask:
                 stations[1] = value
 
             elif key == 'Parent_ID':
-                parent_id = value
+                parent_id = value.replace(' ', '_')
 
+        print(row, stations)
         if stations != [0.0, 0.0]:
 
             #Parent_ID means it's an intersection equation

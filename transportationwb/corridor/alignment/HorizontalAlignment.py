@@ -182,18 +182,26 @@ class _HorizontalAlignment():
 
                 for _eqn in data['equations']:
 
-                    back = -1
-                    forward = -1
+                    print('equation: ', _eqn)
+                    back = 0
+                    forward = 0
 
                     try:
-                        back = float(_eqn[0])
-                        forward = float(_eqn[1])
+
+                        if _eqn[0]:
+                            back = float(_eqn[0])
+
+                        if _eqn[1]:
+                            forward = float(_eqn[1])
 
                     except:
                         self.errors.append('Unable to convert station equation (Back: %s, Forward: %s)' % (_eqn[0], _eqn[1]))
                         continue
 
-                    obj.Alignment_Equations.append(App.Vector(back, forward, 0.0))
+                    eqns = obj.Alignment_Equations
+                    eqns.append(App.Vector(back, forward, 0.0))
+
+                    obj.Alignment_Equations = eqns
 
             else:
 
@@ -206,7 +214,7 @@ class _HorizontalAlignment():
 
                 except:
                     self.errors.append('Unable to convert intersection equation with parent %s: (Back: %s, Forward: %s' % (key, data[key][0], data[key][1]))
-                
+
                 obj.Parent_ID = key
                 obj.Intersection_Equation = App.Vector(back, forward, 0.0)
 
@@ -290,29 +298,45 @@ class _HorizontalAlignment():
 
         self.Object.Geometry = _geometry
 
-    def get_parent_datum(self):
+    def get_datum(self):
         '''
-        Return the object datum as northing / easting, relative to
-        it's intersection with it's parent, if assigned
+        Return the object datum as northing / easting
         '''
 
         result = App.Vector(0.0, 0.0, 0.0)
+        int_eq = self.Object.Intersection_Equation
+        sta_eqs = self.Object.Alignment_Equations
 
-        print ('Int_Eqn: ', self.Object.Intersection_Equation)
+        print ('Int_Eqn: ', int_eq)
+
         if not self.Object.Parent_ID:
             return result
 
         if not self.Object.Intersection_Equation:
             return result
 
-        print ('getting parent ', self.Object.Parent_ID + '_Horiz')
         objs = App.ActiveDocument.getObjectsByLabel(self.Object.Parent_ID + '_Horiz')
 
         if not objs:
             return result
 
-        print('getting coordinate for ', objs[0].Label)
-        return objs[0].get_coordinate_at_station(self.Object.Intersection_Equation[0])
+        parent_coord = self._get_coordinate_at_station(int_eq[0], objs[0].Alignment_Equations)
+
+        print ('intersection coordinate: ', parent_coord)
+
+        start_sta = 0.0
+
+        #if the first alignment equation back is 0, it's the starting station
+        if sta_eqs:
+            if sta_eqs[0][0] == 0.0:
+                start_sta = sta_eqs[0][1]
+
+        distance = int_eq[0] - start_sta
+        slope = self.Object.Geometry[0][1] / self.Object.Geometry[0][0]
+
+        _x = math.sqrt((distance * distance) / 1 + slope)
+        _y = slope * _x
+        child_coord = App.Vector(_x, _y, 0.0)
 
     def set_data(self, data):
         '''
@@ -324,54 +348,56 @@ class _HorizontalAlignment():
         self.assign_meta_data(data['meta'])
         self.assign_station_data(data['station'])
 
-        datum = self.get_parent_datum()
+        datum = self.get_datum()
 
         print('DATUM: ', datum)
         self.assign_geometry_data(datum, data['data'])
 
         delattr(self, 'no_execute')
 
-    def _get_coordinate_at_station(self, station):
+    def _get_coordinate_at_station(self, station, equations):
         '''
         Return the distance along an alignment from the passed station as a float
         '''
 
-        _eqns = self.Object.Alignment_Equations
+        print(equations)
 
         #default starting station unles otherwise specified
         start_sta = 0.0
-
         start_index = 0
 
         #if the first equation's back value is zero, it's forward value is the starting station
-        if _eqns[0][0] == 0.0:
-            start_sta = _eqns[0][1]
+        if equations[0][0] == 0.0:
+            start_sta = equations[0][1]
             start_index = 1
 
         distance = 0
 
-        #iterate the equation list, locating the passed station
-        for _eqn in _eqns[start_index:]:
+        if len(equations) > 1:
 
-            if start_sta <= station <= _eqn[1]:
-                break
+            #iterate the equation list, locating the passed station
+            for _eqn in equations[start_index:]:
 
-            distance += _eqn[1] - start_sta
+                if start_sta <= station <= _eqn[1]:
+                    break
 
-            start_sta = _eqn[1]
+                distance += _eqn[1] - start_sta
 
-        result = distance + station - start_sta
+                start_sta = _eqn[1]
+
+        distance += station - start_sta
 
         #station bound checks
-        if result > self.Object.Shape.Length:
+        if distance > parent.Shape.Length:
             return None
 
-        if result < 0.0:
+        if distance < 0.0:
             return None
 
+        print('Distance = ', distance)
         #discretize valid distance
-        result = self.Object.Shape.discretize(Distance=distance)[1]
-
+        result = parent.Shape.discretize(Distance=distance)[1]
+        print('Coordinate = ', result)
         if len(result) < 2:
             print('failed to discretize')
             return None

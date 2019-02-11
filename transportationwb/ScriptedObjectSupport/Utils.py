@@ -57,13 +57,13 @@ def distance_bearing_to_coordinates(distance, bearing):
 
     deltas = App.Vector(math.sin(_b), math.cos(_b)).multiply(distance)
 
-    quad = int(_b / Constants.half_pi) + 1
+    #quad = int(_b / Constants.half_pi) + 1
 
-    if quad in [3, 4]:
-        deltas.x *= -1
+    #if quad in [3, 4]:
+    #    deltas.x *= -1
 
-    if quad in [2, 3]:
-        deltas.y *= -1
+    #if quad in [2, 3]:
+    #    deltas.y *= -1
 
     return deltas
 
