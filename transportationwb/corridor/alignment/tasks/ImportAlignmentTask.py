@@ -377,38 +377,35 @@ class ImportAlignmentTask:
         Scrape stationing from the row being imported
         '''
 
-        stations = []
+        stations = [0.0, 0.0]
+        parent_id = ''
+        back_value = ''
 
         for tpl in self.station_indices:
 
             key = tpl[1]
             value = row[tpl[0]]
 
-            has_field = {'Parent_ID': False, 'Back': False, 'Forward': False}
-
             if not value:
                 continue
 
-            has_field[key] = True
+            if key == 'Back':
+                stations[0] = value
 
-            #if the Parent_ID is not empty, it's an interesction equation
-            if key != 'Parent_ID':
-                stations.append(value)
+            elif key == 'Forward':
+                stations[1] = value
 
-        if stations:
+            elif key == 'Parent_ID':
+                parent_id = value
+
+        if stations != [0.0, 0.0]:
 
             #Parent_ID means it's an intersection equation
-            if has_field['Parent_ID']:
-                self.station_dict[key] = stations
+            if parent_id:
+                self.station_dict[parent_id] = stations
 
             else:
-                #if only forward is defined, it's the datum station
-                if not has_field['Back']:
-                    self.station_dict['equations'].append([-1, stations[0]])
-
-                #full station equation
-                else:
-                    self.station_dict['equations'].append(stations)
+                self.station_dict['equations'].append(stations)
 
     def _scrape_data(self, row):
         '''

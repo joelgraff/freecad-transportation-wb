@@ -177,17 +177,17 @@ class _HorizontalAlignment():
 
         for key in data.keys():
 
+            print(key)
             if key == 'equations':
 
                 for _eqn in data['equations']:
 
-                    print ('processing eqwn: ', _eqn)
                     back = -1
                     forward = -1
 
                     try:
                         back = float(_eqn[0])
-                        forwaad = float(_eqn[1])
+                        forward = float(_eqn[1])
 
                     except:
                         self.errors.append('Unable to convert station equation (Back: %s, Forward: %s)' % (_eqn[0], _eqn[1]))
@@ -197,18 +197,18 @@ class _HorizontalAlignment():
 
             else:
 
-                back = -1
-                forward = -1
+                back = data[key][0]
+                forward = data[key][1]
 
                 try:
-                    back = _eqn[0]
-                    forward = _eqn[1]
+                    back = float(back)
+                    forward = float(forward)
 
                 except:
-                    self.errors.append('Unable to convert intersection equation with parent %s: (Back: %s, Forward: %s' % (key, _eqn[0], _eqn[1]))
+                    self.errors.append('Unable to convert intersection equation with parent %s: (Back: %s, Forward: %s' % (key, data[key][0], data[key][1]))
                 
                 obj.Parent_ID = key
-                obj.Intersection_Equation = App.Vector(data[key][0], data[key][1])
+                obj.Intersection_Equation = App.Vector(back, forward, 0.0)
 
     def assign_geometry_data(self, datum, data):
         '''
@@ -298,17 +298,20 @@ class _HorizontalAlignment():
 
         result = App.Vector(0.0, 0.0, 0.0)
 
+        print ('Int_Eqn: ', self.Object.Intersection_Equation)
         if not self.Object.Parent_ID:
             return result
 
-        if self.Object.Intersection_Equation:
+        if not self.Object.Intersection_Equation:
             return result
 
-        objs = App.ActiveDocument.getObjectsByLabel(self.Object.Parent_ID + ' Horiz')
+        print ('getting parent ', self.Object.Parent_ID + '_Horiz')
+        objs = App.ActiveDocument.getObjectsByLabel(self.Object.Parent_ID + '_Horiz')
 
         if not objs:
             return result
 
+        print('getting coordinate for ', objs[0].Label)
         return objs[0].get_coordinate_at_station(self.Object.Intersection_Equation[0])
 
     def set_data(self, data):
@@ -320,10 +323,60 @@ class _HorizontalAlignment():
 
         self.assign_meta_data(data['meta'])
         self.assign_station_data(data['station'])
+
         datum = self.get_parent_datum()
+
+        print('DATUM: ', datum)
         self.assign_geometry_data(datum, data['data'])
 
         delattr(self, 'no_execute')
+
+    def _get_coordinate_at_station(self, station):
+        '''
+        Return the distance along an alignment from the passed station as a float
+        '''
+
+        _eqns = self.Object.Alignment_Equations
+
+        #default starting station unles otherwise specified
+        start_sta = 0.0
+
+        start_index = 0
+
+        #if the first equation's back value is zero, it's forward value is the starting station
+        if _eqns[0][0] == 0.0:
+            start_sta = _eqns[0][1]
+            start_index = 1
+
+        distance = 0
+
+        #iterate the equation list, locating the passed station
+        for _eqn in _eqns[start_index:]:
+
+            if start_sta <= station <= _eqn[1]:
+                break
+
+            distance += _eqn[1] - start_sta
+
+            start_sta = _eqn[1]
+
+        result = distance + station - start_sta
+
+        #station bound checks
+        if result > self.Object.Shape.Length:
+            return None
+
+        if result < 0.0:
+            return None
+
+        #discretize valid distance
+        result = self.Object.Shape.discretize(Distance=distance)[1]
+
+        if len(result) < 2:
+            print('failed to discretize')
+            return None
+
+        return result
 
     def execute(self, obj):
         '''
@@ -333,8 +386,8 @@ class _HorizontalAlignment():
         if hasattr(self, 'no_execute'):
             return
 
-        #res = Draft._BSpline(obj)
-        res = Draft._Wire(obj)
+        res = Draft._BSpline(obj)
+        #res = Draft._Wire(obj)
 
         obj.Closed = False
         obj.Points = obj.Geometry
