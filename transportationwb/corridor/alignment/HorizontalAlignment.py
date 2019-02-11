@@ -113,7 +113,7 @@ class _HorizontalAlignment():
         #add class properties
         Properties.add(obj, 'String', 'ID', 'ID of alignment', '')
         Properties.add(obj, 'String', 'Parent ID', 'ID of alignment parent', '')
-        Properties.add(obj, 'Vector', 'Intersection Equation', 'Station equation for intersection with parent', App.Vector(0.0, 0.0, 0.0))
+        Properties.add(obj, 'Vector', 'Intersection Equation', 'Station equation for intersections with parent alignment', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Alignment Equations', 'Station equation along the alignment', [])
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Geometry', 'Geometry defining the alignment', [])
@@ -162,69 +162,53 @@ class _HorizontalAlignment():
 
         obj = self.Object
 
-        #data is stored in a list of dictionaries
         if data['ID']:
             obj.ID = data['ID']
+
+        if data['Northing'] and data['Easting']:
+            obj.Datum = App.Vector(float(data['Easting']), float(data['Northing']), 0.0)
 
     def assign_station_data(self, data):
         '''
         Assign the station and intersection equation data
         '''
 
-        if data['Parent_ID']:
-            obj.Parent_ID = data['Parent_ID']
+        obj = self.Object
 
-        sta_tpl = (data['Back'], data['Forward'])
+        for key in data.keys():
 
-        #a datum has been defined as a northing and easting
-        if all((data['Northing'], data['Easting'])):
+            if key == 'equations':
 
-            try:
-                _north = float(data['Northing'])
-                _east = float(data['Easting'])
+                for _eqn in data['equations']:
 
-            except:
-                _err = 'Invalid Northing / Easting datum defined: (%s, %s)' % (_north, _east)
-                self.errors.append(_err)
+                    print ('processing eqwn: ', _eqn)
+                    back = -1
+                    forward = -1
 
-            self.Object.Datum = App.Vector(_north, _east, 0.0)
+                    try:
+                        back = float(_eqn[0])
+                        forwaad = float(_eqn[1])
 
-        #intersection station equation if back/forward and parent_id are defined
-        if all(sta_tpl) and data['Parent_ID']:
+                    except:
+                        self.errors.append('Unable to convert station equation (Back: %s, Forward: %s)' % (_eqn[0], _eqn[1]))
+                        continue
 
-            _bk = 0.0
-            _fwd = 0.0
+                    obj.Alignment_Equations.append(App.Vector(back, forward, 0.0))
 
-            try:
-                _bk = float(data['Back'])
-                _fwd = float(data['Forward'])
+            else:
 
-            except:
-                _err1 = 'Invalid station equation for object ' + data['ID'] + ':\n'
-                _err2 = 'Values: %s (back); %s (forward)' % sta_tpl
-                self.errors.append(_err1 + _err2)
-                return
+                back = -1
+                forward = -1
 
-            obj.Intersection_Equation = App.Vector(_bk, _fwd, 0.0)
+                try:
+                    back = _eqn[0]
+                    forward = _eqn[1]
 
-        #alignment datum/starting station if only Forward is defined (parent ID is irrelevant)
-        elif sta_tpl[1] and not sta_tpl[0]:
-
-            _fwd = 0.0
-
-            try:
-                _fwd = float(data['Forward'])
-
-            except:
-                self.errors.append('Invalid datum station for object ' + data['ID'] + ': %s' % data['Forward'])
-                return
-
-            obj.Alignment_Equations.append(App.Vector(-1.0, _fwd, 0.0))
-
-        #only back is specified, or both are without a parent ID
-        elif any(sta_tpl):
-
-            self.errors.append('Invalid station equation for object ' + data['ID'] + ': %s (Back), %s (Forward)' % sta_tpl)
+                except:
+                    self.errors.append('Unable to convert intersection equation with parent %s: (Back: %s, Forward: %s' % (key, _eqn[0], _eqn[1]))
+                
+                obj.Parent_ID = key
+                obj.Intersection_Equation = App.Vector(data[key][0], data[key][1])
 
     def assign_geometry_data(self, datum, data):
         '''

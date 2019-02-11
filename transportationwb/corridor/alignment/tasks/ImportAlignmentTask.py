@@ -250,7 +250,7 @@ class ImportAlignmentTask:
         '''
         Populate the table views with the data acquired from open_file
         '''
-        model = HorizontalAlignment.meta + HorizontalAlignment.data + HorizontalAlignment.station
+        model = HorizontalAlignment.meta_fields + HorizontalAlignment.data_fields + HorizontalAlignment.station_fields
 
         lower_header = [_x.lower() for _x in header]
         lower_model = [_x.lower() for _x in model]
@@ -335,9 +335,9 @@ class ImportAlignmentTask:
         Generate index values for named data for the imported CSV
         '''
         #dictionary keys for the dictionary data that is used for alignment construction
-        meta_keys = HorizontalAlignment.meta
-        data_keys = HorizontalAlignment.data
-        station_keys = HorizontalAlignment.station
+        meta_keys = HorizontalAlignment.meta_fields
+        data_keys = HorizontalAlignment.data_fields
+        station_keys = HorizontalAlignment.station_fields
 
         #get headers imported from file
         headers = self.form.header_matcher.model().data_model[0]
@@ -377,7 +377,6 @@ class ImportAlignmentTask:
         Scrape stationing from the row being imported
         '''
 
-        eqn_type = 'equations'
         stations = []
 
         for tpl in self.station_indices:
@@ -385,22 +384,31 @@ class ImportAlignmentTask:
             key = tpl[1]
             value = row[tpl[0]]
 
+            has_field = {'Parent_ID': False, 'Back': False, 'Forward': False}
+
             if not value:
                 continue
 
-            #if the Parent_ID is not empty, it's an interesction equation
-            if key == 'Parent_ID':
-                eqn_type = value
+            has_field[key] = True
 
-            else:
+            #if the Parent_ID is not empty, it's an interesction equation
+            if key != 'Parent_ID':
                 stations.append(value)
 
         if stations:
 
-            if eqn_type == 'equations':
-                self.station_dict['equations'].append(stations)
-            else:
+            #Parent_ID means it's an intersection equation
+            if has_field['Parent_ID']:
                 self.station_dict[eqn_type] = stations
+
+            else:
+                #if only forward is defined, it's the datum station
+                if not has_field['Back']:
+                    self.station_dict['equations'].append([-1, stations[0]])
+
+                #full station equation
+                else:
+                    self.station_dict['equations'].append(stations)
 
     def _scrape_data(self, row):
         '''
@@ -408,7 +416,7 @@ class ImportAlignmentTask:
         '''
 
         #build the PI dictionary to capture data from the row
-        pi_dict = dict.fromkeys(HorizontalAlignment.data, '')
+        pi_dict = dict.fromkeys(HorizontalAlignment.data_fields, '')
 
         for tpl in self.data_indices:
 
@@ -434,7 +442,7 @@ class ImportAlignmentTask:
         Build the self object dictionaries that are used in data scraping
         '''
 
-        self.meta_dict = dict.fromkeys(HorizontalAlignment.meta)
+        self.meta_dict = dict.fromkeys(HorizontalAlignment.meta_fields)
         self.station_dict = {'equations':[]}
         self.alignment_dict = {'meta': [], 'station': [], 'data': []}
 
