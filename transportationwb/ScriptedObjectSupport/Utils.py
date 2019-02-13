@@ -47,6 +47,30 @@ class Constants(Const):
     half_pi = math.pi / 2.0     #   1/2 * pi in radians
     one_radian = 180 / math.pi  #   one radian in degrees
 
+def directed_angle(in_vector, out_vector):
+    '''
+    Returns a signed angle in radians, < 0 == CCW, > 0 = CW
+    in_vector / out_vector - Two App.Vector() objects
+    '''
+    direction = (in_vector.x * out_vector.y) - (in_vector.y * out_vector.x)
+
+    if direction == 0.0:
+        direction = 1.0
+
+    return -(direction / abs(direction)), in_vector.getAngle(out_vector)
+
+def vector_from_angle(angle, unit=False):
+    '''
+    Returns a vector form a given angle in radians
+    '''
+
+    result = App.Vector(math.sin(angle), math.cos(angle), 0.0)
+
+    if (unit):
+        return result.normalize()
+
+    return result
+
 def distance_bearing_to_coordinates(distance, bearing):
     '''
     Converts a distance and bearing (in degrees) to cartesian coordinates

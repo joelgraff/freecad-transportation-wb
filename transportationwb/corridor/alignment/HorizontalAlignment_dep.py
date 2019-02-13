@@ -27,13 +27,12 @@ Alignment object for managing 2D (Horizontal and Vertical) and 3D alignments
 import math
 
 import FreeCAD as App
-import FreeCADGui as Gui
 import Draft
 import numpy
 
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties
 
-_CLASS_NAME = 'HorizontalAlignment'
+_CLASS_NAME = 'Alignment'
 _TYPE = 'Part::Part2DObjectPython'
 
 __title__ = _CLASS_NAME + '.py'
@@ -70,8 +69,8 @@ def create(data, object_name='', units='English', parent=None):
     result = _HorizontalAlignment(_obj)
     result.set_data(data)
 
-    #if not units == 'English':
-        #result.set_units(units)
+    if not units == 'English':
+        result.set_units(units)
 
     #Draft._ViewProviderWire(_obj.ViewObject)
     _ViewProviderHorizontalAlignment(_obj.ViewObject)
@@ -79,24 +78,27 @@ def create(data, object_name='', units='English', parent=None):
     App.ActiveDocument.recompute()
     return result
 
-#def createTestFpo():
-
-#    obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", OBJECT_TYPE)
-
-    #obj.Label = translate("Transportation", OBJECT_TYPE)
-
-#    test_fpo = _TestFPO(obj)
-
-#    _ViewProviderCell(obj.ViewObject)
-
-#    App.ActiveDocument.recompute()
-
 class _HorizontalAlignment():
 
+    # Metadata headers include:
+    #   ID - The ID of the alignment
+    #   Parent_ID - The ID of the parent alignment (optional)
+    #   Back/Forward - The dataum station for the start of the alignment, or parent / child station for intersection equations
+    #   Northing / Easting - The datum planar coordinates
+    #
+    # Data headers include:
+    #   Northing / Easting - The planar coordinates of the curve PI
+    #   Bearing - The bearing of the tangent from the previous PI
+    #   Distance - The distance between the current PU and the prvious PI
+    #   Radius / Degree - The radius or degree of curvature for the curve
+    #   Back / Forward - Station equation.  May be specified in absence of other data.
+    #       Starting station defined with first PI by providing a 'forward' value.
+
     def __init__(self, obj, label=''):
-        """
-        Default Constructor
-        """
+        '''
+        Main class intialization
+        '''
+
         self.no_execute = True
 
         obj.Proxy = self
@@ -124,9 +126,15 @@ class _HorizontalAlignment():
         delattr(self, 'no_execute')
 
     def __getstate__(self):
+        '''
+        State method for serialization
+        '''
         return self.Type
 
     def __setstate__(self, state):
+        '''
+        State method for serialization
+        '''
         if state:
             self.Type = state
 
@@ -343,8 +351,6 @@ class _HorizontalAlignment():
 
         self.assign_geometry_data(datum, data['data'])
 
-        print(self.Object.Geometry)
-
         delattr(self, 'no_execute')
 
         if not self.Object.Parent_ID:
@@ -417,7 +423,6 @@ class _HorizontalAlignment():
             return None
 
         return result
-
 
     def _discretize_geometry(self, segments):
         '''
@@ -508,7 +513,7 @@ class _HorizontalAlignment():
 
         print(coords)
         return coords
-        
+
     def onChanged(self, obj, prop):
 
         print('propchange: ', prop)
@@ -522,6 +527,9 @@ class _HorizontalAlignment():
             self.execute(obj)
 
     def execute(self, obj):
+        '''
+        Class execute for recompute calls
+        '''
 
         print('executing...')
 
@@ -532,11 +540,11 @@ class _HorizontalAlignment():
         res = None
 
         if obj.Draft_Shape == 'Spline':
-            self.Object.Shape = Draft._BSpline(obj)
+            res = Draft._BSpline(obj)
         else:
-            self.Object.Shape = Draft._Wire(obj)
+            res = Draft._Wire(obj)
 
-        obj.Points = [] # self._discretize_geometry(obj.Segments)
+        obj.Points = self._discretize_geometry(obj.Segments)
 
         obj.Closed = False
 

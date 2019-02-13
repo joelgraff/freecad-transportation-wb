@@ -33,31 +33,31 @@ import FreeCAD as App
 
 class DocumentProperty:
 
-    Param = App.ParamGet('User parameter:BaseApp/Preferences/Mod/Transportation')
+    Param = lambda: App.ParamGet('User parameter:BaseApp/Preferences/Mod/Transportation')
 
     @staticmethod
     def _set_string(key, value):
-        DocumentProperty.Param.SetString(key, value)
+        DocumentProperty.Param().SetString(key, value)
 
     @staticmethod
-    def _get_string(key):
-        return DocumentProperty.Param.GetString(key)
+    def _get_string(key, default=''):
+        return DocumentProperty.Param().GetString(key, default)
 
     @staticmethod
     def _set_int(key, value):
-        DocumentProperty.Param.SetInt(key, value)
+        DocumentProperty.Param().SetInt(key, value)
 
     @staticmethod
-    def _get_int(key):
-        return DocumentProperty.Param.GetInt(key)
+    def _get_int(key, default=0):
+        return DocumentProperty.Param().GetInt(key, default)
 
     @staticmethod
     def _set_float(key, value):
-        DocumentProperty.Param.SetFloat(key, value)
+        DocumentProperty.Param().SetFloat(key, value)
         
     @staticmethod
-    def _get_float(key):
-        return DocumentProperty.Param.GetFloat(key)
+    def _get_float(key, default=0.0):
+        return DocumentProperty.Param().GetFloat(key, default)
 
 class TemplateLibraryPath():
 
@@ -73,7 +73,8 @@ class MinimumTangentLength(DocumentProperty):
 
     @staticmethod
     def get_value():
-        return DocumentProperty._get_float('MinimumTangentLength')
+
+        return DocumentProperty._get_float('MinimumTangentLength', 500.0)
 
     @staticmethod
     def set_value(value):
