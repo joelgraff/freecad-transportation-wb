@@ -29,8 +29,9 @@ import math
 
 import FreeCAD as App
 import Draft
+import numpy
 
-from transportationwb.ScriptedObjectSupport import Properties, Units, Utils
+from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties
 
 _CLASS_NAME = 'Alignment'
 _TYPE = 'Part::Part2DObjectPython'
@@ -118,6 +119,8 @@ class _HorizontalAlignment():
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Geometry', 'Geometry defining the alignment', [])
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
+        Properties.add(obj, 'VectorList', 'Points', 'Discretization of geometry as a list of vectors', [])
+        Properties.add(obj, 'Integer', 'Segments', 'Set the curve segments to control accuracy', 1)
 
         delattr(self, 'no_execute')
 
@@ -177,12 +180,10 @@ class _HorizontalAlignment():
 
         for key in data.keys():
 
-            print(key)
             if key == 'equations':
 
                 for _eqn in data['equations']:
 
-                    print('equation: ', _eqn)
                     back = 0
                     forward = 0
 
@@ -226,7 +227,8 @@ class _HorizontalAlignment():
         Assign Northing / Easting datums
         '''
 
-        _geometry = [datum]
+        _points = [datum]
+        _geometry = []
 
         for item in data:
 
@@ -244,6 +246,7 @@ class _HorizontalAlignment():
                 continue
 
             geo_vector = App.Vector(0.0, 0.0, 0.0)
+            point_vector = App.Vector(0.0, 0.0, 0.0)
 
             #parse degree of curve / radius values
             if _rd[0]:
@@ -278,12 +281,13 @@ class _HorizontalAlignment():
                 #successful conversion of distance/bearing to floats
 
                 #set values to geo_vector, adding the previous position to the new one
-                geo_vector = Utils.distance_bearing_to_coordinates(_db[0], _db[1])
+                point_vector = Utils.distance_bearing_to_coordinates(_db[0], _db[1])
+                geo_vector.x, geo_vector.y = _db
 
                 if not Units.is_metric_doc():
-                    geo_vector.multiply(304.8)
+                    point_vector.multiply(304.8)
 
-                geo_vector = _geometry[-1].add(geo_vector)
+                point_vector = _points[-1].add(point_vector)
 
             #parse northing / easting values
             if any(_ne) and not all(_ne):
@@ -292,17 +296,18 @@ class _HorizontalAlignment():
             elif all(_ne):
 
                 try:
-                    geo_vector.y = float(_ne[0])
-                    geo_vector.x = float(_ne[1])
+                    point_vector.y = float(_ne[0])
+                    point_vector.x = float(_ne[1])
 
                 except:
                     self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
 
+                geo_vector.x, geo_vector.y = Utils.coordinates_to_distance_bearing(_points[-1], point_vector)
 
-                print (geo_vector)
-
+            _points.append(point_vector)
             _geometry.append(geo_vector)
 
+        self.Object.Points = _points
         self.Object.Geometry = _geometry
 
     def get_intersection_coordinates(self):
@@ -310,11 +315,8 @@ class _HorizontalAlignment():
         Return the object intersection point with it's parent alignment
         '''
 
-        result = App.Vector(0.0, 0.0, 0.0)
         int_eq = self.Object.Intersection_Equation
         sta_eqs = self.Object.Alignment_Equations
-
-        print ('Int_Eqn: ', int_eq)
 
         if not self.Object.Parent_ID:
             return None
@@ -424,15 +426,163 @@ class _HorizontalAlignment():
         if distance < 0.0:
             return None
 
-        print('Distance = ', distance)
         #discretize valid distance
         result = parent.Shape.discretize(Distance=distance)[1]
-        print('Coordinate = ', result)
+
         if len(result) < 2:
             print('failed to discretize')
             return None
 
         return result
+
+    def _discretize_geometry(self, segments):
+        '''
+        Discretizes the alignment geometry to a series of vector points
+        '''
+
+        segments = 2
+        geometry = self.Object.Geometry[1:]
+        prev_geo = self.Object.Geometry[0]
+        prev_coord = App.Vector(0.0, 0.0, 0.0)
+        prev_curve_tangent = 0.0
+
+        coords = [App.Vector(0.0, 0.0, 0.0)]
+
+        for _geo in geometry:
+
+            distance = prev_geo[0]
+            bearing_in = math.radians(prev_geo[1])
+            bearing_out = math.radians(_geo[1])
+            radius = prev_geo[2]
+            central_angle = bearing_out - bearing_in
+            curve_dir = central_angle / abs(central_angle)
+            central_angle = abs(central_angle)
+
+            print('distance: ', distance)
+            print('bearing_in', bearing_in)
+            print('baering_out', bearing_out)
+            print('radius', radius)
+            print('central_nagle', central_angle)
+            print('curve_dir', curve_dir)
+
+            if central_angle >= math.pi:
+                central_angle = (math.pi * 2.0) - central_angle
+
+            curve_tangent = radius * math.tan(central_angle / 2.0)
+
+            print('curve_tangent', curve_tangent)
+            print('prev_curve_tangent', prev_curve_tangent)
+
+            prev_tan_len = distance - curve_tangent - prev_curve_tangent
+
+            if prev_tan_len < DocumentProperties.MinimumTangentLength.get_value():
+                continue
+
+            seg_len = prev_tan_len / float(segments)
+
+            print('prev_tan_len', prev_tan_len)
+            prev_curve_tangent = curve_tangent
+
+            _forward = App.Vector(math.sin(bearing_in), math.cos(bearing_in), 0.0)
+
+            #discretize the tangent
+            for _i in numpy.arange(seg_len, prev_tan_len + seg_len / 2.0, seg_len):
+                _x = App.Vector(_forward)
+                coords.append(prev_coord.add(_x.multiply(_i)))
+
+            #add the end of the tangent / start of the curve (PC)
+            #coords.append(_forward.multiply(prev_tan_len))
+
+            #zero radius means no curve.  We're done
+            if radius == 0.0:
+                continue
+
+            _left = App.Vector(-_forward.y, _forward.x, 0.0)
+            seg_rad = central_angle / float(segments)
+
+            prev_coord = coords[-1]
+
+            for _i in range(0, segments):
+
+                _dfw = App.Vector(_forward)
+                _dlt = App.Vector(-_left)
+
+                delta = float(_i + 1) * seg_rad
+
+                print('DELTA = ', delta)
+
+                _dfw.multiply(radius * math.sin(delta))
+                _dlt.multiply(curve_dir * radius * (1 - math.cos(delta)))
+
+                print('dFW = ', _dfw)
+                print('dLT = ', _dlt)
+                coords.append(prev_coord.add(_dfw).add(_dlt))
+
+            prev_geo = _geo
+            prev_coord = coords[-1]
+
+        print(coords)
+        return coords
+
+    def _project_arc(self, point, curve, azimuth, segments=4):
+        '''
+        Return a series of points along an arc based on the starting point,
+        central angle (delta) and radius
+        '''
+
+        #calculate the circle center from the passed point and bearing
+        #use the circle center with the delta to generate the remaining points along the arc
+
+        points = []
+
+        curve_dir = 1.0
+        two_pi = math.pi * 2.0
+
+        if curve.Direction == 'L':
+            curve_dir = -1.0
+
+        #if curve.Bearing != 0.0:
+            #azimuth = self._get_azimuth(math.radians(curve.Bearing), curve.Quadrant)
+
+        central_angle = math.radians(curve.Delta)
+
+        angle_seg = central_angle / float(segments)
+        radius = float(curve.Radius)
+
+        _fw = App.Vector(math.sin(azimuth), math.cos(azimuth), 0.0)
+        _lt = App.Vector(-_fw.y, _fw.x, 0.0)
+
+        for _i in range(0, segments):
+
+            delta = float(_i + 1) * angle_seg
+
+            fw_delta = App.Vector(_fw).multiply(radius * math.sin(delta))
+            lt_delta = App.Vector(-_lt).multiply(curve_dir * radius * (1 - math.cos(delta)))
+
+            points.append(point.add(fw_delta).add(lt_delta))
+
+        azimuth += central_angle * curve_dir
+
+        if azimuth > two_pi:
+            azimuth -= two_pi
+
+        elif azimuth < 0.0:
+            azimuth += two_pi
+
+        return points, azimuth   
+
+    def onChanged(self, obj, prop):
+
+        print('propchange: ', prop)
+        #dodge onChanged calls during initialization
+        if hasattr(self, 'no_execute'):
+            return
+
+        print('changing prop: ', prop)
+        if prop == "Segments":
+            print('segments....')
+            self.execute(obj)
+            
 
     def execute(self, obj):
         '''
@@ -442,11 +592,14 @@ class _HorizontalAlignment():
         if hasattr(self, 'no_execute'):
             return
 
+        print('executing...')
+
         #res = Draft._BSpline(obj)
         res = Draft._Wire(obj)
+        
+        obj.Points = self._discretize_geometry(obj.Subdivisions)
 
         obj.Closed = False
-        obj.Points = obj.Geometry
 
         res.execute(obj)
 

@@ -101,12 +101,6 @@ class GenerateVerticalAlignment():
 
         seg_len = _len / float(segments)
 
-        print ("segment_length = ", seg_len)
-        print ("g1: ", _g1)
-        print ('g2: ', _g2)
-        print ('elev: ', _e)
-        print ('length: ', _len)
-
         start_seg = 1
 
         offset = abs(pt - _vpc)

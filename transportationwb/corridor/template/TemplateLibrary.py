@@ -42,6 +42,7 @@ import zipfile, tempfile
 import Part, Mesh
 from PySide import QtGui, QtCore
 from transportationwb.corridor.template import SketchTemplate
+from transportationwb.ScriptedObjectSupport import DocumentProperties
 
 #encoding error trap
 _encoding = None
@@ -535,7 +536,7 @@ class ConfigDialog(QtGui.QDialog):
         pass
 
     def changepath(self):
-        self.library_path = App.ParamGet('User parameter:BaseApp/Preferences/Mod/Transportation').GetString('TemplateLibPath', '')
+        self.library_path = DocumentProperties.TemplateLibraryPath.get_value()
         np = QtGui.QFileDialog.getExistingDirectory(self, "Location of your existing template library", self.library_path)
 
         if np:
@@ -551,7 +552,8 @@ class ConfigDialog(QtGui.QDialog):
             if hasattr(cw, "release"):
                 cw.release()
         if self.lineEdit_3.text():
-            App.ParamGet(self.parameter_path).SetString('TemplateLibPath', self.lineEdit_3.text())
+            DocumentProperties.TemplateLibraryPath.set_value(self.lineEdit_3/text())
+            #App.ParamGet(self.parameter_path).SetString('TemplateLibPath', self.lineEdit_3.text())
         QtGui.QDialog.accept(self)
 
 def show(call_back):
@@ -559,16 +561,14 @@ def show(call_back):
     Show the template library window
     '''
 
-    parameter_path = 'User parameter:BaseApp/Preferences/Mod/Transportation'
-    param = App.ParamGet(parameter_path)
-    library_path = param.GetString('TemplateLibPath')
+    library_path = DocumentProperties.TemplateLibraryPath.get_value()
 
     if not library_path:
 
         dialog = QtGui.QFileDialog.getExistingDirectory(None, QtGui.QApplication.translate("Transportation Template Library", "Location of library", None, _encoding))
 
-        param.SetString('TemplateLibPath', dialog)
-        library_path = param.GetString('TemplateLibPath')
+        DocumentProperties.TemplateLibraryPath.set_value(dialog)
+        library_path = DocumentProperties.TemplateLibraryPath.get_value()
 
     if QtCore.QDir(library_path).exists():
         m = Gui.getMainWindow()

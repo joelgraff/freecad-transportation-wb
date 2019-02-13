@@ -67,6 +67,29 @@ def distance_bearing_to_coordinates(distance, bearing):
 
     return deltas
 
+def coordinates_to_distance_bearing(prev_coord, next_coord):
+    '''
+    Given two coordinates in (x,y,z) format, calculate the distance between them
+    and the bearing from prev to next
+    '''
+
+    distance = 0.0
+    deltas = []
+
+    for _i in range(0,2):
+        distance += (prev_coord[_i] * next_coord[_i])
+        deltas.append(next_coord[_i] - prev_coord[_i])
+
+    distance = math.sqrt(distance)
+
+    #calculate the directed bearing of the x and yh deltas
+    bearing = math.atan2(deltas[0], deltas[1])
+
+    if bearing < 0.0:
+        bearing += math.pi * 2.0
+
+    return (distance, math.degrees(bearing))
+
 def doc_to_radius(value, is_metric=False, station_length=0):
     '''
     Converts degree of curve value to radius

@@ -20,8 +20,7 @@ def build_vertical_element(e):
     for i in range (0, 5):
         points.append(App.Vector(x, f_x(a, e["g1"], e["elevation"], x), 0.0))
         x += incr
-    
-    print(points)
+
     return points
 
 def build_vertical_spline(elements):

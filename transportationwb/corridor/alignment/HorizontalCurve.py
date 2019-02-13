@@ -50,8 +50,6 @@ def createHorizontalCurve(data, units):
     #obj.Label = translate("Transportation", OBJECT_TYPE)
     hc = _HorizontalCurve(obj)
 
-    print("Processing curve...")
-    print(data)
     radius = float(data.get('radius', 0.0))
 
     obj.PC_Station = data['PC_station'] + "'"

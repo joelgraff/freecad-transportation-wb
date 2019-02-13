@@ -70,7 +70,6 @@ class ImportAlignmentTask:
 
             for _i in self.alignment_data:
 
-                print (_i)
                 result = HorizontalAlignment.create(_i, _i['meta']['ID'] + ' Horiz').errors
 
                 if result:
@@ -403,7 +402,6 @@ class ImportAlignmentTask:
             elif key == 'Parent_ID':
                 parent_id = value.replace(' ', '_')
 
-        print(row, stations)
         if stations != [0.0, 0.0]:
 
             #Parent_ID means it's an intersection equation
