@@ -321,9 +321,8 @@ class TransportationWorkbench (Workbench):
 
         self.policies_ist = ["Edit..."]
         self.general_fn_list = ["TestCommand", "NewProject"]
-        self.alignment_fn_list = ["AddAlignment",
-            'ImportAlignmentCmd',
-            "GenerateHorizontalAlignment", "GenerateVerticalAlignment", "Generate3dAlignment"]
+        self.alignment_fn_list = ['ImportAlignmentCmd',
+            "GenerateVerticalAlignment", "Generate3dAlignment"]
         self.template_fn_list = ['GenerateElementLoft', 'ViewTemplateLibrary']
         self.loft_fn_list = ['EditIntervals']
 
@@ -333,9 +332,7 @@ class TransportationWorkbench (Workbench):
     def Initialize(self):
 
         import NewProject
-        import transportationwb.corridor.alignment.AddAlignment
         import transportationwb.corridor.alignment.ImportAlignmentCmd
-        import transportationwb.corridor.alignment.GenerateHorizontalAlignment
         import transportationwb.corridor.alignment.GenerateVerticalAlignment
         import transportationwb.corridor.alignment.Generate3dAlignment
         import transportationwb.corridor.loft.GenerateElementLoft
@@ -386,7 +383,7 @@ class TransportationWorkbench (Workbench):
         #create context menus for alignments
         self.general_menu = ['TestCommand']
         self.alignment_menu = ['ImportAlignment',
-            'GenerateHorizontalAlignment', 'GenerateVerticalAlignment', 'Generate3dAlignment']
+            'GenerateVerticalAlignment', 'Generate3dAlignment']
 
         self.template_menu = ['GenerateElementLoft', 'ViewTemplateLibrary']
         self.loft_menu = ['EditIntervals']
