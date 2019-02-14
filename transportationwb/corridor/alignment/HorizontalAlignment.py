@@ -110,20 +110,21 @@ class _HorizontalAlignment(Draft._BSpline):
         self.errors = []
 
         obj.Label = label
+        obj.Closed = False
 
         if not label:
             obj.Label = obj.Name
 
         #add class properties
         Properties.add(obj, 'String', 'ID', 'ID of alignment', '')
-        Properties.add(obj, 'String', 'Parent ID', 'ID of alignment parent', '')
         Properties.add(obj, 'Vector', 'Intersection Equation', 'Station equation for intersections with parent alignment', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Alignment Equations', 'Station equation along the alignment', [])
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Geometry', 'Geometry defining the alignment', [])
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
-        Properties.add(obj, 'VectorList', 'Points', 'Discretization of geometry as a list of vectors', [])
+        Properties.add(obj, 'VectorList', 'PIs', 'Discretization of Points of Intersection (PIs) as a list of vectors', [])
         Properties.add(obj, 'Integer', 'Segments', 'Set the curve segments to control accuracy', 1)
+        Properties.add(obj, 'Link', 'Parent Alignment', 'Links to parent alignment object', None)
         obj.addProperty('App::PropertyEnumeration', 'Draft Shape', '' ,'Represent the alignment as either a Spline or Wire shape').Draft_Shape = ['Wire', 'Spline']
 
         delattr(self, 'no_execute')
@@ -163,6 +164,7 @@ class _HorizontalAlignment(Draft._BSpline):
         Assign the station and intersection equation data
         '''
 
+        print('processing station data: ', data)
         obj = self.Object
 
         for key in data.keys():
@@ -203,7 +205,13 @@ class _HorizontalAlignment(Draft._BSpline):
                 except:
                     self.errors.append('Unable to convert intersection equation with parent %s: (Back: %s, Forward: %s' % (key, data[key][0], data[key][1]))
 
-                obj.Parent_ID = key
+                objs = App.ActiveDocument.getObjectsByLabel(key + '_Horiz')
+
+                if objs is None:
+                    self.errors.append('Parent ID %s specified, but no object %s_Horiz exists' % key)
+                    return
+
+                obj.Parent_Alignment = objs[0]
                 obj.Intersection_Equation = App.Vector(back, forward, 0.0)
 
     def assign_geometry_data(self, datum, data):
@@ -294,45 +302,53 @@ class _HorizontalAlignment(Draft._BSpline):
             _points.append(point_vector)
             _geometry.append(geo_vector)
 
-        self.Object.Points = _points
+        self.Object.PIs = _points
         self.Object.Geometry = _geometry
 
-    def get_intersection_coordinates(self):
+    def get_intersection_delta(self):
         '''
-        Return the object intersection point with it's parent alignment
+        Return the delta of the object intersection point with it's parent alignment
         '''
 
+        if not self.Object.Parent_Alignment:
+            return App.Vector(0.0, 0.0, 0.0)
+
+        if not self.Object.Intersection_Equation:
+            return App.Vector(0.0, 0.0, 0.0)
+
+        parent = self.Object.Parent_Alignment
         int_eq = self.Object.Intersection_Equation
         sta_eqs = self.Object.Alignment_Equations
 
-        if not self.Object.Parent_ID:
-            return None
-
-        if not self.Object.Intersection_Equation:
-            return None
-
-        objs = App.ActiveDocument.getObjectsByLabel(self.Object.Parent_ID + '_Horiz')
-
-        if not objs:
-            return None
-
-        parent_coord = self._get_coordinate_at_station(int_eq[0], objs[0])
+        parent_coord = self._get_coordinate_at_station(int_eq[0], parent)
 
         start_sta = 0.0
 
         #if the first equation's Back is 0.0, the Forward is the starting station
-        if sta_eqs[0][0] == 0.0:
-            start_sta = sta_eqs[0][1]
+        if sta_eqs:
+            if sta_eqs[0][0] == 0.0:
+                start_sta = sta_eqs[0][1]
 
         distance = (int_eq[1] - start_sta) * 304.80
 
-        child_coord = self.Object.Points[0]
+        child_coord = self.Object.Points[0].add(self.Object.Placement.Base)
 
         if distance > 0.0:
 
             child_coord = self.Object.Shape.discretize(Distance=distance)[1]
 
-        return(parent_coord, child_coord)
+        if not parent_coord or not child_coord:
+            print('Unable to calculate geometry datum')
+            return App.Vector(0.0, 0.0, 0.0)
+
+        delta = parent_coord.sub(child_coord)
+
+        print('Parent coordinate at %f: %f, %f' % (int_eq[0], parent_coord.x, parent_coord.y))
+        print('Child coordinate at %f: %f, %f' % (int_eq[0], child_coord.x, child_coord.y))
+        print('Delta at: %f, %f' % (delta.x, delta.y))
+
+        #subtract the child coordinate's intersection point from the parent's
+        return parent_coord
 
     def set_data(self, data):
         '''
@@ -350,24 +366,7 @@ class _HorizontalAlignment(Draft._BSpline):
 
         delattr(self, 'no_execute')
 
-        if not self.Object.Parent_ID:
-            return
-
-        self.execute(self.Object)
-
-        self.no_execute = True
-
-        coordinates = self.get_intersection_coordinates()
-
-        if coordinates:
-
-            #subtract the child coordinate's intersection point from the parent's
-            delta = coordinates[0].sub(coordinates[1])
-
-            #add the delta to the placement base to get the new placement
-            self.Object.Placement.Base = self.Object.Placement.Base.add(delta)
-
-        delattr(self, 'no_execute')
+        self.Object.Points = self._discretize_geometry(self.Object.Segments)
 
     def _get_coordinate_at_station(self, station, parent):
         '''
@@ -381,9 +380,10 @@ class _HorizontalAlignment(Draft._BSpline):
         start_index = 0
 
         #if the first equation's back value is zero, it's forward value is the starting station
-        if equations[0][0] == 0.0:
-            start_sta = equations[0][1]
-            start_index = 1
+        if equations:
+            if equations[0][0] == 0.0:
+                start_sta = equations[0][1]
+                start_index = 1
 
         distance = 0
 
@@ -405,10 +405,8 @@ class _HorizontalAlignment(Draft._BSpline):
         distance += station - start_sta
 
         #station bound checks
-        if distance > parent.Shape.Length:
-            return None
-
-        if distance < 0.0:
+        if distance > parent.Shape.Length or distance < 0.0:
+            print('Station distance exceeds parent limits (%f not in [%f, %f]' % (station, start_sta, start_sta + parent.Shape.Length))
             return None
 
         #discretize valid distance
@@ -424,6 +422,8 @@ class _HorizontalAlignment(Draft._BSpline):
         '''
         Discretizes the alignment geometry to a series of vector points
         '''
+
+        print ('discretizing ', self.Object.Geometry)
 
         #alignment construction requires a 'look ahead' at the next element
         #This implementation does a 'look back' at the previous.
@@ -537,17 +537,18 @@ class _HorizontalAlignment(Draft._BSpline):
         if hasattr(self, 'no_execute'):
             return
 
-        #if prop == "Segments":
-            #self.execute(obj)
+        if prop == "Segments":
+            self.Object.Points = self._discretize_geometry(self.Object.Segments)
 
     def execute(self, obj):
 
         if hasattr(self, 'no_execute'):
             return
 
-        obj.Points = self._discretize_geometry(obj.Segments)
-        obj.Closed = False
+        print('executing ', self.Object.Label)
 
+        super(_HorizontalAlignment, self).execute(obj)
+        self.Object.Placement.Base = self.get_intersection_delta()
         super(_HorizontalAlignment, self).execute(obj)
 
 class _ViewProviderHorizontalAlignment:
