@@ -67,6 +67,8 @@ def create(data, object_name='', units='English', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
+    Draft._BSpline(_obj)
+
     result = _HorizontalAlignment(_obj)
     result.set_data(data)
 
@@ -531,16 +533,18 @@ class _HorizontalAlignment():
         print('...executing...')
         res = None
 
-        if obj.Draft_Shape == 'Spline':
-            self.Object.Shape = Draft._BSpline(obj)
-        else:
-            self.Object.Shape = Draft._Wire(obj)
+       # _o = App.ActiveDocument.addObject("Part::Part2DObjectPython",'temp')
 
-        obj.Points = [] # self._discretize_geometry(obj.Segments)
+        #if obj.Draft_Shape == 'Spline':
+        #    self.Object.Shape = Draft.make
+        #else:
+       #     self.Object.Shape = Draft._Wire(_o).Object.Shape
+
+        obj.Points = self._discretize_geometry(obj.Segments)
 
         obj.Closed = False
 
-        res.execute(obj)
+        #res.execute(obj)
 
 class _ViewProviderHorizontalAlignment:
 
