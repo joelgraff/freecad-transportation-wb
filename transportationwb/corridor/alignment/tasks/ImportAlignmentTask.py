@@ -75,8 +75,6 @@ class ImportAlignmentTask:
                 if result:
                     errors += result
 
-                App.ActiveDocument.recompute()
-
             if errors:
                 print('Errors encountered during alignment creation:\n')
 

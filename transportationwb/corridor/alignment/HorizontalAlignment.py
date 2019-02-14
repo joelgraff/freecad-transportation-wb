@@ -324,7 +324,7 @@ class _HorizontalAlignment(Draft._BSpline):
         if sta_eqs[0][0] == 0.0:
             start_sta = sta_eqs[0][1]
 
-        distance = int_eq[1] - start_sta
+        distance = (int_eq[1] - start_sta) * 304.80
 
         child_coord = self.Object.Points[0]
 
@@ -412,14 +412,13 @@ class _HorizontalAlignment(Draft._BSpline):
             return None
 
         #discretize valid distance
-        result = parent.Shape.discretize(Distance=distance)[1]
+        result = parent.Shape.discretize(Distance=distance * 304.80)[1]
 
         if len(result) < 2:
             print('failed to discretize')
             return None
 
         return result
-
 
     def _discretize_geometry(self, segments):
         '''
@@ -430,10 +429,19 @@ class _HorizontalAlignment(Draft._BSpline):
         #This implementation does a 'look back' at the previous.
         #Thus, iteration starts at the second element and
         #the last element is duplicated to ensure it is constructed.
-        geometry = self.Object.Geometry[1:]
-        geometry.append(geometry[-1])
+        geometry = self.Object.Geometry
 
-        prev_geo = self.Object.Geometry[0]
+        if not geometry:
+            print('No geometry defined.  Unnable to discretize')
+            return None
+
+        prev_geo = geometry[0]
+
+        #test in case we only have one geometric element
+        if len(geometry) > 1:
+            geometry = geometry[1:]
+
+        geometry.append(geometry[-1])
 
         prev_coord = App.Vector(0.0, 0.0, 0.0)
         prev_curve_tangent = 0.0
@@ -464,8 +472,15 @@ class _HorizontalAlignment(Draft._BSpline):
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
             if prev_tan_len >= DocumentProperties.MinimumTangentLength.get_value() or not between_curves:
 
-                _x = App.Vector(_forward)
-                coords.append(prev_coord.add(_x.multiply(prev_tan_len * 304.8)))
+                #append three coordinates:  
+                #   one a millimeter away from the starting point
+                #   one a millimeter away from the ending point
+                #   one at the end point
+                mm_tan_len = prev_tan_len * 304.80
+
+                coords.append(prev_coord.add(_forward))
+                coords.append(prev_coord.add(App.Vector(_forward).multiply(mm_tan_len - 1)))
+                coords.append(prev_coord.add(App.Vector(_forward).multiply(mm_tan_len)))
 
             #zero radius or curve direction means no curve.  We're done
             if radius == 0.0 or curve_dir == 0:
@@ -476,6 +491,10 @@ class _HorizontalAlignment(Draft._BSpline):
 
             prev_coord = coords[-1]
 
+            radius_mm = radius * 304.80
+            directed_radius_mm = curve_dir * radius_mm
+            unit_delta = seg_rad * 0.01
+
             for _i in range(0, segments):
 
                 _dfw = App.Vector(_forward)
@@ -483,52 +502,53 @@ class _HorizontalAlignment(Draft._BSpline):
 
                 delta = float(_i + 1) * seg_rad
 
-                _dfw.multiply(radius * math.sin(delta) * 304.8)
-                _dlt.multiply(curve_dir * radius * (1 - math.cos(delta)) * 304.8)
+                _dfw_scaled = App.Vector(_dfw).multiply(radius_mm * math.sin(delta))
+                _dlt_scaled = App.Vector(_dlt).multiply(directed_radius_mm * (1 - math.cos(delta)))
 
-                coords.append(prev_coord.add(_dfw).add(_dlt))
+                next_coord = prev_coord.add(_dfw_scaled).add(_dlt_scaled)
+
+                #add the unit delta anchor point just after the start of the curve
+                #if _i in[0, segments-1]:
+
+                #    if _i == 0:
+                #        _dfw_unit = _dfw.multiply(radius_mm * math.sin(unit_delta))
+                #        _dlt_unit = _dlt.multiply(directed_radius_mm * (1 - math.cos(unit_delta)))
+                #        _delta = _dfw_unit.add(_dlt_unit)
+
+                #        coords.append(prev_coord.add(_delta))
+                #    else:
+                #        _dfw_unit = _dfw.multiply(radius_mm * math.sin(delta - unit_delta))
+                #        _dlt_unit = _dlt.multiply(directed_radius_mm * (1 - math.cos(delta - unit_delta)))
+                #        _delta = _dfw_unit.add(_dlt_unit)
+
+                #        coords.append(prev_coord.add(_delta))
+
+                coords.append(next_coord)
 
             prev_geo = _geo
             prev_coord = coords[-1]
             prev_curve_tangent = curve_tangent
 
-        print(coords)
         return coords
-        
+
     def onChanged(self, obj, prop):
 
-        print('propchange: ', prop)
         #dodge onChanged calls during initialization
         if hasattr(self, 'no_execute'):
             return
 
-        print('changing prop: ', prop)
-        if prop == "Segments":
-            print('segments....')
-            self.execute(obj)
+        #if prop == "Segments":
+            #self.execute(obj)
 
     def execute(self, obj):
 
-        print('executing...')
-
         if hasattr(self, 'no_execute'):
             return
-
-        print('...executing...')
-        #res = None
-
-       # _o = App.ActiveDocument.addObject("Part::Part2DObjectPython",'temp')
-
-        #if obj.Draft_Shape == 'Spline':
-        #    self.Object.Shape = Draft.make
-        #else:
-       #     self.Object.Shape = Draft._Wire(_o).Object.Shape
 
         obj.Points = self._discretize_geometry(obj.Segments)
         obj.Closed = False
 
         super(_HorizontalAlignment, self).execute(obj)
-        #res.execute(obj)
 
 class _ViewProviderHorizontalAlignment:
 
