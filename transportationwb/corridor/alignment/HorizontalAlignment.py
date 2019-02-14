@@ -75,8 +75,8 @@ def create(data, object_name='', units='English', parent=None):
     #if not units == 'English':
         #result.set_units(units)
 
-    #Draft._ViewProviderWire(_obj.ViewObject)
-    _ViewProviderHorizontalAlignment(_obj.ViewObject)
+    Draft._ViewProviderWire(_obj.ViewObject)
+    #_ViewProviderHorizontalAlignment(_obj.ViewObject)
 
     App.ActiveDocument.recompute()
     return result
@@ -93,12 +93,15 @@ def create(data, object_name='', units='English', parent=None):
 
 #    App.ActiveDocument.recompute()
 
-class _HorizontalAlignment():
+class _HorizontalAlignment(Draft._BSpline):
 
     def __init__(self, obj, label=''):
         """
         Default Constructor
         """
+
+        super(_HorizontalAlignment, self).__init__(obj)
+
         self.no_execute = True
 
         obj.Proxy = self
@@ -345,8 +348,6 @@ class _HorizontalAlignment():
 
         self.assign_geometry_data(datum, data['data'])
 
-        print(self.Object.Geometry)
-
         delattr(self, 'no_execute')
 
         if not self.Object.Parent_ID:
@@ -374,7 +375,6 @@ class _HorizontalAlignment():
         '''
 
         equations = parent.Alignment_Equations
-        print(equations)
 
         #default starting station unles otherwise specified
         start_sta = 0.0
@@ -440,8 +440,6 @@ class _HorizontalAlignment():
 
         coords = [App.Vector(0.0, 0.0, 0.0)]
 
-        print('DISCRETIZING: ', geometry)
-
         for _geo in geometry:
 
             distance = prev_geo[0]
@@ -459,19 +457,9 @@ class _HorizontalAlignment():
             #we're between curves
             between_curves = radius > 0.0 and _geo[2] > 0.0
 
-            print('distance: ', distance)
-            print('bearing_in', bearing_in)
-            print('bearing_out', bearing_out)
-            print('radius', radius)
-            print('central_nagle', central_angle)
-
             curve_tangent = radius * math.tan(central_angle / 2.0)
             prev_tan_len = distance - curve_tangent - prev_curve_tangent
             _forward = App.Vector(math.sin(bearing_in), math.cos(bearing_in), 0.0)
-
-            print('curve_tangent', curve_tangent)
-            print('prev_curve_tangent', prev_curve_tangent)
-            print('prev_tan_len', prev_tan_len)
 
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
             if prev_tan_len >= DocumentProperties.MinimumTangentLength.get_value() or not between_curves:
@@ -495,13 +483,9 @@ class _HorizontalAlignment():
 
                 delta = float(_i + 1) * seg_rad
 
-                print('DELTA = ', delta)
-
                 _dfw.multiply(radius * math.sin(delta) * 304.8)
                 _dlt.multiply(curve_dir * radius * (1 - math.cos(delta)) * 304.8)
 
-                print('dFW = ', _dfw)
-                print('dLT = ', _dlt)
                 coords.append(prev_coord.add(_dfw).add(_dlt))
 
             prev_geo = _geo
@@ -531,7 +515,7 @@ class _HorizontalAlignment():
             return
 
         print('...executing...')
-        res = None
+        #res = None
 
        # _o = App.ActiveDocument.addObject("Part::Part2DObjectPython",'temp')
 
@@ -541,9 +525,9 @@ class _HorizontalAlignment():
        #     self.Object.Shape = Draft._Wire(_o).Object.Shape
 
         obj.Points = self._discretize_geometry(obj.Segments)
-
         obj.Closed = False
 
+        super(_HorizontalAlignment, self).execute(obj)
         #res.execute(obj)
 
 class _ViewProviderHorizontalAlignment:
@@ -570,7 +554,7 @@ class _ViewProviderHorizontalAlignment:
         """
         Property update handler
         """
-        print("update data " + prop)
+        pass
     
     def getDisplayMode(self, obj):
         """
@@ -594,4 +578,4 @@ class _ViewProviderHorizontalAlignment:
         """
         Handle individual property changes
         """
-        print ("View property changed " + prop)
+        pass
