@@ -270,19 +270,20 @@ class _HorizontalAlignment(Draft._BSpline):
                     _db[0] = float(_db[0])
                     _db[1] = float(_db[1])
 
+                    #zero distance means coincident PI's.  Skip that.
+                    if _db[0] > 0.0:
+
+                        #set values to geo_vector, adding the previous position to the new one
+                        point_vector = Utils.distance_bearing_to_coordinates(_db[0], _db[1])
+                        geo_vector.x, geo_vector.y = _db
+
+                        if not Units.is_metric_doc():
+                            point_vector.multiply(304.8)
+
+                        point_vector = _points[-1].add(point_vector)
+
                 except:
                     self.errors.append('(Distance, Bearing) Invalid: (%s, %s)' % tuple(_db))
-
-                #successful conversion of distance/bearing to floats
-
-                #set values to geo_vector, adding the previous position to the new one
-                point_vector = Utils.distance_bearing_to_coordinates(_db[0], _db[1])
-                geo_vector.x, geo_vector.y = _db
-
-                if not Units.is_metric_doc():
-                    point_vector.multiply(304.8)
-
-                point_vector = _points[-1].add(point_vector)
 
             #parse northing / easting values
             if any(_ne) and not all(_ne):
@@ -299,8 +300,10 @@ class _HorizontalAlignment(Draft._BSpline):
 
                 geo_vector.x, geo_vector.y = Utils.coordinates_to_distance_bearing(_points[-1], point_vector)
 
-            _points.append(point_vector)
-            _geometry.append(geo_vector)
+            #skip coincident PI's
+            if geo_vector.x > 0.0:
+                _points.append(point_vector)
+                _geometry.append(geo_vector)
 
         self.Object.PIs = _points
         self.Object.Geometry = _geometry
@@ -447,8 +450,9 @@ class _HorizontalAlignment(Draft._BSpline):
 
         coords = [App.Vector(0.0, 0.0, 0.0)]
 
-        print('geometry ', geometry)
         for _geo in geometry:
+
+            print('\n-----=======>>>>>', _geo)
 
             distance = prev_geo[0]
             bearing_in = math.radians(prev_geo[1])
@@ -482,7 +486,7 @@ class _HorizontalAlignment(Draft._BSpline):
             print('curve tangent ', curve_tangent)
 
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
-            if prev_tan_len >= DocumentProperties.MinimumTangentLength.get_value() or not between_curves:
+            if prev_tan_len >= 1: #DocumentProperties.MinimumTangentLength.get_value() or not between_curves:
 
                 #append three coordinates:  
                 #   one a millimeter away from the starting point

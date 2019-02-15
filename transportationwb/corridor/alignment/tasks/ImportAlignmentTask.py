@@ -201,6 +201,7 @@ class ImportAlignmentTask:
             first_bytes = stream.read(1024)
             stream.seek(0)
 
+            print(first_bytes)
             self.dialect = sniffer.sniff(first_bytes)
             self.form.delimiter.setText(self.dialect.delimiter)
 
