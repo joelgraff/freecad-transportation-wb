@@ -6,5 +6,4 @@ _*
 pylintrc
 freecad-transportation-wb-docu/
 transportationwb/corridor/alignment/data/~$il2_curves.xlsx
-data/alignment/.~lock.HC_IL2_Rev3.csv#
-data/alignment/.~lock.HC_IL2_Rev2.csv#
+*~lock*

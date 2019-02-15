@@ -348,7 +348,7 @@ class _HorizontalAlignment(Draft._BSpline):
         print('Delta at: %f, %f' % (delta.x, delta.y))
 
         #subtract the child coordinate's intersection point from the parent's
-        return parent_coord
+        return delta
 
     def set_data(self, data):
         '''
@@ -440,14 +440,14 @@ class _HorizontalAlignment(Draft._BSpline):
         #test in case we only have one geometric element
         if len(geometry) > 1:
             geometry = geometry[1:]
-
-        geometry.append(geometry[-1])
+            geometry.append(geometry[-1])
 
         prev_coord = App.Vector(0.0, 0.0, 0.0)
         prev_curve_tangent = 0.0
 
         coords = [App.Vector(0.0, 0.0, 0.0)]
 
+        print('geometry ', geometry)
         for _geo in geometry:
 
             distance = prev_geo[0]
@@ -469,6 +469,18 @@ class _HorizontalAlignment(Draft._BSpline):
             prev_tan_len = distance - curve_tangent - prev_curve_tangent
             _forward = App.Vector(math.sin(bearing_in), math.cos(bearing_in), 0.0)
 
+            print('bearing in ', bearing_in)
+            print('bearing_out ', bearing_out)
+            print('distance ', distance)
+            print('in-tangent ', in_tangent)
+            print('out-tangent ', out_tangent)
+            print('curve-dir ', curve_dir)
+            print('central angle ', central_angle)
+            print('radius ', radius)
+            print('between curves? ', between_curves)
+            print('prev_tan_len ', prev_tan_len)
+            print('curve tangent ', curve_tangent)
+
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
             if prev_tan_len >= DocumentProperties.MinimumTangentLength.get_value() or not between_curves:
 
@@ -483,52 +495,61 @@ class _HorizontalAlignment(Draft._BSpline):
                 coords.append(prev_coord.add(App.Vector(_forward).multiply(mm_tan_len)))
 
             #zero radius or curve direction means no curve.  We're done
-            if radius == 0.0 or curve_dir == 0:
-                continue
+            if radius > 0.0:
 
-            _left = App.Vector(-_forward.y, _forward.x, 0.0)
-            seg_rad = central_angle / float(segments)
+                _left = App.Vector(-_forward.y, _forward.x, 0.0)
+                seg_rad = central_angle / float(segments)
 
-            prev_coord = coords[-1]
+                prev_coord = coords[-1]
 
-            radius_mm = radius * 304.80
-            directed_radius_mm = curve_dir * radius_mm
-            unit_delta = seg_rad * 0.01
+                radius_mm = radius * 304.80
+                directed_radius_mm = curve_dir * radius_mm
+                unit_delta = seg_rad * 0.01
 
-            for _i in range(0, segments):
+                print('prev coord ', prev_coord)
+                print('radius mm ', radius_mm)
+                print('unit delta ', unit_delta)
+                print('seg_rad ', seg_rad)
+                print('segments ', segments)
 
-                _dfw = App.Vector(_forward)
-                _dlt = App.Vector(-_left)
+                for _i in range(0, segments):
 
-                delta = float(_i + 1) * seg_rad
+                    _dfw = App.Vector(_forward)
+                    _dlt = App.Vector(-_left)
 
-                _dfw_scaled = App.Vector(_dfw).multiply(radius_mm * math.sin(delta))
-                _dlt_scaled = App.Vector(_dlt).multiply(directed_radius_mm * (1 - math.cos(delta)))
+                    delta = float(_i + 1) * seg_rad
 
-                next_coord = prev_coord.add(_dfw_scaled).add(_dlt_scaled)
+                    print('delta ', delta)
 
-                #add the unit delta anchor point just after the start of the curve
-                #if _i in[0, segments-1]:
+                    _dfw_scaled = App.Vector(_dfw).multiply(radius_mm * math.sin(delta))
+                    _dlt_scaled = App.Vector(_dlt).multiply(directed_radius_mm * (1 - math.cos(delta)))
 
-                #    if _i == 0:
-                #        _dfw_unit = _dfw.multiply(radius_mm * math.sin(unit_delta))
-                #        _dlt_unit = _dlt.multiply(directed_radius_mm * (1 - math.cos(unit_delta)))
-                #        _delta = _dfw_unit.add(_dlt_unit)
+                    next_coord = prev_coord.add(_dfw_scaled).add(_dlt_scaled)
 
-                #        coords.append(prev_coord.add(_delta))
-                #    else:
-                #        _dfw_unit = _dfw.multiply(radius_mm * math.sin(delta - unit_delta))
-                #        _dlt_unit = _dlt.multiply(directed_radius_mm * (1 - math.cos(delta - unit_delta)))
-                #        _delta = _dfw_unit.add(_dlt_unit)
+                    print('next coord ', next_coord)
+                    #add the unit delta anchor point just after the start of the curve
+                    #if _i in[0, segments-1]:
 
-                #        coords.append(prev_coord.add(_delta))
+                    #    if _i == 0:
+                    #        _dfw_unit = _dfw.multiply(radius_mm * math.sin(unit_delta))
+                    #        _dlt_unit = _dlt.multiply(directed_radius_mm * (1 - math.cos(unit_delta)))
+                    #        _delta = _dfw_unit.add(_dlt_unit)
 
-                coords.append(next_coord)
+                    #        coords.append(prev_coord.add(_delta))
+                    #    else:
+                    #        _dfw_unit = _dfw.multiply(radius_mm * math.sin(delta - unit_delta))
+                    #        _dlt_unit = _dlt.multiply(directed_radius_mm * (1 - math.cos(delta - unit_delta)))
+                    #        _delta = _dfw_unit.add(_dlt_unit)
+
+                    #        coords.append(prev_coord.add(_delta))
+
+                    coords.append(next_coord)
 
             prev_geo = _geo
             prev_coord = coords[-1]
             prev_curve_tangent = curve_tangent
 
+        print ('COORDS: ', coords)
         return coords
 
     def onChanged(self, obj, prop):
@@ -548,7 +569,7 @@ class _HorizontalAlignment(Draft._BSpline):
         print('executing ', self.Object.Label)
 
         super(_HorizontalAlignment, self).execute(obj)
-        self.Object.Placement.Base = self.get_intersection_delta()
+        self.Object.Placement.Base = self.Object.Placement.Base.add(self.get_intersection_delta())
         super(_HorizontalAlignment, self).execute(obj)
 
 class _ViewProviderHorizontalAlignment:
