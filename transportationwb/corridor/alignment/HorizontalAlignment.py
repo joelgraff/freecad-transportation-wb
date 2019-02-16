@@ -501,13 +501,12 @@ class _HorizontalAlignment(Draft._BSpline):
             #zero radius or curve direction means no curve.  We're done
             if radius > 0.0:
 
-                _left = App.Vector(-_forward.y, _forward.x, 0.0)
+                _left = App.Vector(_forward.y, -_forward.x, 0.0)
                 seg_rad = central_angle / float(segments)
 
                 prev_coord = coords[-1]
 
                 radius_mm = radius * 304.80
-                directed_radius_mm = curve_dir * radius_mm
                 unit_delta = seg_rad * 0.01
 
                 print('prev coord ', prev_coord)
@@ -517,37 +516,15 @@ class _HorizontalAlignment(Draft._BSpline):
                 print('segments ', segments)
 
                 for _i in range(0, segments):
-
-                    _dfw = App.Vector(_forward)
-                    _dlt = App.Vector(-_left)
-
+                    
                     delta = float(_i + 1) * seg_rad
 
-                    print('delta ', delta)
+                    _dfw = App.Vector(_forward).multiply(math.sin(delta))
+                    _dlt = App.Vector(_left).multiply(curve_dir * (1 - math.cos(delta)))
 
-                    _dfw_scaled = App.Vector(_dfw).multiply(radius_mm * math.sin(delta))
-                    _dlt_scaled = App.Vector(_dlt).multiply(directed_radius_mm * (1 - math.cos(delta)))
+                    coords.append(prev_coord.add(_dfw.add(_dlt).multiply(radius_mm)))
 
-                    next_coord = prev_coord.add(_dfw_scaled).add(_dlt_scaled)
-
-                    print('next coord ', next_coord)
-                    #add the unit delta anchor point just after the start of the curve
-                    #if _i in[0, segments-1]:
-
-                    #    if _i == 0:
-                    #        _dfw_unit = _dfw.multiply(radius_mm * math.sin(unit_delta))
-                    #        _dlt_unit = _dlt.multiply(directed_radius_mm * (1 - math.cos(unit_delta)))
-                    #        _delta = _dfw_unit.add(_dlt_unit)
-
-                    #        coords.append(prev_coord.add(_delta))
-                    #    else:
-                    #        _dfw_unit = _dfw.multiply(radius_mm * math.sin(delta - unit_delta))
-                    #        _dlt_unit = _dlt.multiply(directed_radius_mm * (1 - math.cos(delta - unit_delta)))
-                    #        _delta = _dfw_unit.add(_dlt_unit)
-
-                    #        coords.append(prev_coord.add(_delta))
-
-                    coords.append(next_coord)
+                    print('next coord ', coords[-1])
 
             prev_geo = _geo
             prev_coord = coords[-1]
