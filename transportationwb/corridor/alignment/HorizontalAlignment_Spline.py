@@ -67,7 +67,7 @@ def create(data, object_name='', units='English', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    Draft._Wire(_obj)
+    Draft._BSpline(_obj)
 
     result = _HorizontalAlignment(_obj)
     result.set_data(data)
@@ -80,7 +80,7 @@ def create(data, object_name='', units='English', parent=None):
     App.ActiveDocument.recompute()
     return result
 
-class _HorizontalAlignment(Draft._Wire):
+class _HorizontalAlignment(Draft._BSpline):
 
     def __init__(self, obj, label=''):
         """
@@ -408,46 +408,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         return result
 
-    @staticmethod
-    def discretize_arc(start_coord, bearing, radius, angle, segments):
-        '''
-        Discretize an arc into the specified segments
-
-        Radius in feet
-        Angle in radians
-        bearing - angle from true north of starting tangent of arc
-        '''
-
-        _forward = App.Vector(math.sin(bearing), math.cos(bearing), 0.0)
-        _left = App.Vector(_forward.y, -_forward.x, 0.0)
-        
-        seg_rad = 0.0
-        curve_dir = 0.0
-        
-        if angle != 0.0:
-            seg_rad = abs(angle) / float(segments)
-            curve_dir = angle/abs(angle)
-
-        radius_mm = radius * 304.80
-
-        result = []
-
-        for _i in range(0, segments):
-            
-            delta = float(_i + 1) * seg_rad
-
-            _dfw = App.Vector(_forward)
-            _dlt = App.Vector()
-
-            if delta != 0.0:
-
-                _dfw.multiply(math.sin(delta))
-                _dlt = App.Vector(_left).multiply(curve_dir * (1 - math.cos(delta)))
-
-            result.append(start_coord.add(_dfw.add(_dlt).multiply(radius_mm)))
-
-        return result
-
     def _discretize_geometry(self, segments):
         '''
         Discretizes the alignment geometry to a series of vector points
@@ -479,36 +439,85 @@ class _HorizontalAlignment(Draft._Wire):
 
         for _geo in geometry:
 
+            print('\n-----=======>>>>>', _geo)
+
             distance = prev_geo[0]
             bearing_in = math.radians(prev_geo[1])
             bearing_out = math.radians(_geo[1])
 
-            curve_dir, central_angle = Utils.directed_angle(Utils.vector_from_angle(bearing_in), Utils.vector_from_angle(bearing_out))
+            in_tangent = Utils.vector_from_angle(bearing_in)
+            out_tangent = Utils.vector_from_angle(bearing_out)
+
+            curve_dir, central_angle = Utils.directed_angle(in_tangent, out_tangent)
 
             radius = prev_geo[2]
 
+            #if both the current geometry and the look-back geometry have nno-zero radii,
+            #we're between curves
+            between_curves = radius > 0.0 and _geo[2] > 0.0
+
             curve_tangent = radius * math.tan(central_angle / 2.0)
             prev_tan_len = distance - curve_tangent - prev_curve_tangent
+            _forward = App.Vector(math.sin(bearing_in), math.cos(bearing_in), 0.0)
+
+            print('bearing in ', bearing_in)
+            print('bearing_out ', bearing_out)
+            print('distance ', distance)
+            print('in-tangent ', in_tangent)
+            print('out-tangent ', out_tangent)
+            print('curve-dir ', curve_dir)
+            print('central angle ', central_angle)
+            print('radius ', radius)
+            print('between curves? ', between_curves)
+            print('prev_tan_len ', prev_tan_len)
+            print('curve tangent ', curve_tangent)
 
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
-            if prev_tan_len >= 1:
+            if prev_tan_len >= 1: #DocumentProperties.MinimumTangentLength.get_value() or not between_curves:
 
                 #append three coordinates:  
                 #   one a millimeter away from the starting point
                 #   one a millimeter away from the ending point
                 #   one at the end point
+                mm_tan_len = prev_tan_len * 304.80
 
-                coords.extend(self.discretize_arc(prev_coord, bearing_in, prev_tan_len, 0.0, segments))
+                coords.append(prev_coord.add(_forward))
+                coords.append(prev_coord.add(App.Vector(_forward).multiply(mm_tan_len - 1)))
+                coords.append(prev_coord.add(App.Vector(_forward).multiply(mm_tan_len)))
 
             #zero radius or curve direction means no curve.  We're done
             if radius > 0.0:
 
-                coords.extend(self.discretize_arc(prev_coord, bearing_in, radius, central_angle * curve_dir, segments))
+                _left = App.Vector(_forward.y, -_forward.x, 0.0)
+                seg_rad = central_angle / float(segments)
+
+                prev_coord = coords[-1]
+
+                radius_mm = radius * 304.80
+                unit_delta = seg_rad * 0.01
+
+                print('prev coord ', prev_coord)
+                print('radius mm ', radius_mm)
+                print('unit delta ', unit_delta)
+                print('seg_rad ', seg_rad)
+                print('segments ', segments)
+
+                for _i in range(0, segments):
+                    
+                    delta = float(_i + 1) * seg_rad
+
+                    _dfw = App.Vector(_forward).multiply(math.sin(delta))
+                    _dlt = App.Vector(_left).multiply(curve_dir * (1 - math.cos(delta)))
+
+                    coords.append(prev_coord.add(_dfw.add(_dlt).multiply(radius_mm)))
+
+                    print('next coord ', coords[-1])
 
             prev_geo = _geo
             prev_coord = coords[-1]
             prev_curve_tangent = curve_tangent
 
+        print ('COORDS: ', coords)
         return coords
 
     def onChanged(self, obj, prop):
