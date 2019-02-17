@@ -76,22 +76,9 @@ def create(data, object_name='', units='English', parent=None):
         #result.set_units(units)
 
     Draft._ViewProviderWire(_obj.ViewObject)
-    #_ViewProviderHorizontalAlignment(_obj.ViewObject)
 
     App.ActiveDocument.recompute()
     return result
-
-#def createTestFpo():
-
-#    obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", OBJECT_TYPE)
-
-    #obj.Label = translate("Transportation", OBJECT_TYPE)
-
-#    test_fpo = _TestFPO(obj)
-
-#    _ViewProviderCell(obj.ViewObject)
-
-#    App.ActiveDocument.recompute()
 
 class _HorizontalAlignment(Draft._BSpline):
 
@@ -541,6 +528,7 @@ class _HorizontalAlignment(Draft._BSpline):
 
         if prop == "Segments":
             self.Object.Points = self._discretize_geometry(self.Object.Segments)
+            self.wire.Points = self.Object.Points
 
     def execute(self, obj):
 
@@ -549,8 +537,11 @@ class _HorizontalAlignment(Draft._BSpline):
 
         print('executing ', self.Object.Label)
 
+
         super(_HorizontalAlignment, self).execute(obj)
         self.Object.Placement.Base = self.Object.Placement.Base.add(self.get_intersection_delta())
+        #wire = Draft.makeWire(self.Object.Points)
+        #wire.Placement.Base = self.Object.Placement.Base
         super(_HorizontalAlignment, self).execute(obj)
 
 class _ViewProviderHorizontalAlignment:
