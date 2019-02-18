@@ -33,49 +33,84 @@ import FreeCAD as App
 
 class DocumentProperty:
 
-    Param = lambda: App.ParamGet('User parameter:BaseApp/Preferences/Mod/Transportation')
+    Param = lambda _x: App.ParamGet('User parameter:BaseApp/Preferences/' + _x)
 
     @staticmethod
-    def _set_string(key, value):
-        DocumentProperty.Param().SetString(key, value)
+    def _set_string(path, key, value):
+        DocumentProperty.Param(path).SetString(key, value)
 
     @staticmethod
-    def _get_string(key, default=''):
-        return DocumentProperty.Param().GetString(key, default)
+    def _get_string(path, key, default=''):
+        return DocumentProperty.Param(path).GetString(key, default)
 
     @staticmethod
-    def _set_int(key, value):
-        DocumentProperty.Param().SetInt(key, value)
+    def _set_int(path, key, value):
+        DocumentProperty.Param(path).SetInt(key, value)
 
     @staticmethod
-    def _get_int(key, default=0):
-        return DocumentProperty.Param().GetInt(key, default)
+    def _get_int(path, key, value=0):
+        return DocumentProperty.Param(path).GetInt(key, value)
 
     @staticmethod
-    def _set_float(key, value):
-        DocumentProperty.Param().SetFloat(key, value)
-        
-    @staticmethod
-    def _get_float(key, default=0.0):
-        return DocumentProperty.Param().GetFloat(key, default)
-
-class TemplateLibraryPath():
+    def _set_float(path, key, value):
+        DocumentProperty.Param(path).SetFloat(key, value)
 
     @staticmethod
-    def get_value():
-        return DocumentProperty._get_string('TemplateLibPath')
+    def _get_float(path, key, value=0.0):
+        return DocumentProperty.Param(path).GetFloat(key, value)
 
     @staticmethod
-    def set_value(value):
-        DocumentProperty._set_string('TemplateLibPath', value)
+    def _set_bool_string(value):
+        result = '0'
 
-class MinimumTangentLength(DocumentProperty):
+        if value:
+            result = '1'
 
-    @staticmethod
-    def get_value():
+        return result
 
-        return DocumentProperty._get_float('MinimumTangentLength', 500.0)
+class DocumentPreferences():
 
-    @staticmethod
-    def set_value(value):
-        DocumentProperty._set_float('MinimumTangentLength', value)
+    class SaveThumbnail():
+
+        @staticmethod
+        def set_value(value = True):
+            DocumentProperty._set_string('Document', 'SaveThumbnail', DocumentProperty._set_bool_string(value))
+
+        @staticmethod
+        def get_value():
+            return DocumentProperty._get_string('Document', 'SaveThmbnail')
+
+    class AddThumbnailLogo():
+
+        @staticmethod
+        def set_value(value = False):
+            DocumentProperty._set_string('Document', 'AddThumbnailLogo', DocumentProperty._set_bool_string(value))
+
+        @staticmethod
+        def get_value():
+            return DocumentProperty._get_string('Document', 'AddThumbnailLogo')
+
+
+class TemplateLibrary():
+
+    class Path():
+
+        @staticmethod
+        def get_value():
+            return DocumentProperty._get_string('Mod/Transportation', 'TemplateLibPath')
+
+        @staticmethod
+        def set_value(value):
+            DocumentProperty._set_string('Mod/Transportation', 'TemplateLibPath', value)
+
+class Policy():
+
+    class MinimumTangentLength():
+
+        @staticmethod
+        def get_value():
+            return DocumentProperty._get_float('Mod/Transportation', 'MinimumTangentLength', 500.0)
+
+        @staticmethod
+        def set_value(value):
+            DocumentProperty._set_float('Mod/Trasnportation', 'MinimumTangentLength', value)

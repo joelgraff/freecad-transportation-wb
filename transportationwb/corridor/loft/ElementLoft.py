@@ -141,9 +141,17 @@ class _ElementLoft(object):
         #EditIntervals().Activated()
 
     @staticmethod
-    def _build_sections(spline, sketch, interval):
+    def build_wire_sections(wire, sketch, interval):
         '''
-        Generate / regenerate the loft based on the linked sketch and parameters
+        Generate / regenerate the loft along a wire path
+        '''
+
+        pass
+        
+    @staticmethod
+    def _build_spline_sections(spline, sketch, interval):
+        '''
+        Generate / regenerate the loft along a spline path
         '''
 
         #reference spline curve object

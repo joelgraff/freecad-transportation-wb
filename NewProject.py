@@ -25,6 +25,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 import os
 from PySide import QtGui, QtCore
+from transportationwb.ScriptedObjectSupport import DocumentProperties
 
 class NewProject():
 
@@ -58,6 +59,7 @@ class NewProject():
         App.ParamGet("User parameter:BaseApp/Preferences/Units").SetInt("UserSchema", 7)
         App.ParamGet('User parameter:BaseApp/Preferences/Mod/Sketcher').SetBool('AutoRecompute', False)
         App.ParamGet('User parameter:BaseApp/Preferences/Document').SetBool('DuplicateLabels', True)
+        DocumentProperties.TemplateLibrary.Path.set_value('/home/shawty/.FreeCAD/Mod/freecad-transportation-wb/data/templates')
 
     def _create_document(self):
 

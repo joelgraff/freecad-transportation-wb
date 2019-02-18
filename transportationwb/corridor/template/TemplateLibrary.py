@@ -181,19 +181,18 @@ class ExpDockWidget(QtGui.QDockWidget):
         elif action == open_action:
             self.open_file(path)
 
-    def __init__(self, lib_path, param_path, call_back):
+    def __init__(self, call_back):
 
         QtGui.QDockWidget.__init__(self)
 
         self.lib_title = "Transportation Template Library"
         self.setObjectName("TransportationTemplateLibrary")
-        self.library_path = lib_path
-        self.parameter_path = param_path
+        self.library_path = DocumentProperties.TemplateLibrary.Path.get_value()
         self.call_back = call_back
 
         # setting up a directory model that shows only fcstd
         self.dirmodel = ExpFileSystemModel()
-        self.dirmodel.setRootPath(lib_path)
+        self.dirmodel.setRootPath(self.library_path)
         self.dirmodel.setNameFilters(['*.fcstd', '*.FcStd', '*.FCSTD'])
         self.dirmodel.setNameFilterDisables(0)
 
@@ -210,7 +209,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         self.folder.hideColumn(1)
         self.folder.hideColumn(2)
         self.folder.hideColumn(3)
-        self.folder.setRootIndex(self.dirmodel.index(lib_path))
+        self.folder.setRootIndex(self.dirmodel.index(self.library_path))
 
         self.preview = QtGui.QLabel()
         self.preview.setFixedHeight(128)
@@ -355,11 +354,8 @@ class ExpDockWidget(QtGui.QDockWidget):
         if _dialog != '':
 
             #save the thumbnail enabling the logo if desired
-            parameter_path = 'User parameter:BaseApp/Preferences/Document'
-            param = App.ParamGet(parameter_path)
-
-            param.SetString('SaveThumbnail', '1')
-            param.SetString('AddThumbnailLogo', '0')
+            DocumentProperties.DocumentPreferences.AddThumbnailLogo.set_value()
+            DocumentProperties.DocumentPreferences.SaveThumbnail.set_value()
 
             _fn = _dialog[0]
 
@@ -394,7 +390,7 @@ class ExpDockWidget(QtGui.QDockWidget):
         self.repo.git.pull()
 
     def setconfig(self):
-        _d = ConfigDialog(self.library_path, self.parameter_path, self.lib_title, self.repo)
+        _d = ConfigDialog(self.lib_title, self.repo)
 
         if self.repo:
             _d.lineEdit.setText(self.repo.remote().url)
@@ -450,10 +446,9 @@ class ExpDockWidget(QtGui.QDockWidget):
 
 class ConfigDialog(QtGui.QDialog):
 
-    def __init__(self, lib_path, param_path, lib_title, repo):
+    def __init__(self, lib_title, repo):
 
-        self.library_path = lib_path
-        self.parameter_path = param_path
+        self.library_path = DocumentProperties.TemplateLibrary.Path.get_value()
         self.library_title = lib_title
         self.repo = repo
 
@@ -551,9 +546,10 @@ class ConfigDialog(QtGui.QDialog):
                 cw.set("pushurl", str(self.lineEdit_2.text()))
             if hasattr(cw, "release"):
                 cw.release()
+
         if self.lineEdit_3.text():
             DocumentProperties.TemplateLibraryPath.set_value(self.lineEdit_3/text())
-            #App.ParamGet(self.parameter_path).SetString('TemplateLibPath', self.lineEdit_3.text())
+
         QtGui.QDialog.accept(self)
 
 def show(call_back):
@@ -561,14 +557,13 @@ def show(call_back):
     Show the template library window
     '''
 
-    library_path = DocumentProperties.TemplateLibraryPath.get_value()
+    library_path = DocumentProperties.TemplateLibrary.Path.get_value()
 
     if not library_path:
 
         dialog = QtGui.QFileDialog.getExistingDirectory(None, QtGui.QApplication.translate("Transportation Template Library", "Location of library", None, _encoding))
 
         DocumentProperties.TemplateLibraryPath.set_value(dialog)
-        library_path = DocumentProperties.TemplateLibraryPath.get_value()
 
     if QtCore.QDir(library_path).exists():
         m = Gui.getMainWindow()
@@ -582,8 +577,8 @@ def show(call_back):
             else:
                 # something went wrong with our widget... Recreate it
                 del w
-                m.addDockWidget(QtCore.Qt.RightDockWidgetArea, ExpDockWidget(library_path, parameter_path, call_back))
+                m.addDockWidget(QtCore.Qt.RightDockWidgetArea, ExpDockWidget(call_back))
         else:
-            m.addDockWidget(QtCore.Qt.RightDockWidgetArea, ExpDockWidget(library_path, parameter_path, call_back))
+            m.addDockWidget(QtCore.Qt.RightDockWidgetArea, ExpDockWidget(call_back))
     else:
         print("Library path ", library_path, "not found.")

@@ -67,8 +67,6 @@ def create(data, object_name='', units='English', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    #Draft._Wire(_obj)
-
     result = _HorizontalAlignment(_obj)
     result.set_data(data)
 
@@ -552,11 +550,11 @@ class _HorizontalAlignment(Draft._Wire):
 
         print('executing ', self.Object.Label)
 
-        #self.Object.Points = self._discretize_geometry(self.Object.Segments)
+        self.Object.Points = self._discretize_geometry(self.Object.Segments)
 
-        #super(_HorizontalAlignment, self).execute(obj)
-        #self.Object.Placement.Base = self.Object.Placement.Base.add(self.get_intersection_delta())
-        #super(_HorizontalAlignment, self).execute(obj)
+        super(_HorizontalAlignment, self).execute(obj)
+        self.Object.Placement.Base = self.Object.Placement.Base.add(self.get_intersection_delta())
+        super(_HorizontalAlignment, self).execute(obj)
 
 class _ViewProviderHorizontalAlignment:
 
