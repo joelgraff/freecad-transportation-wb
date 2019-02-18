@@ -18,11 +18,11 @@ def createTestFpo():
 
     test_fpo = _TestFPO(obj)
 
-    _ViewProviderCell(obj.ViewObject)
+    Draft._ViewProviderWire(obj.ViewObject)
 
     App.ActiveDocument.recompute()
 
-class _TestFPO():
+class _TestFPO(Draft._Wire):
 
     def __init__(self, obj):
         """
@@ -31,6 +31,8 @@ class _TestFPO():
         obj.Proxy = self
         self.Type = OBJECT_TYPE
         self.Object = obj
+
+        super(_TestFPO, self).__init__(obj)
 
         self.add_property("App::PropertyLength", "StartStation", "Starting station for the cell").StartStation = 0.00
         self.add_property("App::PropertyLength", "EndStation", "Ending station for the cell").EndStation = 0.00
