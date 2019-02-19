@@ -138,7 +138,7 @@ class _ElementLoft(object):
         editing the schedule data
         '''
         pass
-        #EditIntervals().Activated()
+
 
     @staticmethod
     def build_wire_sections(wire, sketch, interval):
@@ -147,7 +147,7 @@ class _ElementLoft(object):
         '''
 
         pass
-        
+
     @staticmethod
     def _build_spline_sections(spline, sketch, interval):
         '''

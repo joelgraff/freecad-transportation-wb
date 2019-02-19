@@ -41,7 +41,7 @@ __author__ = "AUTHOR_NAME"
 __url__ = "https://www.freecadweb.org"
 
 meta_fields = ['ID', 'Northing', 'Easting']
-data_fields = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree']
+data_fields = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'Spiral']
 station_fields = ['Parent_ID', 'Back', 'Forward']
 
 def create(data, object_name='', units='English', parent=None):
@@ -215,6 +215,7 @@ class _HorizontalAlignment(Draft._Wire):
             _ne = []
             _db = []
             _rd = []
+            _sprial = 0.0
 
             try:
                 _ne = [item['Northing'], item['Easting']]
@@ -225,19 +226,26 @@ class _HorizontalAlignment(Draft._Wire):
                 self.errors.append('Inivalid geometric data: %s' % item)
                 continue
 
-            geo_vector = App.Vector(0.0, 0.0, 0.0)
+            curve = [0.0, 0.0, 0.0, 0.0]
+
+            try:
+                curve[3] = item['Spiral']
+
+            except:
+                pass
+
             point_vector = App.Vector(0.0, 0.0, 0.0)
 
             #parse degree of curve / radius values
             if _rd[0]:
                 try:
-                    geo_vector.z = float(_rd[0])
+                    curve[2] = float(_rd[0])
                 except:
                     self.errors.append('Invalid radius: %s' % _rd[0])
 
             elif _rd[1]:
                 try:
-                    geo_vector.z = Utils.doc_to_radius(float(_rd[1]))
+                    curve[2] = Utils.doc_to_radius(float(_rd[1]))
                 except:
                     self.errors.append('Invalid degree of curve: %s' % _rd[1])
             else:
@@ -260,7 +268,7 @@ class _HorizontalAlignment(Draft._Wire):
 
                         #set values to geo_vector, adding the previous position to the new one
                         point_vector = Utils.distance_bearing_to_coordinates(_db[0], _db[1])
-                        geo_vector.x, geo_vector.y = _db
+                        curve[0:2] = _db
 
                         if not Units.is_metric_doc():
                             point_vector.multiply(304.8)
@@ -283,12 +291,12 @@ class _HorizontalAlignment(Draft._Wire):
                 except:
                     self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
 
-                geo_vector.x, geo_vector.y = Utils.coordinates_to_distance_bearing(_points[-1], point_vector)
+                curve[0:2] = Utils.coordinates_to_distance_bearing(_points[-1], point_vector)
 
             #skip coincident PI's
-            if geo_vector.x > 0.0:
+            if curve[0] > 0.0:
                 _points.append(point_vector)
-                _geometry.append(geo_vector)
+                _geometry.append(curve)
 
         self.Object.PIs = _points
         self.Object.Geometry = _geometry
