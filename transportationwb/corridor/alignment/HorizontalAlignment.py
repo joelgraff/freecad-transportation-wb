@@ -105,7 +105,7 @@ class _HorizontalAlignment(Draft._Wire):
         Properties.add(obj, 'Vector', 'Intersection Equation', 'Station equation for intersections with parent alignment', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Alignment Equations', 'Station equation along the alignment', [])
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
-        Properties.add(obj, 'VectorList', 'Geometry', 'Geometry defining the alignment', [])
+        Properties.add(obj, 'StringList', 'Geometry', 'Geometry defining the alignment', [])
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
         Properties.add(obj, 'VectorList', 'PIs', 'Discretization of Points of Intersection (PIs) as a list of vectors', [])
         Properties.add(obj, 'Integer', 'Segments', 'Set the curve segments to control accuracy', 100)
@@ -212,25 +212,15 @@ class _HorizontalAlignment(Draft._Wire):
 
         for item in data:
 
-            _ne = []
-            _db = []
-            _rd = []
-            _sprial = 0.0
-
-            try:
-                _ne = [item['Northing'], item['Easting']]
-                _db = [item['Distance'], item['Bearing']]
-                _rd = [item['Radius'], item['Degree']]
-
-            except:
-                self.errors.append('Inivalid geometric data: %s' % item)
-                continue
+            _ne = [item['Northing'], item['Easting']]
+            _db = [item['Distance'], item['Bearing']]
+            _rd = [item['Radius'], item['Degree']]
 
             curve = [0.0, 0.0, 0.0, 0.0]
 
             try:
-                curve[3] = item['Spiral']
-
+                curve[3] = float(item['Spiral'])
+            
             except:
                 pass
 
@@ -294,9 +284,12 @@ class _HorizontalAlignment(Draft._Wire):
                 curve[0:2] = Utils.coordinates_to_distance_bearing(_points[-1], point_vector)
 
             #skip coincident PI's
+            #save the point as a vector
+            #save the geometry as a string
             if curve[0] > 0.0:
                 _points.append(point_vector)
-                _geometry.append(curve)
+                print('saving ', str(curve))
+                _geometry.append(str(curve).replace('[', '').replace(']',''))
 
         self.Object.PIs = _points
         self.Object.Geometry = _geometry
@@ -505,7 +498,7 @@ class _HorizontalAlignment(Draft._Wire):
             print('No geometry defined.  Unnable to discretize')
             return None
 
-        prev_geo = geometry[0]
+        prev_geo = [float(_i) for _i in geometry[0].split(',')]
 
         #test in case we only have one geometric element
         if len(geometry) > 1:
@@ -516,7 +509,10 @@ class _HorizontalAlignment(Draft._Wire):
 
         coords = [App.Vector(0.0, 0.0, 0.0)]
 
-        for _geo in geometry:
+        for geo_string in geometry:
+
+            #convert the commo-delimited string of floats into a list of strings, then to floats
+            _geo = [float(_i) for _i in geo_string.split(',')]
 
             bearing_in = math.radians(prev_geo[1])
             bearing_out = math.radians(_geo[1])
@@ -534,7 +530,7 @@ class _HorizontalAlignment(Draft._Wire):
 
             #zero radius or curve direction means no curve.  We're done
             if prev_geo[2] > 0.0:
-                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir,0, segments))
+                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, 0, segments))
 
             prev_geo = _geo
             prev_curve_tangent = curve_tangent
