@@ -330,13 +330,13 @@ class _HorizontalAlignment(Draft._Wire):
             print('Unable to calculate geometry datum')
             return App.Vector(0.0, 0.0, 0.0)
 
+        #subtract the child coordinate's intersection point from the parent's
         delta = parent_coord.sub(child_coord)
 
         print('Parent coordinate at %f: %f, %f' % (int_eq[0], parent_coord.x, parent_coord.y))
         print('Child coordinate at %f: %f, %f' % (int_eq[0], child_coord.x, child_coord.y))
         print('Delta at: %f, %f' % (delta.x, delta.y))
 
-        #subtract the child coordinate's intersection point from the parent's
         return delta
 
     def set_data(self, data):
@@ -481,6 +481,16 @@ class _HorizontalAlignment(Draft._Wire):
 
         return result
 
+    @staticmethod
+    def discretize_spiral(self, start_coord, bearing, radius, angle, length, segments=0, interval=0.0):
+        '''
+        Discretizes a spiral curve using the length parameter.  
+        '''
+
+        #generate inbound spiral
+        #generate circular arc
+        #generate outbound spiral
+        
     def _discretize_geometry(self, segments):
         '''
         Discretizes the alignment geometry to a series of vector points
