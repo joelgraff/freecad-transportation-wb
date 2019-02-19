@@ -108,9 +108,13 @@ class _HorizontalAlignment(Draft._Wire):
         Properties.add(obj, 'StringList', 'Geometry', 'Geometry defining the alignment', [])
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
         Properties.add(obj, 'VectorList', 'PIs', 'Discretization of Points of Intersection (PIs) as a list of vectors', [])
-        Properties.add(obj, 'Integer', 'Segments', 'Set the curve segments to control accuracy', 100)
         Properties.add(obj, 'Link', 'Parent Alignment', 'Links to parent alignment object', None)
-        obj.addProperty('App::PropertyEnumeration', 'Draft Shape', '' ,'Represent the alignment as either a Spline or Wire shape').Draft_Shape = ['Wire', 'Spline']
+
+        subdivision_desc = 'Method of Curve Subdivision\n\nTolerance - ensure error between segments and curve is approximately (n)\nInterval - Subdivide curve into segments of a fixed length (n)\nSegment - Subdivide curve into (n) equal-length segments'
+
+        obj.addProperty('App::PropertyEnumeration', 'Seg_Method', 'Segment', subdivision_desc).Seg_Method = ['Tolerance', 'Interval','Segment']
+
+        Properties.add(obj, 'Float', 'Segment.Seg_Value', 'Set the curve segments to control accuracy', 1.0)
 
         delattr(self, 'no_execute')
 
@@ -355,7 +359,7 @@ class _HorizontalAlignment(Draft._Wire):
 
         delattr(self, 'no_execute')
 
-        self.Object.Points = self._discretize_geometry(self.Object.Segments)
+        self.Object.Points = self._discretize_geometry()
 
     def _get_coordinate_at_station(self, station, parent):
         '''
@@ -408,7 +412,7 @@ class _HorizontalAlignment(Draft._Wire):
         return result
 
     @staticmethod
-    def discretize_arc(start_coord, bearing, radius, angle, segments=0, interval=0.0):
+    def discretize_arc(start_coord, bearing, radius, angle, interval=0.0, interval_type='Tolerance'):
         '''
         Discretize an arc into the specified segments
 
@@ -417,6 +421,10 @@ class _HorizontalAlignment(Draft._Wire):
         bearing - angle from true north of starting tangent of arc
         segments - number of evenly-spaced segments to subdivide arc
         interval - fixed length foreach arc subdivision
+        interval_type - one of three options:
+            'segment' - subdivide the curve into n equal segments
+            'fixed' - subdivide the curve into segments of fixed length
+            'tolerance' - subdivide the curve, minimizing the error between the segment and curve at or below the tolerance value
         '''
 
         _forward = App.Vector(math.sin(bearing), math.cos(bearing), 0.0)
@@ -433,31 +441,40 @@ class _HorizontalAlignment(Draft._Wire):
 
         #zero angle means a tangent section and only one segment       
         else:
-            segments = 1
+            interval_type = 'Segment'
+            interval = 1
 
         partial_segment = False
 
         seg_rad = angle
+        segments = interval
+        interval = float(interval)
 
-        if segments > 0:
+        if interval <= 0.0:
+            print ('Invalid interval value', interval, 'for interval type ', interval_type)
+
+        if interval_type == 'Segment':
+
             seg_rad /= float(segments)
 
-        elif float(interval) > 0.0:
-            seg_rad = float(interval) / radius
+        elif interval_type == 'Interval':
+
+            seg_rad = interval / radius
             segments = int(angle / seg_rad)
 
-            #partial segments where the remainder angle creates a curve longer than one ten-thousandth of a foot.
-            partial_segment = (abs(seg_rad * float(segments) - angle) * radius > 0.0001)
+        elif interval_type == 'Tolerance':
 
-        else:
-            print('No segment count or interval specified for discretization')
-            return None
+            seg_rad = 2 * math.acos(1 - (interval / radius))
+            segments = int(angle / seg_rad)
+
+        #partial segments where the remainder angle creates a curve longer than one ten-thousandth of a foot.
+        partial_segment = (abs(seg_rad * float(segments) - angle) * radius > 0.0001)
 
         radius_mm = radius * 304.80
 
         result = []
 
-        for _i in range(0, segments):
+        for _i in range(0, int(segments)):
             
             delta = float(_i + 1) * seg_rad
 
@@ -491,10 +508,13 @@ class _HorizontalAlignment(Draft._Wire):
         #generate circular arc
         #generate outbound spiral
         
-    def _discretize_geometry(self, segments):
+    def _discretize_geometry(self):
         '''
         Discretizes the alignment geometry to a series of vector points
         '''
+
+        interval = self.Object.Seg_Value
+        interval_type = self.Object.Seg_Method
 
         print ('discretizing ', self.Object.Geometry)
 
@@ -536,16 +556,20 @@ class _HorizontalAlignment(Draft._Wire):
 
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
             if prev_tan_len >= 1:
-                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0,0, segments))
+                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
 
-            #zero radius or curve direction means no curve.  We're done
+            #zero radius means no curve.  We're done
             if prev_geo[2] > 0.0:
-                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, 0, segments))
+                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, interval, interval_type))
 
             prev_geo = _geo
             prev_curve_tangent = curve_tangent
 
         return coords
+
+    def onBeforeChange(self, obj, prop):
+
+        print('on before change: ', prop)
 
     def onChanged(self, obj, prop):
 
@@ -553,7 +577,8 @@ class _HorizontalAlignment(Draft._Wire):
         if hasattr(self, 'no_execute'):
             return
 
-        #if prop == "Segments":
+        if prop == "Seg_Method":
+            pass
         #    self.Object.Points = self._discretize_geometry(self.Object.Segments)
         #    self.wire.Points = self.Object.Points
 
@@ -564,7 +589,7 @@ class _HorizontalAlignment(Draft._Wire):
 
         print('executing ', self.Object.Label)
 
-        self.Object.Points = self._discretize_geometry(self.Object.Segments)
+        self.Object.Points = self._discretize_geometry()
 
         super(_HorizontalAlignment, self).execute(obj)
         self.Object.Placement.Base = self.Object.Placement.Base.add(self.get_intersection_delta())

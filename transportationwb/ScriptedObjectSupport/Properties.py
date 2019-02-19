@@ -76,19 +76,19 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
         return None
 
     p_name = p_name.replace(' ', '_')
-    
+
     obj.addProperty(p_type, p_name, p_group, desc)
 
     App.ActiveDocument.recompute()
 
     prop = obj.getPropertyByName(p_name)
 
-    if p_type in [
-            'App::PropertyFloat'
-        ]:
-        prop = default_value
+    #if p_type in [
+          #  'App::PropertyFloat'
+        #]:
+        #prop = default_value
 
-    elif p_type in [
+    if p_type in [
             'App::PropertyBool',
             'App::PropertyPercent',
             'App::PropertyLinkList',
@@ -99,7 +99,8 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
             'App::PropertyVector',
             'App::PropertyVectorList',
             'App::PropertyInteger',
-            'App::PropertyEnumeration'
+            'App::PropertyEnumeration',
+            'App::PropertyFloat'
         ]:
         setattr(obj, p_name, default_value)
         #prop = default_value
