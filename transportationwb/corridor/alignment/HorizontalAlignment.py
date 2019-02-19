@@ -112,7 +112,7 @@ class _HorizontalAlignment(Draft._Wire):
 
         subdivision_desc = 'Method of Curve Subdivision\n\nTolerance - ensure error between segments and curve is approximately (n)\nInterval - Subdivide curve into segments of a fixed length (n)\nSegment - Subdivide curve into (n) equal-length segments'
 
-        obj.addProperty('App::PropertyEnumeration', 'Seg_Method', 'Segment', subdivision_desc).Seg_Method = ['Tolerance', 'Interval','Segment']
+        obj.addProperty('App::PropertyEnumeration', 'Method', 'Segment', subdivision_desc).Seg_Method = ['Tolerance', 'Interval','Segment']
 
         Properties.add(obj, 'Float', 'Segment.Seg_Value', 'Set the curve segments to control accuracy', 1.0)
 
@@ -577,7 +577,7 @@ class _HorizontalAlignment(Draft._Wire):
         if hasattr(self, 'no_execute'):
             return
 
-        if prop == "Seg_Method":
+        if prop == "Method":
             pass
         #    self.Object.Points = self._discretize_geometry(self.Object.Segments)
         #    self.wire.Points = self.Object.Points
