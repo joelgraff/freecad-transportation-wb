@@ -412,6 +412,31 @@ class _HorizontalAlignment(Draft._Wire):
         return result
 
     @staticmethod
+    def calc_angle_increment(central_angle, radius, interval, interval_type):
+        '''
+        Calculate the radian increment for the specified
+        subdivision method
+        '''
+
+        if central_angle == 0.0:
+            return 0.0
+
+        if interval <= 0.0:
+            print('Invalid interval value', interval, 'for interval type ', interval_type)
+            return 0.0
+
+        if interval_type == 'Segment':
+            return central_angle / interval
+
+        if interval_type == 'Interval':
+            return interval / radius
+
+        if interval_type == 'Tolerance':
+            return 2 * math.acos(1 - (interval / radius))
+
+        return 0.0
+
+    @staticmethod
     def discretize_arc(start_coord, bearing, radius, angle, interval=0.0, interval_type='Tolerance'):
         '''
         Discretize an arc into the specified segments
@@ -430,41 +455,19 @@ class _HorizontalAlignment(Draft._Wire):
         _forward = App.Vector(math.sin(bearing), math.cos(bearing), 0.0)
         _right = App.Vector(_forward.y, -_forward.x, 0.0)
         
-        curve_dir = 0.0
+        partial_segment = False
+
+        curve_dir = 1.0
 
         if angle < 0.0:
             curve_dir = -1.0
             angle = abs(angle)
 
-        elif angle > 0.0:
-            curve_dir = 1.0
+        seg_rad = _HorizontalAlignment.calc_angle_increment(angle, radius, interval, interval_type)
 
-        #zero angle means a tangent section and only one segment       
-        else:
-            interval_type = 'Segment'
-            interval = 1
+        segments = 1
 
-        partial_segment = False
-
-        seg_rad = angle
-        segments = interval
-        interval = float(interval)
-
-        if interval <= 0.0:
-            print ('Invalid interval value', interval, 'for interval type ', interval_type)
-
-        if interval_type == 'Segment':
-
-            seg_rad /= float(segments)
-
-        elif interval_type == 'Interval':
-
-            seg_rad = interval / radius
-            segments = int(angle / seg_rad)
-
-        elif interval_type == 'Tolerance':
-
-            seg_rad = 2 * math.acos(1 - (interval / radius))
+        if angle != 0.0:
             segments = int(angle / seg_rad)
 
         #partial segments where the remainder angle creates a curve longer than one ten-thousandth of a foot.
@@ -499,7 +502,7 @@ class _HorizontalAlignment(Draft._Wire):
         return result
 
     @staticmethod
-    def discretize_spiral(self, start_coord, bearing, radius, angle, length, segments=0, interval=0.0):
+    def discretize_spiral(start_coord, bearing, radius, angle, length, segments=0, interval=0.0):
         '''
         Discretizes a spiral curve using the length parameter.  
         '''
@@ -507,6 +510,10 @@ class _HorizontalAlignment(Draft._Wire):
         #generate inbound spiral
         #generate circular arc
         #generate outbound spiral
+
+        points = []
+
+
         
     def _discretize_geometry(self):
         '''
