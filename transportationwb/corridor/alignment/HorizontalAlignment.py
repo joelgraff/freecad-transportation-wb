@@ -437,7 +437,7 @@ class _HorizontalAlignment(Draft._Wire):
         return 0.0
 
     @staticmethod
-    def discretize_arc(start_coord, bearing, radius, angle, interval=0.0, interval_type='Tolerance'):
+    def discretize_arc(start_coord, bearing, radius, angle, interval, interval_type):
         '''
         Discretize an arc into the specified segments
 
@@ -502,7 +502,7 @@ class _HorizontalAlignment(Draft._Wire):
         return result
 
     @staticmethod
-    def discretize_spiral(start_coord, bearing, radius, angle, length, segments=0, interval=0.0):
+    def discretize_spiral(start_coord, bearing, radius, angle, length, interval, interval_type):
         '''
         Discretizes a spiral curve using the length parameter.  
         '''
@@ -513,8 +513,52 @@ class _HorizontalAlignment(Draft._Wire):
 
         points = []
 
+        length_mm = length * 304.80
+        radius_mm = radius * 304.80
 
-        
+        _Xc = (length_mm**2) / (6.0 * radius_mm)
+        _Yc = length_mm - (length_mm**3) / (40 * radius_mm**2)
+
+        arc_start = start_coord.add(App.Vector(_Xc, _Yc))
+        arc_coords = _HorizontalAlignment.discretize_arc(arc_start, bearing, radius, angle, interval, interval_type)
+
+        if len(arc_coords) < 2:
+            print('Invalid central arc defined for spiral')
+            return None
+
+        segment_length = arc_coords[0].distanceToPoint(arc_coords[1])
+        segments = int(length_mm / segment_length) + 1
+
+        print('start_coord: ', start_coord)
+        print('arc_start: ', arc_start)
+        print('arc_end: ', arc_coords[-1])
+
+        for _i in range(0, segments):
+
+            _len = float(_i) * segment_length
+
+            _x = _len ** 3 / (6.0 * radius_mm * length_mm)
+            _y = _len - (_len**5 / (40 * (radius_mm ** 2) * (length_mm**2)))
+
+            points.append(start_coord.add(App.Vector(_x, _y)))
+
+        points.extend(arc_coords)
+
+        for _i in range(0, segments):
+
+            _len = float(_i + 1) * segment_length
+
+            if _len > length_mm:
+                _len = length_mm
+
+            _x = _len ** 3 / (6.0 * radius_mm * length_mm)
+            _y = _len - (_len**5 / (40 * (radius_mm ** 2) * (length_mm**2)))
+
+            points.append(arc_coords[-1].add(App.Vector(_x, _y)))
+
+        print('end_coord: ', points[-1])
+        return points
+
     def _discretize_geometry(self):
         '''
         Discretizes the alignment geometry to a series of vector points
@@ -563,11 +607,17 @@ class _HorizontalAlignment(Draft._Wire):
 
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
             if prev_tan_len >= 1:
-                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
+                if prev_geo[3] > 0.0:
+                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, prev_geo[3], interval, interval_type))
+                else:
+                    coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
 
             #zero radius means no curve.  We're done
             if prev_geo[2] > 0.0:
-                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, interval, interval_type))
+                if prev_geo[3] > 0.0:
+                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, prev_geo[3], interval, interval_type))
+                else:
+                    coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, interval, interval_type))
 
             prev_geo = _geo
             prev_curve_tangent = curve_tangent
