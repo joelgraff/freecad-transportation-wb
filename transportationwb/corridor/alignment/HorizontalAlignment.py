@@ -516,10 +516,15 @@ class _HorizontalAlignment(Draft._Wire):
         length_mm = length * 304.80
         radius_mm = radius * 304.80
 
-        _Xc = (length_mm**2) / (6.0 * radius_mm)
-        _Yc = length_mm - (length_mm**3) / (40 * radius_mm**2)
+        bearing_in = App.Vector(math.sin(bearing), math.cos(bearing))
 
-        arc_start = start_coord.add(App.Vector(_Xc, _Yc))
+        _Xc = ((length_mm**2) / (6.0 * radius_mm))
+        _Yc = (length_mm - (length_mm**3) / (40 * radius_mm**2))
+
+        _dY = App.Vector(bearing_in).multiply(_Yc)
+        _dX = App.Vector(bearing_in.y, -bearing_in.x).multiply(_Xc)
+
+        arc_start = start_coord.add(_dX.add(_dY))
         arc_coords = _HorizontalAlignment.discretize_arc(arc_start, bearing, radius, angle, interval, interval_type)
 
         if len(arc_coords) < 2:
@@ -529,6 +534,9 @@ class _HorizontalAlignment(Draft._Wire):
         segment_length = arc_coords[0].distanceToPoint(arc_coords[1])
         segments = int(length_mm / segment_length) + 1
 
+        print('Xc = ', _Xc)
+        print('Yc = ', _Yc)
+        print('bearing: ', bearing_in)
         print('start_coord: ', start_coord)
         print('arc_start: ', arc_start)
         print('arc_end: ', arc_coords[-1])
@@ -540,7 +548,10 @@ class _HorizontalAlignment(Draft._Wire):
             _x = _len ** 3 / (6.0 * radius_mm * length_mm)
             _y = _len - (_len**5 / (40 * (radius_mm ** 2) * (length_mm**2)))
 
-            points.append(start_coord.add(App.Vector(_x, _y)))
+            _dY = App.Vector(bearing_in).multiply(_y)
+            _dX = App.Vector(bearing_in.y, -bearing_in.x).multiply(_x)
+            print('dx, dy = ', _dX, _dY)
+            points.append(start_coord.add(_dY.add(_dX)))
 
         points.extend(arc_coords)
 

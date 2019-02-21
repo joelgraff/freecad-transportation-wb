@@ -59,17 +59,12 @@ def directed_angle(in_vector, out_vector):
 
     return -(direction / abs(direction)), in_vector.getAngle(out_vector)
 
-def vector_from_angle(angle, unit=False):
+def vector_from_angle(angle):
     '''
     Returns a vector form a given angle in radians
     '''
 
-    result = App.Vector(math.sin(angle), math.cos(angle), 0.0)
-
-    if (unit):
-        return result.normalize()
-
-    return result
+    return App.Vector(math.sin(angle), math.cos(angle), 0.0)
 
 def distance_bearing_to_coordinates(distance, bearing):
     '''
