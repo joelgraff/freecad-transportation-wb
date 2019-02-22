@@ -519,13 +519,14 @@ class _HorizontalAlignment(Draft._Wire):
         bearing_in = App.Vector(math.sin(bearing), math.cos(bearing))
 
         _Xc = ((length_mm**2) / (6.0 * radius_mm))
-        _Yc = (length_mm - (length_mm**3) / (40 * radius_mm**2))
+        _Yc = (length_mm - ((length_mm**3) / (40 * radius_mm**2)))
 
         _dY = App.Vector(bearing_in).multiply(_Yc)
-        _dX = App.Vector(bearing_in.y, -bearing_in.x).multiply(_Xc)
+        _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(_Xc)
 
+        theta_spiral = length_mm/(2 * radius_mm)
         arc_start = start_coord.add(_dX.add(_dY))
-        arc_coords = _HorizontalAlignment.discretize_arc(arc_start, bearing, radius, angle, interval, interval_type)
+        arc_coords = _HorizontalAlignment.discretize_arc(arc_start, bearing + theta_spiral, radius, angle - (2 * theta_spiral), interval, interval_type)
 
         if len(arc_coords) < 2:
             print('Invalid central arc defined for spiral')
@@ -545,13 +546,15 @@ class _HorizontalAlignment(Draft._Wire):
 
             _len = float(_i) * segment_length
 
-            _x = _len ** 3 / (6.0 * radius_mm * length_mm)
-            _y = _len - (_len**5 / (40 * (radius_mm ** 2) * (length_mm**2)))
+            _x = (_len ** 3) / (6.0 * radius_mm * length_mm)
+            _y = _len - ((_len**5) / (40 * (radius_mm ** 2) * (length_mm**2)))
 
             _dY = App.Vector(bearing_in).multiply(_y)
-            _dX = App.Vector(bearing_in.y, -bearing_in.x).multiply(_x)
+            _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(_x)
             print('dx, dy = ', _dX, _dY)
             points.append(start_coord.add(_dY.add(_dX)))
+
+        print('end_spiral_in: ', points[-1])
 
         points.extend(arc_coords)
 
@@ -565,9 +568,15 @@ class _HorizontalAlignment(Draft._Wire):
             _x = _len ** 3 / (6.0 * radius_mm * length_mm)
             _y = _len - (_len**5 / (40 * (radius_mm ** 2) * (length_mm**2)))
 
-            points.append(arc_coords[-1].add(App.Vector(_x, _y)))
+            exit_bearing = bearing + angle - theta_spiral
 
-        print('end_coord: ', points[-1])
+            bearing_out = App.Vector(math.sin(exit_bearing), math.cos(exit_bearing))
+
+            _dY = App.Vector(bearing_out).multiply(_y)
+            _dX = App.Vector(bearing_out.y, -bearing_in.x, 0.0).multiply(_x)
+
+            points.append(arc_coords[-1].add(_dY.add(_dX)))
+
         return points
 
     def _discretize_geometry(self):
@@ -615,13 +624,11 @@ class _HorizontalAlignment(Draft._Wire):
 
             #previous tangent length = distance between PI's minus the two curve tangents
             prev_tan_len = prev_geo[0] - curve_tangent - prev_curve_tangent
-
+            print('geo = ', prev_geo)
+            print('last arc coord = ', coords[-1])
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
             if prev_tan_len >= 1:
-                if prev_geo[3] > 0.0:
-                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, prev_geo[3], interval, interval_type))
-                else:
-                    coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
+                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
 
             #zero radius means no curve.  We're done
             if prev_geo[2] > 0.0:
