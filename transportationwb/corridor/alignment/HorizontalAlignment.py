@@ -439,7 +439,8 @@ class _HorizontalAlignment(Draft._Wire):
     @staticmethod
     def discretize_arc(start_coord, bearing, radius, angle, interval, interval_type):
         '''
-        Discretize an arc into the specified segments
+        Discretize an arc into the specified segments.
+        Resulting list of coordinates omits provided starting point and concludes with end point
 
         Radius in feet
         Central Angle in radians
@@ -526,7 +527,8 @@ class _HorizontalAlignment(Draft._Wire):
 
         theta_spiral = length_mm/(2 * radius_mm)
         arc_start = start_coord.add(_dX.add(_dY))
-        arc_coords = _HorizontalAlignment.discretize_arc(arc_start, bearing + theta_spiral, radius, angle - (2 * theta_spiral), interval, interval_type)
+        arc_coords = [arc_start]
+        arc_coords.extend(_HorizontalAlignment.discretize_arc(arc_start, bearing + theta_spiral, radius, angle - (2 * theta_spiral), interval, interval_type))
 
         if len(arc_coords) < 2:
             print('Invalid central arc defined for spiral')
@@ -534,13 +536,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         segment_length = arc_coords[0].distanceToPoint(arc_coords[1])
         segments = int(length_mm / segment_length) + 1
-
-        print('Xc = ', _Xc)
-        print('Yc = ', _Yc)
-        print('bearing: ', bearing_in)
-        print('start_coord: ', start_coord)
-        print('arc_start: ', arc_start)
-        print('arc_end: ', arc_coords[-1])
 
         for _i in range(0, segments):
 
@@ -551,31 +546,37 @@ class _HorizontalAlignment(Draft._Wire):
 
             _dY = App.Vector(bearing_in).multiply(_y)
             _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(_x)
-            print('dx, dy = ', _dX, _dY)
-            points.append(start_coord.add(_dY.add(_dX)))
 
-        print('end_spiral_in: ', points[-1])
+            points.append(start_coord.add(_dY.add(_dX)))
 
         points.extend(arc_coords)
 
-        for _i in range(0, segments):
+        exit_bearing = bearing + angle
+        bearing_out = App.Vector(math.sin(exit_bearing), math.cos(exit_bearing), 0.0)
 
-            _len = float(_i + 1) * segment_length
+        _dY = App.Vector(bearing_out).multiply(_Yc)
+        _dX = App.Vector(-bearing_out.y, bearing_out.x, 0.0).multiply(_Xc)
+
+        end_coord = points[-1].add(_dY.add(_dX))
+
+        temp = [end_coord]
+
+        for _i in range(1, segments):
+
+            _len = float(_i) * segment_length
 
             if _len > length_mm:
                 _len = length_mm
 
-            _x = _len ** 3 / (6.0 * radius_mm * length_mm)
-            _y = _len - (_len**5 / (40 * (radius_mm ** 2) * (length_mm**2)))
+            _x = (_len ** 3) / (6.0 * radius_mm * length_mm)
+            _y = _len - ((_len ** 5) / (40 * (radius_mm ** 2) * (length_mm**2)))
 
-            exit_bearing = bearing + angle - theta_spiral
+            _dY = App.Vector(-bearing_out).multiply(_y)
+            _dX = App.Vector(bearing_out.y, -bearing_out.x, 0.0).multiply(_x)
 
-            bearing_out = App.Vector(math.sin(exit_bearing), math.cos(exit_bearing))
+            temp.append(end_coord.add(_dY.add(_dX)))
 
-            _dY = App.Vector(bearing_out).multiply(_y)
-            _dX = App.Vector(bearing_out.y, -bearing_in.x, 0.0).multiply(_x)
-
-            points.append(arc_coords[-1].add(_dY.add(_dX)))
+        points.extend(temp[::-1])
 
         return points
 
@@ -586,8 +587,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         interval = self.Object.Seg_Value
         interval_type = self.Object.Method
-
-        print ('discretizing ', self.Object.Geometry)
 
         #alignment construction requires a 'look ahead' at the next element
         #This implementation does a 'look back' at the previous.
@@ -622,10 +621,13 @@ class _HorizontalAlignment(Draft._Wire):
 
             curve_tangent = prev_geo[2] * math.tan(central_angle / 2.0)
 
+            #alternate calculation for spiral curves
+            if prev_geo[3] > 0.0:
+                curve_tangent = (prev_geo[3] / 2.0) + (prev_geo[2] + ((prev_geo[3]**2)/(24 * prev_geo[2]))) * math.tan(central_angle / 2.0)
+
             #previous tangent length = distance between PI's minus the two curve tangents
             prev_tan_len = prev_geo[0] - curve_tangent - prev_curve_tangent
-            print('geo = ', prev_geo)
-            print('last arc coord = ', coords[-1])
+
             #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
             if prev_tan_len >= 1:
                 coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
