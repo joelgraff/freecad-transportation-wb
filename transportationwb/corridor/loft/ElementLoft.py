@@ -110,7 +110,7 @@ class _ElementLoft(object):
         interval = self.Object.Interval
 
         #create loft sections
-        section_list = self._build_sections(spline, sketch, interval)
+        section_list = self.build_sections(spline, sketch) #, interval)
 
         #Part.show(Part.Compound(section_list))
         #create a compound of the components (polygons)
@@ -139,14 +139,54 @@ class _ElementLoft(object):
         '''
         pass
 
-
     @staticmethod
-    def build_wire_sections(wire, sketch, interval):
+    def build_sections(fpo, sketch, average=True):
         '''
         Generate / regenerate the loft along a wire path
         '''
+        comps = []
+        z_up = App.Vector(0, 0, 1)
 
-        pass
+        prev_tangent = None
+
+        for edge in fpo.Shape.Edges:
+
+            tangent = edge.Curve.Direction
+
+            #average the tangent if desired
+            if average and prev_tangent:
+                tangent = ((tangent + prev_tangent) / 2.0).normalize()
+
+            x_normal = tangent.cross(z_up).normalize()
+            z_normal = tangent.cross(x_normal).normalize()
+
+            if z_normal.z < 0.0:
+                z_normal = z_normal.negative()
+
+            for _i in range(0, 1):
+
+                origin = edge.Vertexes[_i].Point
+                poly_points = []
+
+                #iterate sketch vertices, scaling them along the normal and adding the origin to locate them
+                for sk_vtx in sketch.Shape.Vertexes:
+                    point = sk_vtx.Point
+                    poly_points.append(origin + (point.x * x_normal) + (point.y * z_normal))
+
+                poly_points.append(origin)
+
+                #generate a polygon of the points and save it
+                comps += [Part.makePolygon(poly_points)]
+
+                #averaging tangents on the first tangent
+                #requries skipping the end vertex
+                if average and not prev_tangent:
+                    continue
+
+            if average:
+                prev_tangent = tangent
+
+        return comps
 
     @staticmethod
     def _build_spline_sections(spline, sketch, interval):

@@ -125,6 +125,13 @@ class _HorizontalAlignment(Draft._Wire):
         if state:
             self.Type = state
 
+    def onDocumentRestored(self, fp):
+        '''
+        Restore object references on reload
+        '''
+
+        self.Object = fp
+
     def set_units(self, units):
         '''
         Sets the units of the alignment
