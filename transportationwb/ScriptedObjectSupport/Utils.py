@@ -74,7 +74,7 @@ def distance_bearing_to_coordinates(distance, bearing):
     #convert the bearing to radians, ensuring it falls witin [0.0, 2 * pi)]
     _b = math.radians(bearing) % Constants.two_pi
 
-    deltas = App.Vector(math.sin(_b), math.cos(_b)).multiply(distance)
+    deltas = App.Vector(math.sin(_b), math.cos(_b), 0.0).multiply(distance)
 
     #quad = int(_b / Constants.half_pi) + 1
 
@@ -95,11 +95,9 @@ def coordinates_to_distance_bearing(prev_coord, next_coord):
     distance = 0.0
     deltas = []
 
-    for _i in range(0,2):
-        distance += (prev_coord[_i] * next_coord[_i])
-        deltas.append(next_coord[_i] - prev_coord[_i])
-
-    distance = math.sqrt(distance)
+    print('converting ', prev_coord, next_coord)
+    distance = (next_coord-prev_coord).Length
+    deltas = next_coord - prev_coord
 
     #calculate the directed bearing of the x and yh deltas
     bearing = math.atan2(deltas[0], deltas[1])
@@ -107,6 +105,7 @@ def coordinates_to_distance_bearing(prev_coord, next_coord):
     if bearing < 0.0:
         bearing += math.pi * 2.0
 
+    print('distance = ', distance, '\nbearing = ', bearing, '(', math.degrees(bearing), ')')
     return (distance, math.degrees(bearing))
 
 def doc_to_radius(value, is_metric=False, station_length=0):

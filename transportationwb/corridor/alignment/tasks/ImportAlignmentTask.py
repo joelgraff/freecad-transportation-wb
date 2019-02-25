@@ -364,6 +364,7 @@ class ImportAlignmentTask:
         '''
         Scrape metadata from a row being imported
         '''
+        dct = {}
 
         for tpl in self.meta_indices:
 
@@ -373,8 +374,10 @@ class ImportAlignmentTask:
             if key == 'ID':
                 value = value.replace(' ', '_')
 
-            if value:
-                self.meta_dict[key] = value
+            dct[key] = value
+
+        if dct['ID']:
+            self.meta_dict = dct
 
     def _scrape_stations(self, row):
         '''
@@ -488,7 +491,7 @@ class ImportAlignmentTask:
                 if row[self.id_index]:
                     self._save_alignment()
 
-                #meta data is overwritten by data in subsequent rows
+                #meta data is defined only where the ID value is defined
                 self._scrape_meta(row)
 
                 #station equations are appended, 

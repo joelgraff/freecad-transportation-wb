@@ -210,7 +210,10 @@ class _HorizontalAlignment(Draft._Wire):
                 obj.Parent_Alignment = objs[0]
                 obj.Intersection_Equation = App.Vector(back, forward, 0.0)
 
-    def assign_geometry_data(self, datum, data):
+                print('Parent_Alignment: ', obj.Parent_Alignment)
+                print('Intersection Equation: ', obj.Intersection_Equation)
+
+    def assign_geometry_data(self, data):
         '''
         Iterate the dataset, extracting geometric data
         Validate data
@@ -218,7 +221,8 @@ class _HorizontalAlignment(Draft._Wire):
         Assign Northing / Easting datums
         '''
 
-        _points = [datum]
+        _points = [self.Object.Datum]
+        print('datum = ', _points)
         _geometry = []
 
         for item in data:
@@ -292,8 +296,10 @@ class _HorizontalAlignment(Draft._Wire):
                 except:
                     self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
 
+
                 curve[0:2] = Utils.coordinates_to_distance_bearing(_points[-1], point_vector)
 
+            print ('curve = ', curve)
             #skip coincident PI's
             #save the point as a vector
             #save the geometry as a string
@@ -360,9 +366,12 @@ class _HorizontalAlignment(Draft._Wire):
         self.assign_meta_data(data['meta'])
         self.assign_station_data(data['station'])
 
-        datum = App.Vector(0.0, 0.0, 0.0)
+        #int_eq = self.Object.Intersection_Equation
 
-        self.assign_geometry_data(datum, data['data'])
+        #if int_eq.Length:
+        #    datum = self._get_coordinate_at_station(int_eq[0], self.Object.Parent_Alignment) / 304.80
+
+        self.assign_geometry_data(data['data'])
 
         delattr(self, 'no_execute')
 
