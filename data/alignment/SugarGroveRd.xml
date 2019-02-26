@@ -13,12 +13,12 @@
                         605.2372 -706.1075 0.0
                     </PI>
                 </Curve>
-                <Curve rot='cw' length='1069.9542' dirStart='89.0825' dirEnd='180.5808' staStart='52051.2697'>
+                <Curve rot='cw' length='1069.9542' dirStart='89.0825' dirEnd='180.5808' staStart='52051.2697' radius='670.000'>
                     <PI>
                         2455.0000 -676.4840 0.0
                     </PI>
                 </Curve>
-                <Curve rot='ccw' length='506.1552' dirStart='180.5808' dirEnd='137.29639' staStart='53847.6272'>
+                <Curve rot='ccw' length='506.1552' dirStart='180.5808' dirEnd='137.29639' staStart='53847.6272' radius='670.000'>
                     <PI>
                         2437.9704 -2356.3977 0.0
                     </PI>
@@ -26,6 +26,7 @@
             </CoordGeom>
         </Alignment>
         <Alignment name='Penrose Road West' length='751.2066' staStart = '1000.00' desc='Alignment for Penrose Road West' state='existing'>
+            <StaEquation staAhead='1000.00' staBack='50909.00' desc='Sugar Grove Road'>
             <CoordGeom name='Penrose Road West' desc='Alignment for Penrose Road West' state='existing'>
                 <Curve rot='cw' length='77.4569' dirStart='244.6403' dirEnd='270.00' staStart='1114.7237' radius='175'>
                     <PI>
@@ -35,6 +36,7 @@
             </CoordGeom>
         </Alignment>
         <Alignment name='Penrose Road East' length='734.1455' staStart = '2000.00' desc='Alignment for Penrose Road West' state='existing'>
+            <StaEquation staAhead='20734.1455.00' staBack='50909.00' desc='Sugar Grove Road'>
             <CoordGeom name='Penrose Road West' desc='Alignment for Penrose Road West' state='existing'>
                 <Curve rot='cw' length='137.5287' dirStart='244.6403' dirEnd='270.00' staStart='1114.7237' radius='175'>
                     <PI>
