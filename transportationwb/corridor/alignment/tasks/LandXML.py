@@ -32,14 +32,14 @@ LXML_META_KEYS = ['name', 'staStart', 'desc', 'state']
 LXML_STATION_KEYS = ['staAhead', 'staBack', 'staInternal', 'staIncrement', 'desc']
 LXML_CURVE_KEYS = ['rot', 'dirStart', 'dirEnd', 'staStart', 'radius']
 
-def validate_units(units):
+def _validate_units(units):
     '''
     Validate the units of the alignment, ensuring it matches the document
     '''
 
     return units[0].attrib['linearUnit'] == Units.get_doc_units()[1]
 
-def parse_meta_data(alignments):
+def _parse_meta_data(alignments):
     '''
     Parse the alignment elements and strip out meta data for each alignment, returning it as a dictionary
     '''
@@ -54,7 +54,7 @@ def parse_meta_data(alignments):
 
     return result
 
-def parse_station_data(alignments):
+def _parse_station_data(alignments):
     '''
     Parse the alignment data to get station equations and return a dictionary
     '''
@@ -73,7 +73,7 @@ def parse_station_data(alignments):
 
     return result
 
-def parse_curve_data(alignments):
+def _parse_curve_data(alignments):
     '''
     Parse the alignment data to get curve information and return as a dictionary
     '''
@@ -92,7 +92,7 @@ def parse_curve_data(alignments):
 
     return result
 
-def merge_dictionaries(meta, station, curve):
+def _merge_dictionaries(meta, station, curve):
     '''
     Merge the three dictionaries into one, preserving alignment structure
     '''
@@ -111,16 +111,16 @@ def import_lxml(filepath):
 
     doc = etree.parse(filepath)
 
-    if not validate_units(doc.find('Units')):
+    if not _validate_units(doc.find('Units')):
         print('Alignment data must be in units of ', Units.get_doc_units()[2])
         return None
 
     alignments = doc.findAll('Alignment')
 
-    meta_data = parse_meta_data(alignments)
+    meta_data = _parse_meta_data(alignments)
 
-    station_data = parse_station_data(alignments)
+    station_data = _parse_station_data(alignments)
 
-    curve_data = parse_curve_data(alignments)
+    curve_data = _parse_curve_data(alignments)
 
-    return merge_dictionaries(meta_data, station_data, curve_data)
+    return _merge_dictionaries(meta_data, station_data, curve_data)
