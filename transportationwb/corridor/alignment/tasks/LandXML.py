@@ -25,6 +25,7 @@
 Importer for LandXML files
 '''
 
+from shutil import copyfile
 from lxml import etree
 from transportationwb.ScriptedObjectSupport import Units
 
@@ -104,7 +105,7 @@ def _merge_dictionaries(meta, station, curve):
 
     return result
 
-def import_lxml(filepath):
+def import_file(filepath):
     '''
     Import a LandXML and build the Python dictionary fronm the appropriate elements
     '''
@@ -124,3 +125,42 @@ def import_lxml(filepath):
     curve_data = _parse_curve_data(alignments)
 
     return _merge_dictionaries(meta_data, station_data, curve_data)
+
+def _write_meta_data(data, tree):
+    '''
+    Write out the meta data into the internal XML file
+    '''
+
+    pass
+
+def _write_station_data(data, tree):
+    '''
+    Write out the station data into the internal XML file
+    '''
+
+    pass
+
+def _write_curve_data(data, tree):
+    '''
+    Write out the alignment / curve data into the internal XML file
+    '''
+
+    pass
+
+def write_file(data, tree, target):
+    '''
+    Write the data to a land xml file in the target location
+    '''
+
+    _write_meta_data(data['meta'], )
+    _write_station_data(data['station'])
+    _write_curve_data(data['curve'])
+
+def export_file(source, target):
+    '''
+    Export a LandXML file
+    source - The source filepath (the transient LandXML file)
+    target - The target datapath external to the FCStd
+    '''
+
+    copyfile(source, target)
