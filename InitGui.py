@@ -331,8 +331,8 @@ class TransportationWorkbench (Workbench):
 
     def Initialize(self):
 
-        import transportationwb.Project.NewProject
-        import transportationwb.corridor.alignment.ImportAlignmentCmd
+        import transportationwb.project.NewProject
+        import transportationwb.project.commands.ImportAlignmentCmd
         import transportationwb.corridor.alignment.GenerateVerticalAlignment
         import transportationwb.corridor.alignment.Generate3dAlignment
         import transportationwb.corridor.loft.GenerateElementLoft

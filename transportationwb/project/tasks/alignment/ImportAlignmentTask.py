@@ -32,8 +32,8 @@ from PySide import QtGui, QtCore
 
 import FreeCAD as App
 
-from transportationwb.corridor.alignment.tasks.ImportAlignmentModel import ImportAlignmentModel as Model
-from transportationwb.corridor.alignment.tasks.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
+from transportationwb.project.tasks.alignment.ImportAlignmentModel import ImportAlignmentModel as Model
+from transportationwb.project.tasks.alignment.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
 from transportationwb.corridor.alignment import HorizontalAlignment
 from transportationwb.ScriptedObjectSupport import Utils
 

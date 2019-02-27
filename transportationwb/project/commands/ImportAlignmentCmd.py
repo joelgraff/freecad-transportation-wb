@@ -24,7 +24,7 @@
 import os
 import FreeCAD as App
 import FreeCADGui as Gui
-from transportationwb.corridor.alignment.tasks.ImportAlignmentTask import ImportAlignmentTask
+from transportationwb.project.tasks.alignment.ImportAlignmentTask import ImportAlignmentTask
 class ImportAlignmentCmd():
     '''
     Initiates the ImportAlignmentTask class for 2D horizontal and vertical curves
