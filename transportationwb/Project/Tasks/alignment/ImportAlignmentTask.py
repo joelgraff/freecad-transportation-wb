@@ -32,8 +32,8 @@ from PySide import QtGui, QtCore
 
 import FreeCAD as App
 
-from transportationwb.project.tasks.alignment.ImportAlignmentModel import ImportAlignmentModel as Model
-from transportationwb.project.tasks.alignment.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
+from transportationwb.Project.Tasks.alignment.ImportAlignmentModel import ImportAlignmentModel as Model
+from transportationwb.Project.Tasks.alignment.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
 from transportationwb.corridor.alignment import HorizontalAlignment
 from transportationwb.ScriptedObjectSupport import Utils
 
@@ -41,7 +41,7 @@ class ImportAlignmentTask:
 
     def __init__(self, update_callback):
 
-        path = sys.path[0] + '/../freecad-transportation-wb/transportationwb/corridor/alignment/tasks/import_alignment_task_panel.ui'
+        path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/transportationwb/Project/Tasks/alignment/import_alignment_task_panel.ui'
         self.ui = path
         self.form = None
         self.update_callback = update_callback
@@ -167,7 +167,9 @@ class ImportAlignmentTask:
 
         open_path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/alignment/'
 
-        file_name = QtGui.QFileDialog.getOpenFileName(self.form, 'Select CSV', open_path, self.form.tr('CSV Files (*.csv)'))
+        filters = self.form.tr('All files (*.*);; CSV files (*.csv);; LandXML files (*.xml)')
+        selected_filter = self.form.tr('LandXML files (*.xml)')
+        file_name = QtGui.QFileDialog.getOpenFileName(self.form, 'Select File', open_path, filters, selected_filter)
 
         if not file_name[0]:
             return
