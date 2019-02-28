@@ -67,7 +67,7 @@ def _parse_station_data(alignments):
         sta_eqs = alignment.findAll('staEquation')
 
         for sta_eq in sta_eqs:
-        
+
             for key in LXML_STATION_KEYS:
 
                 result[key] = sta_eq.attrib.get[key]

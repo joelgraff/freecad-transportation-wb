@@ -27,10 +27,12 @@ DESCRIPTION
 
 import sys
 import csv
+import os
 
 from PySide import QtGui, QtCore
 
 import FreeCAD as App
+import FreeCADGui as Gui
 
 from transportationwb.Project.Tasks.alignment.ImportAlignmentModel import ImportAlignmentModel as Model
 from transportationwb.Project.Tasks.alignment.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
@@ -41,8 +43,8 @@ class ImportAlignmentTask:
 
     def __init__(self, update_callback):
 
-        path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/transportationwb/Project/Tasks/alignment/import_alignment_task_panel.ui'
-        self.ui = path
+        self.path_base = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/transportationwb/Project/Tasks/Alignment/'
+        self.ui = self.path_base + 'import_alignment_task_panel.ui'
         self.form = None
         self.update_callback = update_callback
         self.dialect = None
@@ -178,11 +180,13 @@ class ImportAlignmentTask:
 
     def examine_file(self):
         '''
-        Examine the CSV file path indicated in the QLineEdit, testing for headers and delimiter
-        and populating the QTableView
+        Examine the file path indicated in the QLineEdit, determine the type,
+        and pass parsing on to the appropriate module
         '''
 
         file_path = self.form.file_path.text()
+
+        filename, extension = os.path.splitext(file_path)
 
         stream = None
 
@@ -195,7 +199,24 @@ class ImportAlignmentTask:
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
             dialog.exec_()
             return
-        
+
+        filename = 'import_alignment_task_xml_subpanel.ui'
+
+        if 'csv' in extension:
+            filename = 'import_alignment_task_csv_subpanel.ui'
+
+        #stream = QtCore.QFile(self.path_base + filename).open(QtCore.QFile.ReadOnly)
+
+        subpanel = Gui.PySideUic.loadUi(self.path_base + filename, None)
+        #subpanel = QtUiTools.QUiLoader().load(stream, self)
+
+        #stream.close()
+
+        self.form.layout().addWidget(subpanel)
+
+        if 'xml' in extension:
+            return
+
         sniffer = csv.Sniffer()
 
         with open(file_path, encoding="utf-8-sig") as stream:
@@ -294,20 +315,21 @@ class ImportAlignmentTask:
 
         form = _mw.findChild(QtGui.QWidget, 'TaskPanel')
 
-        form.add_button = form.findChild(QtGui.QPushButton, 'add_button')
-        form.remove_button = form.findChild(QtGui.QPushButton, 'remove_button')
-        form.table_view = form.findChild(QtGui.QTableView, 'table_view')
-        form.header_matcher = form.findChild(QtGui.QTableView, 'header_matcher')
+        print('form = ', form)
+        #form.add_button = form.findChild(QtGui.QPushButton, 'add_button')
+        #form.remove_button = form.findChild(QtGui.QPushButton, 'remove_button')
+        #form.table_view = form.findChild(QtGui.QTableView, 'table_view')
+        #form.header_matcher = form.findChild(QtGui.QTableView, 'header_matcher')
 
         form.file_path = form.findChild(QtGui.QLineEdit, 'filename')
         form.pick_file = form.findChild(QtGui.QToolButton, 'pick_file')
-        form.headers = form.findChild(QtGui.QCheckBox, 'headers')
-        form.delimiter = form.findChild(QtGui.QLineEdit, 'delimiter')
+        #form.headers = form.findChild(QtGui.QCheckBox, 'headers')
+        #form.delimiter = form.findChild(QtGui.QLineEdit, 'delimiter')
 
         form.pick_file.clicked.connect(self.choose_file)
         form.file_path.textChanged.connect(self.examine_file)
-        form.headers.stateChanged.connect(self.open_file)
-        form.delimiter.editingFinished.connect(self.open_file)
+        #form.headers.stateChanged.connect(self.open_file)
+        #form.delimiter.editingFinished.connect(self.open_file)
 
         self.form = form
 
