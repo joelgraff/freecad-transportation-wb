@@ -203,6 +203,7 @@ class CsvParser:
             #each row represents a PI, a station equation, or metadata for the alignment
             for row in csv.reader(stream, dialect):
 
+                print(row)
                 if skip_header:
 
                     skip_header = False
@@ -222,6 +223,8 @@ class CsvParser:
 
                 #scrae PI data from the row
                 self._scrape_data(row)
+
+                print('parser data = ', self.alignment_dict, self.meta_dict, self.station_dict, self.data)
 
         #final write of the data
         self._save_alignment()

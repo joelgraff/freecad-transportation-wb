@@ -41,7 +41,7 @@ class ImportAlignmentTask:
 
     def __init__(self, update_callback):
 
-        self.path_base = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/transportationwb/Project/Tasks/Alignment/'
+        self.path_base = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/transportationwb/Project/Tasks/alignment/'
         self.ui = self.path_base + 'import_alignment_task_panel.ui'
         self.form = None
         self.update_callback = update_callback
@@ -52,7 +52,7 @@ class ImportAlignmentTask:
 
     def accept(self):
 
-        self.subtask.import_model()
+        self.alignment_data = self.subtask.import_model()
 
         if self.subtask.errors:
 
@@ -61,6 +61,8 @@ class ImportAlignmentTask:
                 print(_e)
 
         errors = []
+
+        print(self.alignment_data)
 
         for _i in self.alignment_data:
 
@@ -184,6 +186,8 @@ class ImportAlignmentTask:
         _mw = self.getMainWindow()
 
         form = _mw.findChild(QtGui.QWidget, 'TaskPanel')
+
+        print(form)
         form.file_path = form.findChild(QtGui.QLineEdit, 'filename')
         form.pick_file = form.findChild(QtGui.QToolButton, 'pick_file')
         form.pick_file.clicked.connect(self.choose_file)

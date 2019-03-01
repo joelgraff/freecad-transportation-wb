@@ -199,7 +199,7 @@ class ImportCsvSubtask:
 
 
         #returns a message string for notification
-        result = self.validate_headers(self.header_list)
+        result = self._validate_headers()
 
         parser = CsvParser.create()
         parser.import_file(self.filepath, self.header_list, self.dialect)
