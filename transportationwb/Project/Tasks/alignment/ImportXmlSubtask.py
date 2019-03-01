@@ -42,12 +42,14 @@ class ImportXmlSubtask:
 
         self.panel = panel
 
-        self.data = LandXMLParser.import_file(filepath)
+        self.data = LandXMLParser.import_model(filepath)
 
+        print(self.data)
         self._setup_panel()
 
     def _setup_panel(self):
-        self.panel.alignmentsComboBox.connect(self._update_alignment)
+        self.panel.alignmentsComboBox.currentTextChanged.connect(self._update_alignment)
 
     def _update_alignment(self, value):
-        pass
+
+        print('update alignment: ', value)

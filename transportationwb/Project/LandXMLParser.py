@@ -26,19 +26,110 @@ Importer for LandXML files
 '''
 
 from shutil import copyfile
-from lxml import etree
+from xml.etree import ElementTree as etree
 from transportationwb.ScriptedObjectSupport import Units
 
-LXML_META_KEYS = ['name', 'staStart', 'desc', 'state']
-LXML_STATION_KEYS = ['staAhead', 'staBack', 'staInternal', 'staIncrement', 'desc']
-LXML_CURVE_KEYS = ['rot', 'dirStart', 'dirEnd', 'staStart', 'radius']
+XML_META_KEYS = ['name', 'staStart', 'desc', 'state']
+XML_STATION_KEYS = ['staAhead', 'staBack', 'staInternal', 'staIncrement', 'desc']
+XML_CURVE_KEYS = ['rot', 'dirStart', 'dirEnd', 'staStart', 'radius']
+XML_NAMESPACE = {'v1.2': 'http://www.landxml.org/schema/LandXML-1.2'}
 
 def _validate_units(units):
     '''
     Validate the units of the alignment, ensuring it matches the document
     '''
 
-    return units[0].attrib['linearUnit'] == Units.get_doc_units()[1]
+    if units is None:
+        print('Missing units')
+        return False
+
+    xml_units = units[0].attrib['linearUnit']
+
+    if xml_units != Units.get_doc_units()[1]:
+        print('Document units of ', Units.get_doc_units()[1], ' expected, units of ', xml_units, 'found')
+        return False
+
+    return True
+
+def _is_float(num):
+    '''
+    Returns true if value is a float
+    '''
+
+    num_list = num
+
+    if not type(num) is list:
+        num_list = [num]
+
+    for _x in num_list:
+
+        try:
+            float(_x)
+        except:
+            return False
+
+    return True
+
+def _validate_alignments(alignments):
+    '''
+    Validate the alignments in the XML file, ensuring the minimum data is found
+    '''
+
+    if alignments is None:
+        print('Missing alignments')
+        return False
+
+    _err = []
+
+    for alignment in alignments:
+
+        align_name = alignment.attrib['name']
+
+        if not all(_e in alignment.attrib for _e in XML_META_KEYS[:2]):
+            _err.append('Incomplete alignment attributes found for ' + align_name)
+
+        coord_geo = alignment.find('v1.2:CoordGeom', XML_NAMESPACE)
+        sta_eqs = alignment.findall('v1.2:StaEquation', XML_NAMESPACE)
+
+        for sta_eq in sta_eqs:
+
+            if not all(_e in sta_eq.attrib for _e in XML_STATION_KEYS[:2]):
+                _err.append('Missing back / ahead station equation data for ' + align_name)
+
+            print([sta_eq.attrib['staBack'], sta_eq.attrib['staAhead']])
+            if not _is_float([sta_eq.attrib['staBack'], sta_eq.attrib['staAhead']]):
+                _err.append('Invalid back / ahead station equation data for ' + align_name)
+
+        if coord_geo is None:
+            _err.append('Missing CoordGeom for ' + align_name)
+
+        if not coord_geo:
+            _err.append('Missing curve data for ' + align_name)
+
+        curve_idx = 0
+
+        if coord_geo:
+
+            for curve in coord_geo:
+
+                curve_idx += 1
+
+                if not all(_e in curve.attrib for _e in XML_CURVE_KEYS):
+                    _err.append('Missing curve attributes for cuve ' + str(curve_idx) + ' in ' + align_name)
+
+                if not curve:
+                    _err.append('Missing PI for curve ' + str(curve_idx) + ' in ' + align_name)
+                    continue
+
+                values = curve[0].text.replace('\n', '')
+                values = list(filter(None, values.split(' ')))
+
+                if not _is_float(values):
+                    _err.append('Invalid or missing PI coordinates for curve ' + str(curve_idx) + ' in ' + align_name)
+
+    print(_err)
+
+    return len(_err) > 0
 
 def _parse_meta_data(alignments):
     '''
@@ -49,9 +140,9 @@ def _parse_meta_data(alignments):
 
     for alignment in alignments:
 
-        for key in LXML_META_KEYS:
+        for key in XML_META_KEYS:
 
-            result[key] = alignment.attrib.get[key]
+            result[key] = alignment.attrib.get(key)
 
     return result
 
@@ -64,13 +155,13 @@ def _parse_station_data(alignments):
 
     for alignment in alignments:
 
-        sta_eqs = alignment.findAll('staEquation')
+        sta_eqs = alignment.findall('v1.2:staEquation', XML_NAMESPACE)
 
         for sta_eq in sta_eqs:
 
-            for key in LXML_STATION_KEYS:
+            for key in XML_STATION_KEYS:
 
-                result[key] = sta_eq.attrib.get[key]
+                result[key] = sta_eq.attrib.get(key)
 
     return result
 
@@ -83,13 +174,15 @@ def _parse_curve_data(alignments):
 
     for alignment in alignments:
 
-        curves = alignment.findAll('Curve')
+        curves = alignment.findall('v1.2:Curve', XML_NAMESPACE)
 
-        for key in LXML_CURVE_KEYS:
+        for curve in curves:
 
-            result[key] = curves.attrib.get[key]
+            for key in XML_CURVE_KEYS:
 
-        spirals = alignment.findAll('Spiral')
+                result[key] = curve.attrib.get(key)
+
+        #spirals = alignment.findall('v1.2:Spiral', XML_NAMESPACE)
 
     return result
 
@@ -105,18 +198,23 @@ def _merge_dictionaries(meta, station, curve):
 
     return result
 
-def import_file(filepath):
+def import_model(filepath):
     '''
     Import a LandXML and build the Python dictionary fronm the appropriate elements
     '''
 
     doc = etree.parse(filepath)
+    root = doc.getroot()
+    alignments = root.find('v1.2:Alignments', XML_NAMESPACE)
 
-    if not _validate_units(doc.find('Units')):
-        print('Alignment data must be in units of ', Units.get_doc_units()[2])
+    for child in root:
+        print(child.tag)
+
+    if not _validate_units(root.find('v1.2:Units', XML_NAMESPACE)):
         return None
 
-    alignments = doc.findAll('Alignment')
+    if not _validate_alignments(alignments):
+        return None
 
     meta_data = _parse_meta_data(alignments)
 
@@ -152,9 +250,11 @@ def write_file(data, tree, target):
     Write the data to a land xml file in the target location
     '''
 
-    _write_meta_data(data['meta'], )
-    _write_station_data(data['station'])
-    _write_curve_data(data['curve'])
+    #_write_meta_data(data['meta'], )
+    #_write_station_data(data['station'])
+    #_write_curve_data(data['curve'])
+
+    pass
 
 def export_file(source, target):
     '''

@@ -34,7 +34,7 @@ import FreeCADGui as Gui
 
 from transportationwb.corridor.alignment import HorizontalAlignment
 
-#from transportationwb.Project.Tasks.alignment import ImportXmlSubtask
+from transportationwb.Project.Tasks.alignment import ImportXmlSubtask
 from transportationwb.Project.Tasks.alignment import ImportCsvSubtask
 
 class ImportAlignmentTask:
@@ -167,11 +167,9 @@ class ImportAlignmentTask:
 
         self.form.layout().addWidget(subpanel)
 
-        #if 'xml' in extension:
-        #    self.subtask = ImportXmlSubtask.create(subpanel, file_path)
-        #else:
-
-        if '.csv' in extension:
+        if 'xml' in extension:
+            self.subtask = ImportXmlSubtask.create(subpanel, file_path)
+        elif '.csv' in extension:
             self.subtask = ImportCsvSubtask.create(subpanel, file_path)
 
     def setup(self):
