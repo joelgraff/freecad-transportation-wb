@@ -127,9 +127,7 @@ def _validate_alignments(alignments):
                 if not _is_float(values):
                     _err.append('Invalid or missing PI coordinates for curve ' + str(curve_idx) + ' in ' + align_name)
 
-    print(_err)
-
-    return len(_err) > 0
+    return len(_err) == 0
 
 def _parse_meta_data(alignments):
     '''
@@ -140,10 +138,15 @@ def _parse_meta_data(alignments):
 
     for alignment in alignments:
 
+        alignment_meta = {}
+
         for key in XML_META_KEYS:
 
             result[key] = alignment.attrib.get(key)
 
+        result[alignment.attrib.get('name')] = alignment_meta{:}
+
+    print(result)
     return result
 
 def _parse_station_data(alignments):
@@ -222,6 +225,9 @@ def import_model(filepath):
 
     curve_data = _parse_curve_data(alignments)
 
+    print('metea_data = ', meta_data)
+    print('station_data = ', station_data)
+    print('curve_data = ', curve_data)
     return _merge_dictionaries(meta_data, station_data, curve_data)
 
 def _write_meta_data(data, tree):

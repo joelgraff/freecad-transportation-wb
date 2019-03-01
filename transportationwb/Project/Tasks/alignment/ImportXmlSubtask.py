@@ -53,3 +53,8 @@ class ImportXmlSubtask:
     def _update_alignment(self, value):
 
         print('update alignment: ', value)
+
+    def import_model(self):
+
+        print('Model: ', self.data)
+        return None
