@@ -152,7 +152,7 @@ class _HorizontalAlignment(Draft._Wire):
         if data['ID']:
             obj.ID = data['ID']
 
-        if data['Northing'] and data['Easting']:
+        if data.get('Northing') and data.get('Easting'):
             obj.Datum = App.Vector(float(data['Easting']), float(data['Northing']), 0.0)
 
     def assign_station_data(self, data):

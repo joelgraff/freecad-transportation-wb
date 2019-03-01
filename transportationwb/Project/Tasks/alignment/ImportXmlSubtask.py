@@ -50,4 +50,4 @@ class ImportXmlSubtask:
         self.panel.alignmentsComboBox.connect(self._update_alignment)
 
     def _update_alignment(self, value):
-        print(value)
+        pass

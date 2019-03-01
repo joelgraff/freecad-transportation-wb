@@ -102,17 +102,17 @@ class ImportCsvSubtask:
             #populate table view...
             data = [row for row in csv_reader]
 
-        self.header_list = data[0]
+        headers = data[0]
 
         if self.panel.headers.isChecked():
             data = data[1:]
         else:
-            self.header_list = ['Column ' + str(_i) for _i in range(0, len(data[0]))]
+            headers = ['Column ' + str(_i) for _i in range(0, len(data[0]))]
 
-        table_model = Model('csv', self.header_list[:], data)
+        table_model = Model('csv', headers[:], data)
         self.panel.table_view.setModel(table_model)
 
-        self._populate_views(self.header_list)
+        self._populate_views(headers)
 
     def _populate_views(self, header):
         '''
@@ -140,8 +140,8 @@ class ImportCsvSubtask:
 
         for tpl in pairs:
             top_row[tpl[1]] = model[tpl[0]]
-            
-        matcher_model = Model('matcher', [], [top_row, header[:]])
+
+        matcher_model = Model('matcher', [], [top_row])
 
         self.panel.header_matcher.setModel(matcher_model)
         self.panel.header_matcher.hideRow(1)
@@ -151,7 +151,7 @@ class ImportCsvSubtask:
 
         self.panel.table_view.horizontalScrollBar().valueChanged.connect(self.panel.header_matcher.horizontalScrollBar().setValue)
 
-    def _validate_headers(self):
+    def _validate_headers(self, headers):
         '''
         Returns an empty list if header selections are valid,
         list of conflicing header tuples otherwise
@@ -163,10 +163,10 @@ class ImportCsvSubtask:
         nedb = ['Northing', 'Easting', 'Distance', 'Bearing']
 
         #list of valid headers from the user input
-        valid_items = [_i for _i in self.header_list if _i in nedb]
+        valid_items = [_i for _i in headers if _i in nedb]
 
         #boolean list of indices in nedb which are found in the headers
-        bools = [_i in self.header_list for _i in nedb]
+        bools = [_i in headers for _i in nedb]
 
         ne_bools = bools[:2]
         db_bools = bools[2:]
@@ -197,10 +197,16 @@ class ImportCsvSubtask:
         Import the model using the CsvParser module
         '''
 
+        #get the headers from the model
+        headers = self.header_matcher.model().data_model[0]
 
         #returns a message string for notification
-        result = self._validate_headers()
+        result = self._validate_headers([_x for _x in headers if _x])
+
+        if result:
+            return None
 
         parser = CsvParser.create()
-        parser.import_file(self.filepath, self.header_list, self.dialect)
+
+        parser.import_file(self.filepath, headers, self.dialect)
         return parser.data

@@ -62,8 +62,6 @@ class ImportAlignmentTask:
 
         errors = []
 
-        print(self.alignment_data)
-
         for _i in self.alignment_data:
 
             result = HorizontalAlignment.create(_i, _i['meta']['ID'] + ' Horiz').errors
@@ -173,11 +171,8 @@ class ImportAlignmentTask:
         #    self.subtask = ImportXmlSubtask.create(subpanel, file_path)
         #else:
 
-        print(extension)
         if '.csv' in extension:
             self.subtask = ImportCsvSubtask.create(subpanel, file_path)
-
-        print(self.subtask)
 
     def setup(self):
 
@@ -187,7 +182,6 @@ class ImportAlignmentTask:
 
         form = _mw.findChild(QtGui.QWidget, 'TaskPanel')
 
-        print(form)
         form.file_path = form.findChild(QtGui.QLineEdit, 'filename')
         form.pick_file = form.findChild(QtGui.QToolButton, 'pick_file')
         form.pick_file.clicked.connect(self.choose_file)
