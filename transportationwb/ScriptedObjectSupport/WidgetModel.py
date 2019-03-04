@@ -30,17 +30,31 @@ import operator
 
 from PySide import QtCore
 
-class ImportAlignmentModel(QtCore.QAbstractTableModel):
+def create(data, headers=None, parent=None):
+    '''
+    Creation method for widget models.
 
-    default_flags = QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+    Model is a dictionary or nested list providing the data set in a tabular format
+    '''
 
-    def __init__(self, nam, headers, data, parent=None):
+    model = WidgetModel(parent)
+
+    model.data_model = data
+    model.headers = headers
+
+    return model
+
+class WidgetModel(QtCore.QAbstractTableModel):
+
+    def __init__(self, parent=None):
 
         QtCore.QAbstractTableModel.__init__(self, parent)
 
-        self.data_model = data
-        self.headers = headers
-        self.model_name = nam
+        self.data_model = None
+        self.headers = None
+
+        self.default_flags = QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        self.data_roles = [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         '''
@@ -50,21 +64,18 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
         if self.data_model:
             return len(self.data_model)
 
-        #default
         return 0
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         '''
         Number of columns currently in the model
         '''
-
         if self.data_model:
             if isinstance(self.data_model[0], list):
                 return len(self.data_model[0])
 
             return 1
 
-        #default
         return 0
 
     def data(self, index, role):
@@ -91,36 +102,13 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
         Update existing model data
         '''
 
+        if role != QtCore.Qt.EditRole:
+            return False
+
         self.data_model[index.row()][index.column()] = value
         self.dataChanged.emit(index, index)
 
         return True
-
-        if role != QtCore.Qt.EditRole:
-            return False
-
-        if index.isValid() and 0 <= index.row() < len(self.data_model):
-
-            #test for valid data types on a per-column basis
-            if index.column() == 0:
-                value = self.validate_station(value)
-
-            else:
-
-                try:
-                    value = float(value)
-
-                except:
-                    return False
-
-            #set the value
-            self.data_model[index.row()][index.column()] = value
-
-            self.dataChanged.emit(index, index)
-
-            return True
-
-        return False
 
     def headerData(self, col, orientation, role):
         '''
@@ -137,10 +125,7 @@ class ImportAlignmentModel(QtCore.QAbstractTableModel):
 
     def flags(self, index):
 
-        flags = ImportAlignmentModel.default_flags
-
         if index.row() > 0:
-            flags = flags & ~QtCore.Qt.ItemIsEditable
+            return self.default_flags & ~QtCore.Qt.ItemIsEditable
 
-        return flags
-        
+        return self.default_flags

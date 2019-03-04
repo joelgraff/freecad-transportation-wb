@@ -31,6 +31,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from transportationwb.Project import LandXMLParser
+from transportationwb.ScriptedObjectSupport import WidgetModel
 
 def create(panel, filepath):
 
@@ -44,15 +45,68 @@ class ImportXmlSubtask:
 
         self.data = LandXMLParser.import_model(filepath)
 
-        print(self.data)
         self._setup_panel()
 
+        self.errors = []
+
     def _setup_panel(self):
+
+        self.panel.projectName.setText(self.data['Project']['name'])
+
+        alignment_model = list(self.data['Alignments'].keys())
+
+        widget_model = WidgetModel.create(alignment_model)
+
+        self.panel.alignmentsComboBox.setModel(widget_model)
+
         self.panel.alignmentsComboBox.currentTextChanged.connect(self._update_alignment)
+
+        self.panel.staEqTableView.clicked.connect(self._update_curve_list)
+
+        self._update_alignment(self.panel.alignmentsComboBox.currentText())
 
     def _update_alignment(self, value):
 
-        print('update alignment: ', value)
+        subset = self.data['Alignments'][value]
+
+        if subset['meta'].get('staStart'):
+            self.panel.startStationValueLabel.setText(subset['meta']['staStart'])
+
+        if subset['meta'].get('length'):
+            self.panel.lengthValueLabel.setText(subset['meta']['length'])
+
+        sta_model = []
+
+        for key, st_eq in subset['station'].items():
+            sta_model.append([key[0], key[1], st_eq['desc']])
+
+        headers = ['back', 'forward', 'desc']
+
+        widget_model = WidgetModel.create(sta_model, headers)
+
+        self.panel.staEqTableView.setModel(widget_model)
+
+        curve_model = []
+        headers = list(subset['curve'][0].keys())
+
+        for curve in subset['curve']:
+
+            curve_model.append([])
+
+            for key, attrib in curve.items():
+
+                if isinstance(attrib, App.Vector):
+                    attrib = "{0:.2f}, {1:.2f}, {2:.2f}".format(attrib.x, attrib.y, attrib.z)
+
+                curve_model[-1].append([attrib])
+
+        widget_model_2 = WidgetModel.create(curve_model, headers)
+
+        self.panel.curveTableView.setModel(widget_model_2)
+
+    def _update_curve_list(self, value):
+
+        print('update curve list with: ', value)
 
     def import_model(self):
 
