@@ -27,11 +27,16 @@ Importer for LandXML files
 
 from shutil import copyfile
 from xml.etree import ElementTree as etree
+
+import FreeCAD as App
+
 from transportationwb.ScriptedObjectSupport import Units
 
 XML_META_KEYS = ['name', 'staStart', 'desc', 'state']
 XML_STATION_KEYS = ['staAhead', 'staBack', 'staInternal', 'staIncrement', 'desc']
 XML_CURVE_KEYS = ['rot', 'dirStart', 'dirEnd', 'staStart', 'radius']
+XML_LINE_KEYS = ['dir', 'length', 'staStart']
+
 XML_NAMESPACE = {'v1.2': 'http://www.landxml.org/schema/LandXML-1.2'}
 
 def _validate_units(units):
@@ -50,6 +55,14 @@ def _validate_units(units):
         return False
 
     return True
+
+def _get_float_list(text, delimiter = ' '):
+    '''
+    Return a list of floats from a text string of delimited values
+    '''
+
+    values = text.replace('\n', '')
+    return list(filter(None, values.split(delimiter)))
 
 def _is_float(num):
     '''
@@ -121,8 +134,7 @@ def _validate_alignments(alignments):
                     _err.append('Missing PI for curve ' + str(curve_idx) + ' in ' + align_name)
                     continue
 
-                values = curve[0].text.replace('\n', '')
-                values = list(filter(None, values.split(' ')))
+                values = _get_float_list(curve[0].text)
 
                 if not _is_float(values):
                     _err.append('Invalid or missing PI coordinates for curve ' + str(curve_idx) + ' in ' + align_name)
@@ -138,52 +150,155 @@ def _parse_meta_data(alignments):
 
     for alignment in alignments:
 
-        alignment_meta = {}
+        align_name = alignment.attrib.get('name')
+        attribs = alignment.attrib
+        result[align_name] = {}
 
         for key in XML_META_KEYS:
+            result[align_name][key] = attribs.get(key)
 
-            result[key] = alignment.attrib.get(key)
-
-        result[alignment.attrib.get('name')] = alignment_meta{:}
-
-    print(result)
     return result
+
+def _build_tuple_station_key(back, ahead):
+    '''
+    Convert a station string to a floating point value,
+    returning none if it contains invalid characters
+    '''
+
+    _b = back.replace('+', '')
+    _a = ahead.replace('+', '')
+
+    if _b == '':
+        _b = '0.0'
+
+    if _a == '':
+        _a = '0.0'
+
+    try:
+        float(_b)
+        float(_a)
+    except:
+        return None
+
+    return (float(_b), float(_a))
+
+def _build_vector(coords):
+    '''
+    Returns an App.Vector of the passed coordinates,
+    ensuring they are float-compatible
+    '''
+
+    try:
+        for _c in coords:
+            float(_c)
+    except:
+        return None
+
+    return App.Vector(float(coords[0]), float(coords[1]), float(coords[2]))
 
 def _parse_station_data(alignments):
     '''
     Parse the alignment data to get station equations and return a dictionary
+
+    Station equations are stored in a sub-dictionary for each alignment keyed to the alignment name.
+    Each sub-dictionary item is another dictionary keyed to the station equation attributes.
+    Each sub-dictioanry item is keyed in the main dictionary with a tuple of the back / forward stations.
+
+    Thus: station_data['align_name'][-1]['desc'] = description of last station equation in the specified alignment
     '''
 
     result = {}
 
     for alignment in alignments:
 
-        sta_eqs = alignment.findall('v1.2:staEquation', XML_NAMESPACE)
+        align_name = alignment.attrib.get('name')
+        result[align_name] = {}
+
+        sta_eqs = alignment.findall('v1.2:StaEquation', XML_NAMESPACE)
 
         for sta_eq in sta_eqs:
 
+            attribs = sta_eq.attrib
+
+            back_sta = attribs.get('staBack')
+            ahead_sta = attribs.get('staAhead')
+
+            if back_sta is None or ahead_sta is None:
+                print('Missing station equation data for alignment %s: %s, %s' % (align_name, back_sta, ahead_sta))
+                continue
+
+            tuple_key = _build_tuple_station_key(back_sta, ahead_sta)
+
+            if tuple_key is None:
+                print('Invalid station equation for alignment %s: %s, %s' % (align_name, back_sta, ahead_sta))
+                continue
+
+            result[align_name][tuple_key] = {}
+
             for key in XML_STATION_KEYS:
 
-                result[key] = sta_eq.attrib.get(key)
+                result[align_name][tuple_key][key] = attribs.get(key)
 
     return result
 
 def _parse_curve_data(alignments):
     '''
     Parse the alignment data to get curve information and return as a dictionary
+    Dictionary contains a list of curves for each alignment, keyed to the alignment name
+    List contains a dictionary for each curve containing it's attributes and PI location
     '''
 
     result = {}
 
     for alignment in alignments:
 
-        curves = alignment.findall('v1.2:Curve', XML_NAMESPACE)
+        align_name = alignment.attrib.get('name')
+        result[align_name] = []
+
+        coord_geo = alignment.find('v1.2:CoordGeom', XML_NAMESPACE)
+
+        if not coord_geo:
+            print('Missing coordinate geometry for alignment ', align_name)
+            continue
+
+        curves = coord_geo.findall('v1.2:Curve', XML_NAMESPACE)
+        lines = coord_geo.findall('v1.2:Line', XML_NAMESPACE)
 
         for curve in curves:
 
+            attribs = curve.attrib
+            result[align_name].append({})
+
+            _pi = curve.find('v1.2:PI', XML_NAMESPACE)
+
+            if _pi is None:
+                print('No PI found for curve in alignment %s' % align_name)
+
+            if not _pi.text:
+                print('No coordinate information provided for PI in alignment %s ' % align_name)
+
+            result[align_name][-1]['PI'] = _build_vector(_get_float_list(_pi.text))
+
             for key in XML_CURVE_KEYS:
 
-                result[key] = curve.attrib.get(key)
+                result[align_name][-1][key] = attribs.get(key)
+
+        for line in lines:
+
+            line_start = line.find('v1.2:Start', XML_NAMESPACE)
+            line_end = line.find('v1.2:End', XML_NAMESPACE)
+
+            if line_start is None or line_end is None:
+                print('Alignment %s missing line data' % align_name)
+                continue
+
+            attribs = line.attrib
+
+            for key in XML_LINE_KEYS:
+
+                result[align_name][key] = attribs.get(key)
+
+            result[align_name]['points'] = [_build_vector(line_start.split(' ')), _build_vector(line_end.split(' '))]
 
         #spirals = alignment.findall('v1.2:Spiral', XML_NAMESPACE)
 
@@ -210,9 +325,6 @@ def import_model(filepath):
     root = doc.getroot()
     alignments = root.find('v1.2:Alignments', XML_NAMESPACE)
 
-    for child in root:
-        print(child.tag)
-
     if not _validate_units(root.find('v1.2:Units', XML_NAMESPACE)):
         return None
 
@@ -225,9 +337,9 @@ def import_model(filepath):
 
     curve_data = _parse_curve_data(alignments)
 
-    print('metea_data = ', meta_data)
-    print('station_data = ', station_data)
-    print('curve_data = ', curve_data)
+    print('meta_data = ', meta_data, '\n')
+    print('station_data = ', station_data, '\n')
+    print('curve_data = ', curve_data, '\n')
     return _merge_dictionaries(meta_data, station_data, curve_data)
 
 def _write_meta_data(data, tree):
