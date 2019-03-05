@@ -189,7 +189,7 @@ class AlignmentXmlParser(object):
                 ahead_sta = attribs.get('staAhead')
 
                 if back_sta is None or ahead_sta is None:
-                    self.erros.append('Missing station equation data for %s: %s, %s' % (align_name, back_sta, ahead_sta))
+                    self.errors.append('Missing station equation data for %s: %s, %s' % (align_name, back_sta, ahead_sta))
                     continue
 
                 tuple_key = self._build_tuple_station_key(back_sta, ahead_sta)
