@@ -41,7 +41,9 @@ class AlignmentXmlParser(object):
     XML_META_KEYS = {'name': 'ID', 'staStart': 'StartStation', 'desc': 'Description', 'state': 'Status', 'length': 'Length', 'units': 'Units'}
     XML_STATION_KEYS = {'staAhead': 'Ahead', 'staBack': 'Back', 'staInternal': 'Position', 'staIncrement': 'Direction', 'desc': 'Description'}
     XML_CURVE_KEYS = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radius': 'Radius'}
-    XML_LINE_KEYS = {'dir': 'Direction', 'length': 'Length', 'staStart': 'PcStation'}
+
+    #A line is simply a curve with zero radius.  It's direction is the out-going bearing, it's PI is the starting point
+    XML_LINE_KEYS = {'dir': 'OutBearing','length': 'Length', 'staStart': 'PcStation'}
 
     def __init__(self):
 
@@ -227,6 +229,9 @@ class AlignmentXmlParser(object):
             attribs = curve.attrib
 
             _pi = Parser.get_child(curve, 'PI')
+            _start = Parser.get_child(curve, 'Start')
+            _center = Parser.get_child(curve, 'Center')
+            _end = Parser.get_child(curve, 'End')
 
             for key, value in self.XML_CURVE_KEYS.items():
 
@@ -239,6 +244,9 @@ class AlignmentXmlParser(object):
                 self.errors.append('No coordinate information provided for PI in %s ' % align_name)
 
             result[-1]['PI'] = Parser.build_vector(Parser.get_float_list(_pi.text))
+            result[-1]['Start'] = Parser.build_vector(Parser.get_float_list(_start.text))
+            result[-1]['Center'] = Parser.build_vector(Parser.get_float_list(_center.text))
+            result[-1]['End'] = Parser.build_vector(Parser.get_float_list(_end.text))
 
         return result
 
@@ -272,7 +280,7 @@ class AlignmentXmlParser(object):
 
                 result[-1][key] = attribs.get(key)
 
-            result[-1]['points'] = [Parser.build_vector(line_start.split(' ')), Parser.build_vector(line_end.split(' '))]
+            result[-1]['points'] = [Parser.build_vector(line_start.split(' '))), Parser.build_vector(line_end.split(' '))]
         
         result[-1]['type'] = 'line'
 

@@ -22,7 +22,7 @@
 # **************************************************************************
 
 '''
-Class for managing 2D Horizontal Alignments
+Alignment object for managing 2D (Horizontal and Vertical) and 3D alignments
 '''
 import math
 
@@ -40,9 +40,9 @@ __title__ = _CLASS_NAME + '.py'
 __author__ = "AUTHOR_NAME"
 __url__ = "https://www.freecadweb.org"
 
-meta_fields = ['ID', 'StartStation', 'Description', 'Status', 'Length', 'Units']
-data_fields = ['Direction', 'Length', 'InBearing', 'OutBearing', 'Radius', 'PI', 'PcStation']
-station_fields = ['Back', 'Ahead', 'Position', 'Direction', 'Description']
+meta_fields = ['ID', 'Northing', 'Easting']
+data_fields = ['Northing', 'Easting', 'Bearing', 'Distance', 'Radius', 'Degree', 'Spiral']
+station_fields = ['Parent_ID', 'Back', 'Forward']
 
 def create(data, object_name='', units='English', parent=None):
     '''
@@ -81,9 +81,9 @@ def create(data, object_name='', units='English', parent=None):
 class _HorizontalAlignment(Draft._Wire):
 
     def __init__(self, obj, label=''):
-        '''
+        """
         Default Constructor
-        '''
+        """
 
         super(_HorizontalAlignment, self).__init__(obj)
 
@@ -102,8 +102,8 @@ class _HorizontalAlignment(Draft._Wire):
 
         #add class properties
         Properties.add(obj, 'String', 'ID', 'ID of alignment', '')
-        Properties.add(obj, 'Vector', 'Intersection Equation', 'Equation for intersection with parent alignment', App.Vector(0.0, 0.0, 0.0))
-        Properties.add(obj, 'VectorList', 'Station Equations', 'Station equation along the alignment', [])
+        Properties.add(obj, 'Vector', 'Intersection Equation', 'Station equation for intersections with parent alignment', App.Vector(0.0, 0.0, 0.0))
+        Properties.add(obj, 'VectorList', 'Alignment Equations', 'Station equation along the alignment', [])
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'StringList', 'Geometry', 'Geometry defining the alignment', [])
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
@@ -152,9 +152,12 @@ class _HorizontalAlignment(Draft._Wire):
         if data['ID']:
             obj.ID = data['ID']
 
+        if data.get('Northing') and data.get('Easting'):
+            obj.Datum = App.Vector(float(data['Easting']), float(data['Northing']), 0.0)
+
     def assign_station_data(self, data):
         '''
-        Assign the station equation data
+        Assign the station and intersection equation data
         '''
 
         print('processing station data: ', data)
@@ -162,135 +165,151 @@ class _HorizontalAlignment(Draft._Wire):
 
         for key in data.keys():
 
-            back = key[0]
-            ahead = key[1]
+            if key == 'equations':
 
-            eqns = obj.Station_Equations
-            eqns.append(App.Vector(back, ahead, 0.0))
+                for _eqn in data['equations']:
 
-            obj.Station_Equations = eqns
+                    back = 0
+                    forward = 0
+
+                    try:
+
+                        if _eqn[0]:
+                            back = float(_eqn[0])
+
+                        if _eqn[1]:
+                            forward = float(_eqn[1])
+
+                    except:
+                        self.errors.append('Unable to convert station equation (Back: %s, Forward: %s)' % (_eqn[0], _eqn[1]))
+                        continue
+
+                    eqns = obj.Alignment_Equations
+                    eqns.append(App.Vector(back, forward, 0.0))
+
+                    obj.Alignment_Equations = eqns
+
+            else:
+
+                back = data[key][0]
+                forward = data[key][1]
+
+                try:
+                    back = float(back)
+                    forward = float(forward)
+
+                except:
+                    self.errors.append('Unable to convert intersection equation with parent %s: (Back: %s, Forward: %s' % (key, data[key][0], data[key][1]))
+
+                objs = App.ActiveDocument.getObjectsByLabel(key + '_Horiz')
+
+                if objs is None:
+                    self.errors.append('Parent ID %s specified, but no object %s_Horiz exists' % key)
+                    return
+
+                obj.Parent_Alignment = objs[0]
+                obj.Intersection_Equation = App.Vector(back, forward, 0.0)
+
+                print('Parent_Alignment: ', obj.Parent_Alignment)
+                print('Intersection Equation: ', obj.Intersection_Equation)
 
     def assign_geometry_data(self, data):
         '''
-        Validate the coordinate geometry data by ensuring
-        PI data is continuous within the alignment and ordering the
-        internal data set accordingly.
-        data - a list of curve dictionaries
+        Iterate the dataset, extracting geometric data
+        Validate data
+        Create separate items for each curve / tangent
+        Assign Northing / Easting datums
         '''
 
-        #XML_CURVE_KEYS = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radius': 'Radius'}
-        #XML_LINE_KEYS = {'dir': 'Direction', 'length': 'Length', 'staStart': 'PcStation'}
+        _points = [self.Object.Datum]
+        print('datum = ', _points)
+        _geometry = []
 
-        matches = []
+        for item in data:
 
-        data_len = len(data)
-        for _i in range(0, data_len):
+            _ne = [item['Northing'], item['Easting']]
+            _db = [item['Distance'], item['Bearing']]
+            _rd = [item['Radius'], item['Degree']]
+
+            curve = [0.0, 0.0, 0.0, 0.0]
+
+            try:
+                curve[3] = float(item['Spiral'])
             
-            ################# Test for coincident endpoints
-            curve_1 = data[_i]
-            end_point = curve_1.get('End')
+            except:
+                pass
 
-            if end_point:
+            point_vector = App.Vector(0.0, 0.0, 0.0)
 
-                #test for coincident start / end points
-                for _j in range(0, data_len):
+            #parse degree of curve / radius values
+            if _rd[0]:
+                try:
+                    curve[2] = float(_rd[0])
+                except:
+                    self.errors.append('Invalid radius: %s' % _rd[0])
 
-                    curve_2 = data[_j]
+            elif _rd[1]:
+                try:
+                    curve[2] = Utils.doc_to_radius(float(_rd[1]))
+                except:
+                    self.errors.append('Invalid degree of curve: %s' % _rd[1])
+            else:
+                self.errors.append('Missing Radius / Degree of Curvature')
 
-                    start_point = curve_2.get('Start')
+            #parse bearing / distance values
+            if any(_db) and not all(_db):
+                self.errors.append('(Distance, Bearing) Incomplete: (%s, %s)' % tuple(_db))
+            
+            elif all(_db):
+                #get the last point in the geometry for the datum, unless empty
+                datum = self.Object.Datum
 
-                    if start_point:
+                try:
+                    _db[0] = float(_db[0])
+                    _db[1] = float(_db[1])
 
-                        if end_point.distanceToPoint(curve_2['Start']) < 1.0:
-                            matches.append((_i, _j))
-                            break
+                    #zero distance means coincident PI's.  Skip that.
+                    if _db[0] > 0.0:
 
-                #skip the rest if a match was found
-                if matches[-1][0] == _i:
-                    continue
+                        #set values to geo_vector, adding the previous position to the new one
+                        point_vector = Utils.distance_bearing_to_coordinates(_db[0], _db[1])
+                        curve[0:2] = _db
 
-            ############## Test for identical bearings
-            out_bearing = curve_1.get('OutBearing')
+                        if not Units.is_metric_doc():
+                            point_vector.multiply(304.8)
 
-            if out_bearing:
+                        point_vector = _points[-1].add(point_vector)
 
-                for _j in range(0, data_len):
+                except:
+                    self.errors.append('(Distance, Bearing) Invalid: (%s, %s)' % tuple(_db))
 
-                    lst = []
+            #parse northing / easting values
+            if any(_ne) and not all(_ne):
+                self.errors.append('(Easting, Northing) Incomplete: ( %s, %s)' % tuple(_ne))
 
-                    #matching bearings may be adjacent curves
-                    if out_bearing == curve_2.get('in_bearing'):
-                        lst.append(_j)
+            elif all(_ne):
 
-                #no matches found, throw error and abort
-                if not lst:
-                    print('Alignment ', self.Object.ID, ' is discontinuous.')
-                    return None
+                try:
+                    point_vector.y = float(_ne[0])
+                    point_vector.x = float(_ne[1])
 
-                #test for more than one curve with a matching bearing,
-                #picking the shortest as the adjacent curve
-                match = lst[0]
-                max_dist = None
-                nearest_pi = None
+                except:
+                    self.errors.append('(Easting, Northing) Invalid: (%s, %s)' % tuple(_ne))
 
-                for _x in lst:
 
-                    pi_1 = curve_1.get('PI')
-                    pi_2 = data[_j].get('PI')
+                curve[0:2] = Utils.coordinates_to_distance_bearing(_points[-1], point_vector)
 
-                    if not pi_1 or not pi_2:
-                        print ('Missing PI in ' self.Object.ID)
-                        return None
+            print ('curve = ', curve)
+            #skip coincident PI's
+            #save the point as a vector
+            #save the geometry as a string
+            if curve[0] > 0.0:
+                _points.append(point_vector)
+                print('saving ', str(curve))
+                _geometry.append(str(curve).replace('[', '').replace(']',''))
 
-                    if pi_1 != pi_2:
-
-                        dist = pi_1.distanceToPoint(pi_2)
-
-                        if max_dist:
-                            if dist < max_dist:
-                                max_dist = dist
-                                nearest_pi = _j
-
-                if nearest_pi:
-                    matches.append(_i, nearest_pi)
-
-        match_len = len(matches)
-
-        if len(matches) != data_len - 1:
-            print('%d curves found, %d unmatched' (data_len, data_len - match_len - 1))
-            return None
-
-        ordered_list = []
-
-        self._order_list(matches)
-
-    def _order_list(self, tuples):
-        '''
-        Combine a list of tuples where endpoints of two tuples match
-        '''
-
-        tuple_end = len(tuples[0]) - 1
-        tuple_count = len(tuples)
-        tuple_pairs = []
-
-        for _i in range(0, tuple_count):
-
-            _tpl1 = tuples[_i]
-
-            for _tpl2 in tuples[_i:]:
-
-                ordered_tple = None
-
-                if _tpl1[0] == tpl2[tuple_end]:
-                    ordered_tuple = tpl2 + tpl1[1:]
-
-                elif _tpl1[tuple_end] == tpl1[0]:
-                    ordered_tuple = tpl1 + tpl2[1:]
-
-                if ordered_tuple:
-                    tuple_pairs.append(ordered_tuple)
-
-        return tuple_pairs
+        self.Object.PIs = _points
+        self.Object.Geometry = _geometry
 
     def get_intersection_delta(self):
         '''
