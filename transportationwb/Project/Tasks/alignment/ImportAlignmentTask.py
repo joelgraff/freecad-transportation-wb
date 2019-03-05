@@ -62,6 +62,7 @@ class ImportAlignmentTask:
 
         errors = []
 
+
         for _i in self.alignment_data:
 
             result = HorizontalAlignment.create(_i, _i['meta']['ID'] + ' Horiz').errors
@@ -169,6 +170,7 @@ class ImportAlignmentTask:
 
         if 'xml' in extension:
             self.subtask = ImportXmlSubtask.create(subpanel, file_path)
+
         elif '.csv' in extension:
             self.subtask = ImportCsvSubtask.create(subpanel, file_path)
 

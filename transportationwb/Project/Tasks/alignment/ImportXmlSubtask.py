@@ -30,7 +30,7 @@ from PySide import QtGui, QtCore
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from transportationwb.Project import LandXMLParser
+from transportationwb.Project.Tasks.alignment import AlignmentXmlParser
 from transportationwb.ScriptedObjectSupport import WidgetModel
 
 def create(panel, filepath):
@@ -43,7 +43,13 @@ class ImportXmlSubtask:
 
         self.panel = panel
 
-        self.data = LandXMLParser.import_model(filepath)
+        self.parser = AlignmentXmlParser.AlignmentXmlParser()
+        self.data = self.parser.import_model(filepath)
+
+        if self.parser.errors:
+
+            for _err in self.parser.errors:
+                print(_err)
 
         self._setup_panel()
 
@@ -51,7 +57,7 @@ class ImportXmlSubtask:
 
     def _setup_panel(self):
 
-        self.panel.projectName.setText(self.data['Project']['name'])
+        self.panel.projectName.setText(self.data['Project']['ID'])
 
         alignment_model = list(self.data['Alignments'].keys())
 
@@ -69,18 +75,18 @@ class ImportXmlSubtask:
 
         subset = self.data['Alignments'][value]
 
-        if subset['meta'].get('staStart'):
-            self.panel.startStationValueLabel.setText(subset['meta']['staStart'])
+        if subset['meta'].get('StartStation'):
+            self.panel.startStationValueLabel.setText(subset['meta']['StartStation'])
 
-        if subset['meta'].get('length'):
-            self.panel.lengthValueLabel.setText(subset['meta']['length'])
+        if subset['meta'].get('Length'):
+            self.panel.lengthValueLabel.setText(subset['meta']['Length'])
 
         sta_model = []
 
         for key, st_eq in subset['station'].items():
-            sta_model.append([key[0], key[1], st_eq['desc']])
+            sta_model.append([key[0], key[1], st_eq['Description']])
 
-        headers = ['back', 'forward', 'desc']
+        headers = ['Back', 'Ahead', 'Description']
 
         widget_model = WidgetModel.create(sta_model, headers)
 
@@ -96,7 +102,7 @@ class ImportXmlSubtask:
             for key, attrib in curve.items():
 
                 if isinstance(attrib, App.Vector):
-                    attrib = "{0:.2f}, {1:.2f}, {2:.2f}".format(attrib.x, attrib.y, attrib.z)
+                    attrib = '{0:.2f}, {1:.2f}, {2:.2f}'.format(attrib.x, attrib.y, attrib.z)
 
                 curve_model[-1].append([attrib])
 
@@ -110,5 +116,4 @@ class ImportXmlSubtask:
 
     def import_model(self):
 
-        print('Model: ', self.data)
-        return None
+        return self.data
