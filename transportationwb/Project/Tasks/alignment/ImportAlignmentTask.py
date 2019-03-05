@@ -62,10 +62,9 @@ class ImportAlignmentTask:
 
         errors = []
 
+        for key, value in self.alignment_data['Alignments'].items():
 
-        for _i in self.alignment_data:
-
-            result = HorizontalAlignment.create(_i, _i['meta']['ID'] + ' Horiz').errors
+            result = HorizontalAlignment.create(value, value['meta']['ID'] + ' Horiz').errors
 
             if result:
                 errors += result

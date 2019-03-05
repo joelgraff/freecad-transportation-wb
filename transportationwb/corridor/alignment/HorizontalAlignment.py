@@ -184,6 +184,7 @@ class _HorizontalAlignment(Draft._Wire):
         matches = []
 
         data_len = len(data)
+
         for _i in range(0, data_len):
             
             ################# Test for coincident endpoints
@@ -239,7 +240,7 @@ class _HorizontalAlignment(Draft._Wire):
                     pi_2 = data[_j].get('PI')
 
                     if not pi_1 or not pi_2:
-                        print ('Missing PI in ' self.Object.ID)
+                        print ('Missing PI in ' + self.Object.ID)
                         return None
 
                     if pi_1 != pi_2:
@@ -260,9 +261,14 @@ class _HorizontalAlignment(Draft._Wire):
             print('%d curves found, %d unmatched' (data_len, data_len - match_len - 1))
             return None
 
-        ordered_list = []
+        ordered_list = matches
+        old_len = len(ordered_list) + 1
 
-        self._order_list(matches)
+        while len(rodered_list) < old_len:
+            old_len = len(ordered_list)
+            ordered_list = self._order_list(ordered_list)
+
+        print('\nordered list = ', ordered_list)
 
     def _order_list(self, tuples):
         '''
@@ -291,51 +297,6 @@ class _HorizontalAlignment(Draft._Wire):
                     tuple_pairs.append(ordered_tuple)
 
         return tuple_pairs
-
-    def get_intersection_delta(self):
-        '''
-        Return the delta of the object intersection point with it's parent alignment
-        '''
-
-        if not self.Object.Parent_Alignment:
-            return App.Vector(0.0, 0.0, 0.0)
-
-        if not self.Object.Intersection_Equation:
-            return App.Vector(0.0, 0.0, 0.0)
-
-        parent = self.Object.Parent_Alignment
-        int_eq = self.Object.Intersection_Equation
-        sta_eqs = self.Object.Alignment_Equations
-
-        parent_coord = self._get_coordinate_at_station(int_eq[0], parent)
-
-        start_sta = 0.0
-
-        #if the first equation's Back is 0.0, the Forward is the starting station
-        if sta_eqs:
-            if sta_eqs[0][0] == 0.0:
-                start_sta = sta_eqs[0][1]
-
-        distance = (int_eq[1] - start_sta) * 304.80
-
-        child_coord = self.Object.Points[0].add(self.Object.Placement.Base)
-
-        if distance > 0.0:
-
-            child_coord = self.Object.Shape.discretize(Distance=distance)[1]
-
-        if not parent_coord or not child_coord:
-            print('Unable to calculate geometry datum')
-            return App.Vector(0.0, 0.0, 0.0)
-
-        #subtract the child coordinate's intersection point from the parent's
-        delta = parent_coord.sub(child_coord)
-
-        print('Parent coordinate at %f: %f, %f' % (int_eq[0], parent_coord.x, parent_coord.y))
-        print('Child coordinate at %f: %f, %f' % (int_eq[0], child_coord.x, child_coord.y))
-        print('Delta at: %f, %f' % (delta.x, delta.y))
-
-        return delta
 
     def set_data(self, data):
         '''

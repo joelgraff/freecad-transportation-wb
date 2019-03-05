@@ -60,6 +60,9 @@ def is_float(num):
     Returns true if value is a float
     '''
 
+    if not num:
+        return None
+
     num_list = num
 
     if not type(num) is list:
@@ -79,6 +82,9 @@ def build_vector(coords):
     Returns an App.Vector of the passed coordinates,
     ensuring they are float-compatible
     '''
+
+    if not coords:
+        return None
 
     try:
         for _c in coords:

@@ -244,9 +244,15 @@ class AlignmentXmlParser(object):
                 self.errors.append('No coordinate information provided for PI in %s ' % align_name)
 
             result[-1]['PI'] = Parser.build_vector(Parser.get_float_list(_pi.text))
-            result[-1]['Start'] = Parser.build_vector(Parser.get_float_list(_start.text))
-            result[-1]['Center'] = Parser.build_vector(Parser.get_float_list(_center.text))
-            result[-1]['End'] = Parser.build_vector(Parser.get_float_list(_end.text))
+
+            if _start:
+                result[-1]['Start'] = Parser.build_vector(Parser.get_float_list(_start.text))
+
+            if _center:
+                result[-1]['Center'] = Parser.build_vector(Parser.get_float_list(_center.text))
+
+            if _end:
+                result[-1]['End'] = Parser.build_vector(Parser.get_float_list(_end.text))
 
         return result
 
@@ -280,7 +286,8 @@ class AlignmentXmlParser(object):
 
                 result[-1][key] = attribs.get(key)
 
-            result[-1]['points'] = [Parser.build_vector(line_start.split(' '))), Parser.build_vector(line_end.split(' '))]
+            result[-1]['Start'] = Parser.build_vector(line_start.split(' '))
+            result[-1]['End'] = Parser.build_vector(line_end.split(' '))
         
         result[-1]['type'] = 'line'
 
