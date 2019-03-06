@@ -191,18 +191,18 @@ class _HorizontalAlignment(Draft._Wire):
             curve_1 = data[_i]
             end_point = curve_1.get('End')
 
+            print('Analyzing curve ', curve_1)
             if end_point:
 
                 #test for coincident start / end points
                 for _j in range(0, data_len):
 
-                    curve_2 = data[_j]
-
-                    start_point = curve_2.get('Start')
+                    start_point = data[_j].get('Start')
 
                     if start_point:
 
-                        if end_point.distanceToPoint(curve_2['Start']) < 1.0:
+                        #arbitrary tolerance check to determine if points are close enough to be merged
+                        if end_point.distanceToPoint(start_point) < 1.0:
                             matches.append((_i, _j))
                             break
 
@@ -215,19 +215,24 @@ class _HorizontalAlignment(Draft._Wire):
 
             if out_bearing:
 
+                lst = []
+
                 for _j in range(0, data_len):
 
-                    lst = []
-
                     #matching bearings may be adjacent curves
-                    if out_bearing == curve_2.get('in_bearing'):
+                    if out_bearing == data[_j].get('InBearing'):
                         lst.append(_j)
 
-                #no matches found, throw error and abort
+                #no matches found, skip the remainder of the iteration
                 if not lst:
-                    print('Alignment ', self.Object.ID, ' is discontinuous.')
-                    return None
+                    continue
 
+                #one match found, save it and move on
+                if len(lst) == 1:
+                    matches.append((_i, lst[0]))
+                    continue
+
+                #still here?  Multiple matches found.
                 #test for more than one curve with a matching bearing,
                 #picking the shortest as the adjacent curve
                 match = lst[0]
@@ -253,18 +258,19 @@ class _HorizontalAlignment(Draft._Wire):
                                 nearest_pi = _j
 
                 if nearest_pi:
-                    matches.append(_i, nearest_pi)
+                    matches.append((_i, nearest_pi))
 
         match_len = len(matches)
 
         if len(matches) != data_len - 1:
-            print('%d curves found, %d unmatched' (data_len, data_len - match_len - 1))
+            print('%d curves found, %d unmatched' % (data_len, data_len - match_len - 1))
+            print('Alignment ', self.Object.ID, ' is discontinuous.')
             return None
 
         ordered_list = matches
         old_len = len(ordered_list) + 1
 
-        while len(rodered_list) < old_len:
+        while len(ordered_list) < old_len:
             old_len = len(ordered_list)
             ordered_list = self._order_list(ordered_list)
 
@@ -285,13 +291,13 @@ class _HorizontalAlignment(Draft._Wire):
 
             for _tpl2 in tuples[_i:]:
 
-                ordered_tple = None
+                ordered_tuple = None
 
-                if _tpl1[0] == tpl2[tuple_end]:
-                    ordered_tuple = tpl2 + tpl1[1:]
+                if _tpl1[0] == _tpl2[tuple_end]:
+                    ordered_tuple = _tpl2 + _tpl1[1:]
 
-                elif _tpl1[tuple_end] == tpl1[0]:
-                    ordered_tuple = tpl1 + tpl2[1:]
+                elif _tpl1[tuple_end] == _tpl1[0]:
+                    ordered_tuple = _tpl1 + _tpl2[1:]
 
                 if ordered_tuple:
                     tuple_pairs.append(ordered_tuple)
@@ -313,7 +319,7 @@ class _HorizontalAlignment(Draft._Wire):
         #if int_eq.Length:
         #    datum = self._get_coordinate_at_station(int_eq[0], self.Object.Parent_Alignment) / 304.80
 
-        self.assign_geometry_data(data['data'])
+        self.assign_geometry_data(data['curve'])
 
         delattr(self, 'no_execute')
 

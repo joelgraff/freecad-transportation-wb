@@ -380,7 +380,6 @@ class AlignmentXmlParser(object):
         result['Project'][self.XML_META_KEYS['name']] = project_name
         result['Project'][self.XML_META_KEYS['units']] = unit_name
 
-        print(result)
         return result
 
     @staticmethod
