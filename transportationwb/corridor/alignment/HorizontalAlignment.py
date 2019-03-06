@@ -157,7 +157,6 @@ class _HorizontalAlignment(Draft._Wire):
         Assign the station equation data
         '''
 
-        print('processing station data: ', data)
         obj = self.Object
 
         for key in data.keys():
@@ -191,7 +190,6 @@ class _HorizontalAlignment(Draft._Wire):
             curve_1 = data[_i]
             end_point = curve_1.get('End')
 
-            print('Analyzing curve ', curve_1)
             if end_point:
 
                 #test for coincident start / end points
@@ -203,7 +201,7 @@ class _HorizontalAlignment(Draft._Wire):
 
                         #arbitrary tolerance check to determine if points are close enough to be merged
                         if end_point.distanceToPoint(start_point) < 1.0:
-                            matches.append((_i, _j))
+                            matches.append([_i, _j])
                             break
 
                 #skip the rest if a match was found
@@ -229,7 +227,7 @@ class _HorizontalAlignment(Draft._Wire):
 
                 #one match found, save it and move on
                 if len(lst) == 1:
-                    matches.append((_i, lst[0]))
+                    matches.append([_i, lst[0]])
                     continue
 
                 #still here?  Multiple matches found.
@@ -258,12 +256,10 @@ class _HorizontalAlignment(Draft._Wire):
                                 nearest_pi = _j
 
                 if nearest_pi:
-                    matches.append((_i, nearest_pi))
-
-        match_len = len(matches)
+                    matches.append([_i, nearest_pi])
 
         if len(matches) != data_len - 1:
-            print('%d curves found, %d unmatched' % (data_len, data_len - match_len - 1))
+            print('%d curves found, %d unmatched' % (data_len, data_len - len(matches) - 1))
             print('Alignment ', self.Object.ID, ' is discontinuous.')
             return None
 
@@ -274,12 +270,19 @@ class _HorizontalAlignment(Draft._Wire):
             old_len = len(ordered_list)
             ordered_list = self._order_list(ordered_list)
 
-        print('\nordered list = ', ordered_list)
+        self.Object.Geometry = data
+
+        #with an ordered list of indices, create a new data set in the correct order
+        if ordered_list[0] != list(range(0,data_len)):
+            self.Object.Geometry = [data[_i] for _i in ordered_list[0]]
 
     def _order_list(self, tuples):
         '''
         Combine a list of tuples where endpoints of two tuples match
         '''
+
+        if len(tuples) == 1:
+            return tuples
 
         tuple_end = len(tuples[0]) - 1
         tuple_count = len(tuples)
@@ -289,15 +292,17 @@ class _HorizontalAlignment(Draft._Wire):
 
             _tpl1 = tuples[_i]
 
-            for _tpl2 in tuples[_i:]:
+            for _tpl2 in tuples[(_i + 1):]:
 
                 ordered_tuple = None
 
                 if _tpl1[0] == _tpl2[tuple_end]:
-                    ordered_tuple = _tpl2 + _tpl1[1:]
+                    ordered_tuple = _tpl2
+                    ordered_tuple.extend(_tpl1[1:])
 
-                elif _tpl1[tuple_end] == _tpl1[0]:
-                    ordered_tuple = _tpl1 + _tpl2[1:]
+                elif _tpl1[tuple_end] == _tpl2[0]:
+                    ordered_tuple = _tpl1 
+                    ordered_tuple.extend(_tpl2[1:])
 
                 if ordered_tuple:
                     tuple_pairs.append(ordered_tuple)
