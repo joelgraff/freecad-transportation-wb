@@ -44,15 +44,11 @@ class ImportAlignmentTask:
         self.path_base = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/transportationwb/Project/Tasks/alignment/'
         self.ui = self.path_base + 'import_alignment_task_panel.ui'
         self.form = None
-        self.update_callback = update_callback
-        self.dialect = None
-        self.alignment_type = 'Horizontal'
-        self.alignment_data = []
         self.subtask = None
 
     def accept(self):
 
-        self.alignment_data = self.subtask.import_model()
+        data = self.subtask.import_model()
 
         if self.subtask.errors:
 
@@ -60,9 +56,13 @@ class ImportAlignmentTask:
             for _e in self.subtask.errors:
                 print(_e)
 
+
+        if not data:
+            return None
+
         errors = []
 
-        for key, value in self.alignment_data['Alignments'].items():
+        for key, value in data['Alignments'].items():
 
             result = HorizontalAlignment.create(value, value['meta']['ID'] + ' Horiz').errors
 
@@ -77,14 +77,9 @@ class ImportAlignmentTask:
             for _e in errors:
                 print(_e)
 
+        #get all alignment objects and export them to the transient XML file
+
         return True
-
-        #message returned - notify user
-        dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, 'Duplicate / Conflicting Headers', result)
-        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-        dialog.exec_()
-
-        return False
 
     def reject(self):
         return True

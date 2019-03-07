@@ -4,4 +4,5 @@
     <Units>
         <Metric areaUnit='squareMeter' linearUnit='meter' volumeUnit='cubicMeter' temperatureUnit='celsius' pressureUnit='mmHG' diameterUnit='meter' widthUnit='meter' heightUnit='meter' velocityUnit='kilometersPerHour' flowUnit='cubicMeterSecond' angularUnit='decimal degrees' directionUnit='decimal degrees' latLongAngularUnit='decimal degrees' elevationUnit='meter'/>
     </Units>
+    <Application name='FreeCAD' manufacturer='The FreeCAD Project' version='' manufacturerURL='www.freecadweb.org'/>
 </LandXML>

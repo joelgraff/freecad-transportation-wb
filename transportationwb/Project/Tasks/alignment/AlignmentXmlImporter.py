@@ -32,22 +32,27 @@ import FreeCAD as App
 
 from transportationwb.ScriptedObjectSupport import Units
 from transportationwb.Project import LandXmlParser as Parser
+from transportationwb.ScriptedObjectSupport.Const import Const
+
+class XmlKeyMaps(Const):
+
+    XML_META_KEYS = {'name': 'ID', 'staStart': 'StartStation', 'desc': 'Description', 'state': 'Status', 'length': 'Length', 'units': 'Units'}
+    XML_STATION_KEYS = {'staAhead': 'Ahead', 'staBack': 'Back', 'staInternal': 'Position', 'staIncrement': 'Direction', 'desc': 'Description'}
+    XML_CURVE_KEYS = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radius': 'Radius'}
+    XML_CURVE_KEYS_OPT = {'chord': 'Chrod', 'delta': 'Delta', 'external': 'External', 'length': 'Length', 'midOrd': 'MiddleOrd', 'tangent': 'Tangent'}
+
+    #A line is simply a curve with zero radius.  It's direction is the out-going bearing, it's PI is the starting point
+    XML_LINE_KEYS = {'dir': 'OutBearing','length': 'Length', 'staStart': 'PcStation'}
 
 class AlignmentXmlImporter(object):
     '''
     LandXML parsing class for alignments
     '''
 
-    XML_META_KEYS = {'name': 'ID', 'staStart': 'StartStation', 'desc': 'Description', 'state': 'Status', 'length': 'Length', 'units': 'Units'}
-    XML_STATION_KEYS = {'staAhead': 'Ahead', 'staBack': 'Back', 'staInternal': 'Position', 'staIncrement': 'Direction', 'desc': 'Description'}
-    XML_CURVE_KEYS = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radius': 'Radius'}
-
-    #A line is simply a curve with zero radius.  It's direction is the out-going bearing, it's PI is the starting point
-    XML_LINE_KEYS = {'dir': 'OutBearing','length': 'Length', 'staStart': 'PcStation'}
-
     def __init__(self):
 
         self.errors = []
+        self.maps = XmlKeyMaps()
 
     def _validate_units(self, units):
         '''
@@ -79,7 +84,7 @@ class AlignmentXmlImporter(object):
 
             align_name = alignment.attrib['name']
 
-            if not all(_key in alignment.attrib for _key in list(self.XML_META_KEYS.keys())[:2]):
+            if not all(_key in alignment.attrib for _key in list(self.maps.XML_META_KEYS.keys())[:2]):
                self.errors.append('Incomplete alignment attributes found for ' + align_name)
 
             coord_geo = Parser.get_child(alignment, 'CoordGeom')
@@ -87,7 +92,7 @@ class AlignmentXmlImporter(object):
 
             for sta_eq in sta_eqs:
 
-                if not all(_key in sta_eq.attrib for _key in list(self.XML_STATION_KEYS.keys())[:2]):
+                if not all(_key in sta_eq.attrib for _key in list(self.maps.XML_STATION_KEYS.keys())[:2]):
                     self.errors.append('Missing back / ahead station equation data for ' + align_name)
 
                 if not Parser.is_float([sta_eq.attrib['staBack'], sta_eq.attrib['staAhead']]):
@@ -107,7 +112,7 @@ class AlignmentXmlImporter(object):
 
                     curve_idx += 1
 
-                    if not all(_key in curve.attrib for _key in list(self.XML_CURVE_KEYS.keys())):
+                    if not all(_key in curve.attrib for _key in list(self.maps.XML_CURVE_KEYS.keys())):
                         self.errors.append('Missing curve attributes for cuve ' + str(curve_idx) + ' in ' + align_name)
 
                     if not curve:
@@ -134,7 +139,7 @@ class AlignmentXmlImporter(object):
             attribs = alignment.attrib
             result[align_name] = {}
 
-            for key, value in self.XML_META_KEYS.items():
+            for key, value in self.maps.XML_META_KEYS.items():
                 result[align_name][value] = attribs.get(key)
 
         return result
@@ -202,7 +207,7 @@ class AlignmentXmlImporter(object):
 
                 result[align_name][tuple_key] = {}
 
-                for key, value in self.XML_STATION_KEYS.items():
+                for key, value in self.maps.XML_STATION_KEYS.items():
 
                     result[align_name][tuple_key][value] = attribs.get(key)
 
@@ -233,7 +238,19 @@ class AlignmentXmlImporter(object):
             _center = Parser.get_child(curve, 'Center')
             _end = Parser.get_child(curve, 'End')
 
-            for key, value in self.XML_CURVE_KEYS.items():
+            #required attributes - skip curve if any are missing
+            for key, value in self.maps.XML_CURVE_KEYS.items():
+
+                attr_val = attribs.get(key)
+
+                if attr_val is None:
+                    self.errors.append('Missing attribute %s for curve in alignment %s' % (attr_val, align_name))
+                    break
+
+                result[-1][value] = attr_val
+
+            #optional attributes
+            for key, value in self.maps.XML_CURVE_KEYS_OPT.items():
 
                 result[-1][value] = attribs.get(key)
 
@@ -282,7 +299,7 @@ class AlignmentXmlImporter(object):
 
             attribs = line.attrib
 
-            for key in self.XML_LINE_KEYS:
+            for key in self.maps.XML_LINE_KEYS:
 
                 result[-1][key] = attribs.get(key)
 
@@ -377,8 +394,8 @@ class AlignmentXmlImporter(object):
         result = {}
         result['Alignments'] = self._merge_dictionaries(meta_data, station_data, curve_data)
         result['Project'] = {}
-        result['Project'][self.XML_META_KEYS['name']] = project_name
-        result['Project'][self.XML_META_KEYS['units']] = unit_name
+        result['Project'][self.maps.XML_META_KEYS['name']] = project_name
+        result['Project'][self.maps.XML_META_KEYS['units']] = unit_name
 
         return result
 
