@@ -30,8 +30,7 @@ from xml.etree import ElementTree as etree
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Units
-from transportationwb.Project import LandXmlParser as Parser
+from transportationwb.ScriptedObjectSupport import Units, LandXml
 from transportationwb.ScriptedObjectSupport.Const import Const
 
 class XmlKeyMaps(Const):
@@ -87,15 +86,15 @@ class AlignmentXmlImporter(object):
             if not all(_key in alignment.attrib for _key in list(self.maps.XML_META_KEYS.keys())[:2]):
                self.errors.append('Incomplete alignment attributes found for ' + align_name)
 
-            coord_geo = Parser.get_child(alignment, 'CoordGeom')
-            sta_eqs = Parser.get_children(alignment, 'StaEquation')
+            coord_geo = LandXml.get_child(alignment, 'CoordGeom')
+            sta_eqs = LandXml.get_children(alignment, 'StaEquation')
 
             for sta_eq in sta_eqs:
 
                 if not all(_key in sta_eq.attrib for _key in list(self.maps.XML_STATION_KEYS.keys())[:2]):
                     self.errors.append('Missing back / ahead station equation data for ' + align_name)
 
-                if not Parser.is_float([sta_eq.attrib['staBack'], sta_eq.attrib['staAhead']]):
+                if not LandXml.is_float([sta_eq.attrib['staBack'], sta_eq.attrib['staAhead']]):
                     self.errors.append('Invalid back / ahead station equation data for ' + align_name)
 
             if coord_geo is None:
@@ -119,9 +118,9 @@ class AlignmentXmlImporter(object):
                         self.errors.append('Missing PI for curve ' + str(curve_idx) + ' in ' + align_name)
                         continue
 
-                    values = Parser.get_float_list(curve[0].text)
+                    values = LandXml.get_float_list(curve[0].text)
 
-                    if not Parser.is_float(values):
+                    if not LandXml.is_float(values):
                         self.errors.append('Invalid or missing PI coordinates for curve ' + str(curve_idx) + ' in ' + align_name)
 
         return len(self.errors) == 0
@@ -186,7 +185,7 @@ class AlignmentXmlImporter(object):
             align_name = alignment.attrib.get('name')
             result[align_name] = {}
 
-            sta_eqs = Parser.get_children(alignment, 'StaEquation')
+            sta_eqs = LandXml.get_children(alignment, 'StaEquation')
 
             for sta_eq in sta_eqs:
 
@@ -233,10 +232,10 @@ class AlignmentXmlImporter(object):
 
             attribs = curve.attrib
 
-            _pi = Parser.get_child(curve, 'PI')
-            _start = Parser.get_child(curve, 'Start')
-            _center = Parser.get_child(curve, 'Center')
-            _end = Parser.get_child(curve, 'End')
+            _pi = LandXml.get_child(curve, 'PI')
+            _start = LandXml.get_child(curve, 'Start')
+            _center = LandXml.get_child(curve, 'Center')
+            _end = LandXml.get_child(curve, 'End')
 
             #required attributes - skip curve if any are missing
             for key, value in self.maps.XML_CURVE_KEYS.items():
@@ -260,16 +259,16 @@ class AlignmentXmlImporter(object):
             if not _pi.text:
                 self.errors.append('No coordinate information provided for PI in %s ' % align_name)
 
-            result[-1]['PI'] = Parser.build_vector(Parser.get_float_list(_pi.text))
+            result[-1]['PI'] = LandXml.build_vector(LandXml.get_float_list(_pi.text))
 
             if _start:
-                result[-1]['Start'] = Parser.build_vector(Parser.get_float_list(_start.text))
+                result[-1]['Start'] = LandXml.build_vector(LandXml.get_float_list(_start.text))
 
             if _center:
-                result[-1]['Center'] = Parser.build_vector(Parser.get_float_list(_center.text))
+                result[-1]['Center'] = LandXml.build_vector(LandXml.get_float_list(_center.text))
 
             if _end:
-                result[-1]['End'] = Parser.build_vector(Parser.get_float_list(_end.text))
+                result[-1]['End'] = LandXml.build_vector(LandXml.get_float_list(_end.text))
 
         return result
 
@@ -290,8 +289,8 @@ class AlignmentXmlImporter(object):
 
             result.append({})
 
-            line_start = Parser.get_child(line, 'Start')
-            line_end = Parser.get_child(line, 'End')
+            line_start = LandXml.get_child(line, 'Start')
+            line_end = LandXml.get_child(line, 'End')
 
             if line_start is None or line_end is None:
                 self.errors.append('Alignment %s missing line data' % align_name)
@@ -303,8 +302,8 @@ class AlignmentXmlImporter(object):
 
                 result[-1][key] = attribs.get(key)
 
-            result[-1]['Start'] = Parser.build_vector(line_start.split(' '))
-            result[-1]['End'] = Parser.build_vector(line_end.split(' '))
+            result[-1]['Start'] = LandXml.build_vector(line_start.split(' '))
+            result[-1]['End'] = LandXml.build_vector(line_end.split(' '))
         
         result[-1]['type'] = 'line'
 
@@ -324,14 +323,14 @@ class AlignmentXmlImporter(object):
             align_name = alignment.attrib.get('name')
             result[align_name] = []
 
-            coord_geo = Parser.get_child(alignment, 'CoordGeom')
+            coord_geo = LandXml.get_child(alignment, 'CoordGeom')
 
             if not coord_geo:
                 print('Missing coordinate geometry for ', align_name)
                 continue
 
-            curves = Parser.get_children(coord_geo, 'Curve')
-            lines = Parser.get_children(coord_geo, 'Lines')
+            curves = LandXml.get_children(coord_geo, 'Curve')
+            lines = LandXml.get_children(coord_geo, 'Lines')
 
             if curves:
                 result[align_name] = self._parse_curve_data(align_name, curves)
@@ -364,9 +363,9 @@ class AlignmentXmlImporter(object):
         doc = etree.parse(filepath)
         root = doc.getroot()
 
-        project = Parser.get_child(root, 'Project')
-        units = Parser.get_child(root, 'Units')
-        alignments = Parser.get_child(root, 'Alignments')
+        project = LandXml.get_child(root, 'Project')
+        units = LandXml.get_child(root, 'Units')
+        alignments = LandXml.get_child(root, 'Alignments')
 
         if not units:
             self.errors.append('Missing project units')
