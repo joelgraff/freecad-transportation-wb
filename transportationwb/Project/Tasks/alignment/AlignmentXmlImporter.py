@@ -33,7 +33,7 @@ import FreeCAD as App
 from transportationwb.ScriptedObjectSupport import Units
 from transportationwb.Project import LandXmlParser as Parser
 
-class AlignmentXmlParser(object):
+class AlignmentXmlImporter(object):
     '''
     LandXML parsing class for alignments
     '''
