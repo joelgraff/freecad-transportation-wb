@@ -38,60 +38,15 @@ from xml.etree import ElementTree as etree
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties, Singleton
 from transportationwb.Project.AlignmentXmlImporter import AlignmentXmlImporter
 from transportationwb.Project.AlignmentXmlExporter import AlignmentXmlExporter
+from transportatiowb.cooridor.alignment import XmlFile
 
 _CLASS_NAME = 'HorizontalAlignment'
 _TYPE = 'Part::Part2DObjectPython'
 
 __title__ = _CLASS_NAME + '.py'
-__author__ = "AUTHOR_NAME"
+__author__ = 'Joel Graff'
 __url__ = "https://www.freecadweb.org"
 
-meta_fields = ['ID', 'StartStation', 'Description', 'Status', 'Length', 'Units']
-data_fields = ['Direction', 'Length', 'InBearing', 'OutBearing', 'Radius', 'PI', 'PcStation']
-station_fields = ['Back', 'Ahead', 'Position', 'Direction', 'Description']
-
-class _XmlFile(metaclass=Singleton.Singleton):
-    '''
-    Const / class that manage
-    '''
-
-    @staticmethod
-    def instance():
-        '''
-        Return the singleton instance of the class
-        '''
-
-        return Singleton.Singleton.instance_of(_XmlFile)
-
-    def __init__(self, data):
-        '''
-        Initialize the XML file singleton
-        Data consists of a dictionary of alignment objects
-        '''
-
-        self.template_path = 'data/landXML-imperial-template.xml'
-
-        if Units.is_metric_doc():
-            self.template_path = 'data/landXML-metric-template.xml'
-
-        self.target_path = App.ActiveDocument.TransientDir + '/alignments.xml'
-
-        self.data = data
-
-    def update(self, key, value):
-        '''
-        Update the dictionary
-        '''
-
-        self.data[key] = value
-
-    def write(self):
-        '''
-        Write the dictionary to file
-        '''
-
-        tree = etree.parse(self.template_path)
-        AlignmentXmlExporter.write(tree, self.data, self.target_path)
 
 def create(data, object_name='', units='English', parent=None):
     '''
@@ -155,7 +110,7 @@ class _HorizontalAlignment(Draft._Wire):
         Properties.add(obj, 'Vector', 'Intersection Equation', 'Equation for intersection with parent alignment', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Station Equations', 'Station equation along the alignment', [])
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
-        #Properties.add(obj, 'StringList', 'Geometry', 'Geometry defining the alignment', [])
+
         #THIS SHOULD BE MANAGED UNDER CUSTOM ALIGNMENTS GROUP OBJECT
         #Properties.add(obj, 'FileIncluded','Alignment XML File', 'Filepath for alignment XML', )
 
@@ -185,8 +140,9 @@ class _HorizontalAlignment(Draft._Wire):
 
         self.Object = fp
 
-        #HANDLE AT GROUP LEVEL?
-        self.geometry = AlignmentXmlImporter.import_model(App.ActiveDocument.TransientDir + '/alignments.xml', 'r')
+        data = XmlFile.XmlFile.import_file(App.ActiveDocument.TransientDir + '/alignments.xml', 'r')
+
+        self.geometry = data['Alignments'][fp.ID]
 
     def set_units(self, units):
         '''

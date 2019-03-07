@@ -44,7 +44,7 @@ class ImportXmlSubtask:
         self.panel = panel
 
         self.parser = AlignmentXmlImporter.AlignmentXmlImporter()
-        self.data = self.parser.import_model(filepath)
+        self.data = self.parser.import_file(filepath)
 
         if self.parser.errors:
 

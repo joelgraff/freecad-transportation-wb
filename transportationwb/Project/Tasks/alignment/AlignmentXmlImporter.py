@@ -356,7 +356,7 @@ class AlignmentXmlImporter(object):
 
         return result
 
-    def import_model(self, filepath):
+    def import_file(self, filepath):
         '''
         Import a LandXML and build the Python dictionary fronm the appropriate elements
         '''
@@ -398,49 +398,3 @@ class AlignmentXmlImporter(object):
         result['Project'][self.maps.XML_META_KEYS['units']] = unit_name
 
         return result
-
-    @staticmethod
-    def _write_meta_data(data, tree):
-        '''
-        Write out the meta data into the internal XML file
-        '''
-
-        pass
-
-    @staticmethod
-    def _write_station_data(data, tree):
-        '''
-        Write out the station data into the internal XML file
-        '''
-
-        pass
-
-    @staticmethod
-    def _write_curve_data(data, tree):
-        '''
-        Write out the alignment / curve data into the internal XML file
-        '''
-
-        pass
-
-    @staticmethod
-    def write_file(data, tree, target):
-        '''
-        Write the data to a land xml file in the target location
-        '''
-
-        #_write_meta_data(data['meta'], )
-        #_write_station_data(data['station'])
-        #_write_curve_data(data['curve'])
-
-        pass
-
-    @staticmethod
-    def export_file(source, target):
-        '''
-        Export a LandXML file
-        source - The source filepath (the transient LandXML file)
-        target - The target datapath external to the FCStd
-        '''
-
-        copyfile(source, target)
