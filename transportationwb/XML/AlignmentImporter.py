@@ -43,7 +43,7 @@ class XmlKeyMaps(Const):
     #A line is simply a curve with zero radius.  It's direction is the out-going bearing, it's PI is the starting point
     XML_LINE_KEYS = {'dir': 'OutBearing','length': 'Length', 'staStart': 'PcStation'}
 
-class AlignmentXmlImporter(object):
+class AlignmentImporter(object):
     '''
     LandXML parsing class for alignments
     '''

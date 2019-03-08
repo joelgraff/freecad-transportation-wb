@@ -28,6 +28,7 @@ Feature Python Object which manages XML document reading, writing, and updating
 import FreeCAD as App
 import Part
 from transportationwb.ScriptedObjectSupport import Properties
+from transportationwb.XML import AlignmentImporter, AlignmentExporter
 
 _CLASS_NAME = 'XmlFpo'
 _TYPE = 'App::FeaturePython'
@@ -56,7 +57,28 @@ def create(parent=None):
 
     return result
 
+def find():
+    '''
+    Locate the XmlFpo object inthe active document, if it exists
+    '''
+
+    App.ActiveDocument.
+
 class _XmlFpo():
+    '''
+    Class provides basic support for XML datasets stored internally in the FCStd.
+
+    XML files are loaded when requested by FPO's that ened them and stored here.
+    Requesting FPO's can access the data from a dictionary entry and push updated data back.
+    Reads from the internal transient XML are done by calling the read() method
+    Writes to the internal transient XML's are done by calling the write() method
+
+    The class provides 'App::PropertyFileIncluded' properties for the internal XML files to ensure
+    they are serialized on document saves
+    '''
+
+    XML_ID = ['alignment']
+    XML_IO = {'alignment': {'import': AlignmentImporter.AlignmentImporter(), 'export': AlignmentExporter.AlignmentExporter()}}
 
     def __init__(self, obj):
         '''
@@ -92,3 +114,17 @@ class _XmlFpo():
         Class execute for recompute calls
         '''
         pass
+
+    def read(xml_id):
+        '''
+        Read the transient xml specified in xml_id.
+
+        See XML_ID const member for valid id's
+        '''
+
+    def write(xml_id):
+        '''
+        Write the transient xml data to the file specified by xml_id
+
+        See XML_ID const member for valid id's
+        '''

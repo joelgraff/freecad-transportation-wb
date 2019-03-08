@@ -36,9 +36,8 @@ import numpy
 from xml.etree import ElementTree as etree
 
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties, Singleton
-from transportationwb.Project.AlignmentXmlImporter import AlignmentXmlImporter
-from transportationwb.Project.AlignmentXmlExporter import AlignmentXmlExporter
-from transportatiowb.cooridor.alignment import XmlFile
+from transportationwb.XML import XmlFpo
+
 
 _CLASS_NAME = 'HorizontalAlignment'
 _TYPE = 'Part::Part2DObjectPython'

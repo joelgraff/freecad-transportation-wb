@@ -67,7 +67,8 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
             'Vector',
             'VectorList',
             'Integer',
-            'Enumeration'
+            'Enumeration',
+            'FileIncluded'
         ]:
         p_type = 'App::Property' + p_type
 
@@ -83,10 +84,6 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
 
     prop = obj.getPropertyByName(p_name)
 
-    #if p_type in [
-          #  'App::PropertyFloat'
-        #]:
-        #prop = default_value
 
     if p_type in [
             'App::PropertyBool',
@@ -100,10 +97,12 @@ def add(obj, p_type, name, desc, default_value=None, is_read_only=False, is_hidd
             'App::PropertyVectorList',
             'App::PropertyInteger',
             'App::PropertyEnumeration',
-            'App::PropertyFloat'
+            'App::PropertyFloat',
+            'App::PropertyFileIncluded'
+
         ]:
         setattr(obj, p_name, default_value)
-        #prop = default_value
+
     else:
         prop.Value = default_value
 
