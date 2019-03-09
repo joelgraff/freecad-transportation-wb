@@ -29,6 +29,7 @@ import FreeCAD as App
 import Part
 from transportationwb.ScriptedObjectSupport import Properties
 from transportationwb.XML import AlignmentImporter, AlignmentExporter
+from xml.etree import ElementTree as etree
 
 _CLASS_NAME = 'XmlFpo'
 _TYPE = 'App::FeaturePython'
@@ -44,7 +45,12 @@ def create(parent=None):
     '''
 
     _obj = None
-    _name = _CLASS_NAME
+    _name = 'Document_Data'
+
+    result = App.ActiveDocument.get(_name)
+
+    if (result):
+        return result
 
     if parent:
         _obj = parent.newObject(_TYPE, _name)
@@ -56,13 +62,6 @@ def create(parent=None):
     _obj.ViewObject.Proxy = 0
 
     return result
-
-def find():
-    '''
-    Locate the XmlFpo object inthe active document, if it exists
-    '''
-
-    App.ActiveDocument.
 
 class _XmlFpo():
     '''
@@ -88,6 +87,16 @@ class _XmlFpo():
         self.Enabled = False
         self.Type = "_" + _CLASS_NAME
         self.Object = obj
+        self.last_action = {'alignment': None}
+        self.data = {}
+
+        for _id in self.XML_ID:
+            self.data[_id] = {}
+    
+        self.template_path = 'data/landXML-imperial-template.xml'
+
+        if Units.is_metric_doc():
+            self.template_path = 'data/landXML-metric-template.xml'
 
         obj.Proxy = self
 
@@ -115,16 +124,50 @@ class _XmlFpo():
         '''
         pass
 
-    def read(xml_id):
+    def update(xml_id, key, data):
+        '''
+        Update the dataset for the passed xml id
+        '''
+
+        if not xml_id in self.XML_ID:
+            print('Invalid XML data id')
+            return
+
+        self._lat_action(xml_id, 'update')
+
+        self.data[xml_id][key] = data
+
+    def read(self, xml_id):
         '''
         Read the transient xml specified in xml_id.
 
         See XML_ID const member for valid id's
         '''
 
-    def write(xml_id):
+        if not xml_id in self.XML_ID:
+            print('Invalid XML data id')
+            return
+
+        if not self.last_action[xml_id] == 'read':
+            self.last_action[xml_id] = 'read'
+            self.data = self.importer.import_file()
+
+        return self.data
+
+    def write(self, xml_id):
         '''
         Write the transient xml data to the file specified by xml_id
 
         See XML_ID const member for valid id's
         '''
+
+        if not xml_id in self.XML_ID:
+            print('Invalid XML data id')
+            return
+
+        if not self.last_action[xml_id] == 'write':
+            self.last_action[xml_id] = 'write'
+            return
+
+        tree = etree.parse(self.template_path)
+        self.exporter.write(tree, self.data, App.ActiveDocument.TransientDir + '/' + xml_id + '.xml')            
