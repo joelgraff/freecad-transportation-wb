@@ -56,7 +56,6 @@ class ImportAlignmentTask:
             for _e in self.subtask.errors:
                 print(_e)
 
-
         if not data:
             return None
 
@@ -78,6 +77,8 @@ class ImportAlignmentTask:
                 print(_e)
 
         #get all alignment objects and export them to the transient XML file
+
+        App.ActiveDocument.getObject('Document_Data').write('alignment')
 
         return True
 

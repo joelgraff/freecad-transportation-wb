@@ -47,6 +47,34 @@ class Constants(Const):
     half_pi = math.pi / 2.0     #   1/2 * pi in radians
     one_radian = 180 / math.pi  #   one radian in degrees
 
+def to_float(value):
+    '''
+    Return true if string value is float
+    '''
+
+    result = None
+
+    try:
+        result=float(value)
+    except:
+        pass
+
+    return result
+
+def to_int(value):
+    '''
+    Return true if string is an integer
+    '''
+
+    result = None
+
+    try:
+        result = int(float(value))
+    except:
+        pass
+    
+    return result
+
 def directed_angle(in_vector, out_vector):
     '''
     Returns a signed angle in radians, < 0 == CCW, > 0 = CW

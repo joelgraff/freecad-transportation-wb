@@ -36,12 +36,26 @@ from transportationwb.ScriptedObjectSupport.Const import Const
 class XmlKeyMaps(Const):
 
     XML_META_KEYS = {'name': 'ID', 'staStart': 'StartStation', 'desc': 'Description', 'state': 'Status', 'length': 'Length', 'units': 'Units'}
+    XML_META_TYPES = {'name': 'string', 'staStart': 'float', 'desc': 'string', 'state': 'string', 'length': 'float', 'units': 'string'}
     XML_STATION_KEYS = {'staAhead': 'Ahead', 'staBack': 'Back', 'staInternal': 'Position', 'staIncrement': 'Direction', 'desc': 'Description'}
-    XML_CURVE_KEYS = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radius': 'Radius'}
-    XML_CURVE_KEYS_OPT = {'chord': 'Chrod', 'delta': 'Delta', 'external': 'External', 'length': 'Length', 'midOrd': 'MiddleOrd', 'tangent': 'Tangent'}
+    XML_STATION_TYPES = {'staAhead': 'float', 'staBack': 'float', 'staInternal': 'float', 'staIncrement': 'int', 'desc': 'string'}
+    XML_CURVE_KEYS = {}
+    XML_CURVE_KEYS_TYPES = {}
+    XML_CURVE_KEYS_OPT = {}
+    XML_CURVE_KEYS_OPT_TYPES = {}
+
+    XML_CURVE_KEYS['arc'] = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radius': 'Radius'}
+    XML_CURVE_KEYS_TYPES['arc'] = {'rot': 'string', 'dirStart': 'float', 'dirEnd': 'float', 'staStart': 'float', 'radius': 'float'}
+    XML_CURVE_KEYS_OPT['arc'] = {'chord': 'Chord', 'delta': 'Delta', 'external': 'External', 'length': 'Length', 'midOrd': 'MiddleOrd', 'tangent': 'Tangent'}
+    XML_CURVE_KEYS_OPT_TYPES['arc'] = {'chord': 'float', 'delta': 'float', 'external': 'float', 'length': 'float', 'midOrd': 'float', 'tangent': 'float'}
+    XML_CURVE_KEYS['spiral'] = {'rot': 'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radiusStart': 'Radius', 'length': 'Length'}
+    XML_CURVE_KEYS_TYPES['spiral'] = {'rot': 'string', 'dirStart': 'float', 'dirEnd': 'float', 'staStart': 'float', 'radius': 'float', 'length': 'float'}
+    XML_CURVE_KEYS_OPT['spiral'] = {{'chord': 'Chord', 'theta': 'Delta', 'constant': 'Constant', 'desc': 'Description', 'totalX': 'TotalX', 'totalY': 'TotalY', 'tanLong': 'Tangent', 'tanShort': 'InternalTangent'}}
+    XML_CURVE_KEYS_OPT_TYPES['spiral'] = {{'chord': 'float', 'theta': 'float', 'constant': 'float', 'totalX': 'float', 'totalY': 'float', 'tanLong': 'float', 'tanShort': 'float'}}
 
     #A line is simply a curve with zero radius.  It's direction is the out-going bearing, it's PI is the starting point
     XML_LINE_KEYS = {'dir': 'OutBearing','length': 'Length', 'staStart': 'PcStation'}
+    XML_LINE_KEYS_TYPES = {'dir': 'float', 'length': 'float', 'staStart': 'float'}
 
 class AlignmentImporter(object):
     '''
@@ -125,6 +139,25 @@ class AlignmentImporter(object):
 
         return len(self.errors) == 0
 
+    @staticmethod
+    def _convert_token(value, typ):
+        '''
+        Converts a string token to a float or integer value as indicated by type
+        Returns None if fails
+        value = string token
+        typ = numeric type: 'float' or 'int'
+        '''
+
+        if not value:
+            return None
+
+        if typ == 'int':
+            return Utils.to_int(value)
+        elif typ == 'float':
+            return Utils.to_float(value)
+
+        return None
+        
     def _parse_meta_data(self, alignments):
         '''
         Parse the alignment elements and strip out meta data for each alignment, returning it as a dictionary
@@ -139,7 +172,15 @@ class AlignmentImporter(object):
             result[align_name] = {}
 
             for key, value in self.maps.XML_META_KEYS.items():
-                result[align_name][value] = attribs.get(key)
+
+                typ = maps.XML_META_KEYS[key]:
+                attr_val = self._convert_token(attribs.get(key), typ)
+
+                if not attr_val:
+                    self.errors.append('Missing or invalid %s attrubte in alignment %s' % (typ, alilgn_name))
+
+                else:
+                    result[align_name][value] = attribs.get(key)
 
         return result
 
@@ -208,11 +249,18 @@ class AlignmentImporter(object):
 
                 for key, value in self.maps.XML_STATION_KEYS.items():
 
-                    result[align_name][tuple_key][value] = attribs.get(key)
+                    typ = maps.XML_STATION_KEYS[key]:
+                    attr_val = self._convert_token(attribs.get(key), typ)
+
+                    if not attr_val:
+                        self.errors.append('Missing or invalid %s attrubte in alignment %s' % (typ, alilgn_name))
+
+                    else:
+                        result[align_name][tuple_key][value] = attribs.get(key)
 
         return result
 
-    def _parse_curve_data(self, align_name, curves):
+    def _parse_curve_data(self, align_name, curves, curve_type = 'arc'):
         '''
         Parse curve data.  Returns a list of dictionaries describing:
 
@@ -228,7 +276,7 @@ class AlignmentImporter(object):
 
         for curve in curves:
 
-            result.append({'type': 'arc'})
+            result.append({'type': curve_type})
 
             attribs = curve.attrib
 
@@ -238,20 +286,28 @@ class AlignmentImporter(object):
             _end = LandXml.get_child(curve, 'End')
 
             #required attributes - skip curve if any are missing
-            for key, value in self.maps.XML_CURVE_KEYS.items():
+            for key, value in self.maps.XML_CURVE_KEYS[curve_type].items():
 
-                attr_val = attribs.get(key)
+                typ = maps.XML_CURVE_KEYS[curve_type][key]:
+                attr_val = self._convert_token(attribs.get(key), typ)
 
-                if attr_val is None:
-                    self.errors.append('Missing attribute %s for curve in alignment %s' % (attr_val, align_name))
-                    break
+                if not attr_val:
+                    self.errors.append('Missing or invalid %s attribute in alignment %s' % (typ, alilgn_name))
 
-                result[-1][value] = attr_val
+                else:
+                    result[-1][value] = attr_val
 
             #optional attributes
-            for key, value in self.maps.XML_CURVE_KEYS_OPT.items():
+            for key, value in self.maps.XML_CURVE_KEYS_OPT[curve_type].items():
 
-                result[-1][value] = attribs.get(key)
+                    typ = maps.XML_CURVE_OPT_KEYS[curve_type][key]:
+                    attr_val = self._convert_token(attribs.get(key), typ)
+
+                    if not attr_val:
+                        self.errors.append('Missing or invalid %s attribute in alignment %s' % (typ, alilgn_name))
+
+                    else:
+                        result[-1][value] = attribs.get(key)
 
             if _pi is None:
                 self.errors.append('No PI found for curve in %s' % align_name)
@@ -270,7 +326,7 @@ class AlignmentImporter(object):
             if _end:
                 result[-1]['End'] = LandXml.build_vector(LandXml.get_float_list(_end.text))
 
-        return result
+        return result        
 
     def _parse_line_data(self, align_name, lines):
         '''
@@ -330,10 +386,14 @@ class AlignmentImporter(object):
                 continue
 
             curves = LandXml.get_children(coord_geo, 'Curve')
+            spirals = LandXml.get_children(coord_geo, 'Spirals')
             lines = LandXml.get_children(coord_geo, 'Lines')
 
             if curves:
                 result[align_name] = self._parse_curve_data(align_name, curves)
+
+            if spirals:
+                result[align_name] = self._parse_spiral_data(align_name, spirals)
 
             if lines:
                 result[align_name].extend(self._parse_line_data(align_name, lines))
