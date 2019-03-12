@@ -30,7 +30,7 @@ from PySide import QtGui, QtCore
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from transportationwb.Project.Tasks.alignment import AlignmentXmlImporter
+from transportationwb.XML.AlignmentImporter import AlignmentImporter
 from transportationwb.ScriptedObjectSupport import WidgetModel
 
 def create(panel, filepath):
@@ -43,7 +43,7 @@ class ImportXmlSubtask:
 
         self.panel = panel
 
-        self.parser = AlignmentXmlImporter.AlignmentXmlImporter()
+        self.parser = AlignmentImporter()
         self.data = self.parser.import_file(filepath)
 
         if self.parser.errors:

@@ -76,6 +76,8 @@ def create(data, object_name='', units='English', parent=None):
     #if not units == 'English':
         #result.set_units(units)
 
+    
+
     Draft._ViewProviderWire(_obj.ViewObject)
 
     App.ActiveDocument.recompute()
@@ -97,6 +99,7 @@ class _HorizontalAlignment(Draft._Wire):
         self.Object = obj
         self.errors = []
         self.geometry = None
+        self.xml_fpo = None
 
         obj.Label = label
         obj.Closed = False
@@ -138,10 +141,6 @@ class _HorizontalAlignment(Draft._Wire):
         '''
 
         self.Object = fp
-
-        data = XmlFile.XmlFile.import_file(App.ActiveDocument.TransientDir + '/alignments.xml', 'r')
-
-        self.geometry = data['Alignments'][fp.ID]
 
     def set_units(self, units):
         '''
@@ -281,11 +280,11 @@ class _HorizontalAlignment(Draft._Wire):
             old_len = len(ordered_list)
             ordered_list = self._order_list(ordered_list)
 
-        self.Object.Geometry = data
+        self.geometry = data
 
         #with an ordered list of indices, create a new data set in the correct order
         if ordered_list[0] != list(range(0,data_len)):
-            self.Object.Geometry = [data[_i] for _i in ordered_list[0]]
+            self.geometry = [data[_i] for _i in ordered_list[0]]
 
     def _order_list(self, tuples):
         '''
@@ -340,6 +339,12 @@ class _HorizontalAlignment(Draft._Wire):
         delattr(self, 'no_execute')
 
         self.Object.Points = self._discretize_geometry()
+
+        #update the document data FPO with the new alignment dataset
+        if not self.xml_fpo:
+            self.xml_fpo = XmlFpo.create()
+
+        self.xml_fpo.update('alignment', self.ID, self.data)            
 
     def _get_coordinate_at_station(self, station, parent):
         '''
@@ -574,11 +579,69 @@ class _HorizontalAlignment(Draft._Wire):
         interval = self.Object.Seg_Value
         interval_type = self.Object.Method
 
+        prev_curve = self.geometry[0]
+
+        geometry = self.geometry
+
+        if len(geometry) > 1:
+            geometry = geometry[1:]
+            geometry.append(geometry[-1])
+
+        prev_curve_tan = 0.0
+        coords = App.Vector(0.0, 0.0, 0.0)
+
+        for curve in geometry:
+
+            direction = 1.0
+
+            if curve['Direction'] == 'ccw'':
+                direction = -1.0
+
+            bearing_in = math.radians(curve['InBearing'])
+            bearing_out = math.radians(curve['OutBearing'])
+            central_angle = Utils.vector_from_angle(bearing_in).getAngle(Utils.vector_from_angle(bearing_out))
+            curve_tangent = curve['Radius'] * math.tan(central_angle / 2.0)
+
+            #get the length of the previous tangent
+            pi_dist = curve['PI'].distanceToPoint(prev_curve['PI'])
+            prev_tan_len = pi_dist - prev_curve_tan - curve_tangent
+
+            #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
+            if prev_tan_len >= 1:
+                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
+
+            #zero radius means no curve.  We're done
+            if curve['Radius'] > 0.0:
+                if curve['type'] == 'spiral'and curve['Length'] > 0.0:
+                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_curve['Radius'], central_angle * direction, ))
+                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * direction, interval, interval_type))
+
+            #zero radius means no curve.  We're done
+            if prev_geo[2] > 0.0:
+                if prev_geo[3] > 0.0:
+                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, prev_geo[3], interval, interval_type))
+                else:
+                    coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, interval, interval_type))
+
+
+            prev_curve = curve
+            prev_curve_tangent = curve_tangent
+
+        return coords
+
+    def _discretize_geometry_dep(self):
+        '''
+        Discretizes the alignment geometry to a series of vector points
+        '''
+
+        interval = self.Object.Seg_Value
+        interval_type = self.Object.Method
+
         #alignment construction requires a 'look ahead' at the next element
         #This implementation does a 'look back' at the previous.
         #Thus, iteration starts at the second element and
         #the last element is duplicated to ensure it is constructed.
-        geometry = self.Object.Geometry
+        geometry = self.geometry
 
         if not geometry:
             print('No geometry defined.  Unnable to discretize')

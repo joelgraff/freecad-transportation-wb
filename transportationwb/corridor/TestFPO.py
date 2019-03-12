@@ -12,31 +12,84 @@ if App.Gui:
 
 def createTestFpo():
 
-    obj = App.ActiveDocument.addObject("Part::Part2DObjectPython", OBJECT_TYPE)
+    obj_parent = App.ActiveDocument.addObject("Part::Part2DObjectPython", OBJECT_TYPE)
+    obj_child = App.ActiveDocument.addObject("Part::Part2DObjectPython", OBJECT_TYPE)
 
     #obj.Label = translate("Transportation", OBJECT_TYPE)
 
-    test_fpo = _TestFPO(obj)
+    fpo_parent = _TestFPO(obj_parent, 'parent')
 
-    Draft._ViewProviderWire(obj.ViewObject)
+    Draft._ViewProviderWire(obj_parent.ViewObject)
+
+    fpo_child = _TestFPO_child(obj_child, 'child')
+    fpo_child.Object.FpoParent = fpo_parent.Object
 
     App.ActiveDocument.recompute()
 
 class _TestFPO(Draft._Wire):
 
-    def __init__(self, obj):
+    def __init__(self, obj, nam):
         """
         Default Constructor
         """
         obj.Proxy = self
         self.Type = OBJECT_TYPE
         self.Object = obj
-
+        self.name = nam
         super(_TestFPO, self).__init__(obj)
 
-        self.add_property("App::PropertyLength", "StartStation", "Starting station for the cell").StartStation = 0.00
-        self.add_property("App::PropertyLength", "EndStation", "Ending station for the cell").EndStation = 0.00
-        self.add_property("App::PropertyLength", "Length", "Length of baseline").Length = 0.00
+        self.add_property('App::PropertyLink', 'FpoParent', 'FpoParent').FpoParent = None
+
+        self.init = True
+
+    def __getstate__(self):
+        return self.Type
+
+    def __setstate__(self, state):
+        if state:
+            self.Type = state
+
+    def CustomFunction(self):
+
+        print ('CUSTOM FUNCTION')
+
+    def add_property(self, prop_type, prop_name, prop_desc):
+
+        return self.Object.addProperty(prop_type, prop_name, OBJECT_TYPE, QT_TRANSLATE_NOOP("App::Property", prop_desc))
+
+    def onChanged(self, obj, prop):
+
+        if not hasattr(self, 'init'):
+            return
+
+        print ("property " + prop)
+        print (prop)
+
+        prop_obj = obj.getPropertyByName(prop)
+
+        if prop in ["StartStation", "EndStation"]:
+
+            print ("updating property " + prop)
+            self.Object.Length = self.Object.EndStation - self.Object.StartStation
+
+        Gui.updateGui()
+
+        if not hasattr(self, "Object"):
+            self.Object = obj
+
+class _TestFPO_child(Draft._Wire):
+
+    def __init__(self, obj, nam):
+        """
+        Default Constructor
+        """
+        obj.Proxy = self
+        self.Type = OBJECT_TYPE
+        self.Object = obj
+        self.name = nam
+        super(_TestFPO_child, self).__init__(obj)
+
+        self.add_property('App::PropertyLink', 'FpoParent', 'FpoParent').FpoParent = None
 
         self.init = True
 
@@ -77,11 +130,14 @@ class _TestFPO(Draft._Wire):
 
     def execute(self, fpy):
 
-        print("execute")
+        print("execute ", self.name)
+        print(fpy.FpoParent)
 
-        self.CustomFunction()
+        #self.CustomFunction()
 
         Gui.updateGui()
+
+        return False
 
 class _ViewProviderCell:
 

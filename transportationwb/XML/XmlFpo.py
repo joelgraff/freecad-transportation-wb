@@ -27,7 +27,7 @@ Feature Python Object which manages XML document reading, writing, and updating
 '''
 import FreeCAD as App
 import Part
-from transportationwb.ScriptedObjectSupport import Properties
+from transportationwb.ScriptedObjectSupport import Properties, Units
 from transportationwb.XML import AlignmentImporter, AlignmentExporter
 from xml.etree import ElementTree as etree
 
@@ -87,7 +87,7 @@ class _XmlFpo():
         self.Enabled = False
         self.Type = "_" + _CLASS_NAME
         self.Object = obj
-        self.last_action = {'alignment': None}
+        self.last_action = {'alignment': {}}
         self.data = {}
 
         for _id in self.XML_ID:
@@ -119,13 +119,33 @@ class _XmlFpo():
         if state:
             self.Type = state
 
+    def _update_action(self, xml_id, action):
+        '''
+        Set the action last performed on the specified xml id
+        Returns whether or not the action is a change from previous (True = changed)
+        '''
+
+        result = self.last_action['alignment'][xml_id] != action
+
+        if result:
+            self.last_action['alignment'][xml_id] = action
+
+        return result
+
+    def onDocumentRestored(self, fp):
+        '''
+        Restore object references on reload
+        '''
+
+        self.Object = fp
+
     def execute(self, obj):
         '''
         Class execute for recompute calls
         '''
         pass
 
-    def update(xml_id, key, data):
+    def update(self, xml_id, key, data):
         '''
         Update the dataset for the passed xml id
         '''
@@ -134,7 +154,7 @@ class _XmlFpo():
             print('Invalid XML data id')
             return
 
-        self._lat_action(xml_id, 'update')
+        self._update_action(xml_id, 'update')
 
         self.data[xml_id][key] = data
 
@@ -149,9 +169,8 @@ class _XmlFpo():
             print('Invalid XML data id')
             return
 
-        if not self.last_action[xml_id] == 'read':
-            self.last_action[xml_id] = 'read'
-            self.data = self.importer.import_file()
+        if self._update_action(xml_id, 'read'):
+            self.data = self.XML_IO[xml_id]['import'].import_file()
 
         return self.data
 
@@ -166,11 +185,9 @@ class _XmlFpo():
             print('Invalid XML data id')
             return
 
-        if not self.last_action[xml_id] == 'write':
-            self.last_action[xml_id] = 'write'
+        if self._update_action(xml_id, 'write'):
             return
 
-        setattr(self.Object, xmi_id, App.ActiveDocument.TransientDir + '/' + xml_id + '.xml')
-
+        print('writing XML to ', App.ActiveDocument.TransientDir + '/' + xml_id + '.xml')
         tree = etree.parse(self.template_path)
-        self.exporter.write(tree, self.data, self.Object.getPropertyByName(xml_id))            
+        self.XML_IO[xml_id]['export'].write(tree, self.data, App.ActiveDocument.TransientDir + '/' + xml_id + '.xml')            
