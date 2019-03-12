@@ -38,7 +38,7 @@ class XmlKeyMaps(Const):
     XML_CURVE_KEYS['arc'] = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'radius': 'Radius'}
     XML_CURVE_KEYS_TYPES['arc'] = {'rot': 'string', 'dirStart': 'float', 'dirEnd': 'float', 'radius': 'float'}
     XML_CURVE_KEYS_OPT['arc'] = {'chord': 'Chord', 'delta': 'Delta', 'external': 'External', 'length': 'Length', 'midOrd': 'MiddleOrd', 'tangent': 'Tangent', 'staStart': 'PcStation'}
-    XML_CURVE_KEYS_OPT_TYPES['arc'] = {'chord': 'float', 'delta': 'float', 'external': 'float', 'length': 'float', 'midOrd': 'float', 'tangent': 'float' 'staStart': 'float'}
+    XML_CURVE_KEYS_OPT_TYPES['arc'] = {'chord': 'float', 'delta': 'float', 'external': 'float', 'length': 'float', 'midOrd': 'float', 'tangent': 'float', 'staStart': 'float'}
     XML_CURVE_KEYS['spiral'] = {'rot': 'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radiusStart': 'Radius', 'length': 'Length'}
     XML_CURVE_KEYS_TYPES['spiral'] = {'rot': 'string', 'dirStart': 'float', 'dirEnd': 'float', 'staStart': 'float', 'radius': 'float', 'length': 'float'}
     XML_CURVE_KEYS_OPT['spiral'] = {{'chord': 'Chord', 'theta': 'Delta', 'constant': 'Constant', 'desc': 'Description', 'totalX': 'TotalX', 'totalY': 'TotalY', 'tanLong': 'Tangent', 'tanShort': 'InternalTangent'}}

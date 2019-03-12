@@ -333,9 +333,9 @@ class AlignmentImporter(object):
 
             attribs = line.attrib
 
-            for key in self.maps.XML_LINE_KEYS:
+            for key, value in self.maps.XML_LINE_KEYS:
 
-                result[-1][key] = attribs.get(key)
+                result[-1][value] = attribs.get(key)
 
             result[-1]['Start'] = LandXml.build_vector(line_start.split(' '))
             result[-1]['End'] = LandXml.build_vector(line_end.split(' '))

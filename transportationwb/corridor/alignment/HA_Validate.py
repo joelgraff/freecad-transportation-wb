@@ -48,7 +48,7 @@ def station_equations(data):
     '''
 
     if data is None:
-        return [obj.Station_Equations.append(]App.Vector(0.0, 0.0, 0.0)]
+        return [obj.Station_Equations.append([App.Vector(0.0, 0.0, 0.0)])]
 
     result = []
 
@@ -61,17 +61,51 @@ def station_equations(data):
 
     return result
 
-def _validate_curve(data):
+_tan    = lambda radius, delta: radius * math.tan(delta / 2.0)
+_quad   = lambda angle: (angle % math.pi) * -1
+_delta  = lambda bearing_in, bearing_out: abs(bearing_out - bearing_in)
+
+_lambdas = {}
+_lambdas['Length']      = lambda radius, delta: radius * delta
+_lambdas['External']    = lambda radius, delta: radius * ((1 / math.cos(delta / 2.0)) - 1)
+_lambdas['MiddleOrd']   = lambda radius, delta: radius * (1 - cos(delta / 2.0))
+_lambdas['Chord']       = lambda radius, delta: 2.0 * radius * sin(delta / 2.0)
+_lambdas['Tangent']     = _tan
+_lambdas['TangentDelta']= lambda radius, delta: App.Vector(_tan(radius, delta) * _quad(delta) * math.sin(delta), _tan(radius, delta) * _quad(delta) * math.cos(delta), 0.0)
+
+def _validate_arc(curve):
     '''
-    Validate a curve
+    Validate a single-center curve
     '''
 
-    for key in HorizontalKeyMaps().XML_CURVE_KEYS_OPT.keys():
+    delta = _delta(curve['InBearing'], curve['OutBearing'])
+    radius = curve['Radius']
 
-        if key in data.keys():
+    for key, value in HorizontalKeyMaps().XML_CURVE_KEYS_OPT['arc'].items():
+
+        #don't compute attribs that exist or stations
+        if value in curve.keys() or value == 'PcStation':
             continue
 
-        if key == ''
+        curve[value] = _lambdas[value](radius, delta)
+
+XML_CURVE_KEYS_OPT['spiral'] = {{'chord': 'Chord', 'theta': 'Delta', 'constant': 'Constant', 'desc': 'Description', 'totalX': 'TotalX', 'totalY': 'TotalY', 'tanLong': 'Tangent', 'tanShort': 'InternalTangent'}}
+
+def _validate_spiral(curve):
+    '''
+    Validate a spiral curve
+    '''
+
+    delta = _delta(curve['InBearing'], curve['OutBearing'])
+    radius = curve['Radius']
+
+    for key, value in HorizontalKeyMaps().XML_CURVE_KEYS_OPT['arc'].items():
+
+        #don't compute attribs that exist or stations
+        if value in curve.keys() or value == 'PcStation':
+            continue
+
+        curve[value] = _lambdas[value](radius, delta)
 
 def geometry_data(data):
     '''
