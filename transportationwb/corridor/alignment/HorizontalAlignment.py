@@ -37,7 +37,7 @@ from xml.etree import ElementTree as etree
 
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties, Singleton
 from transportationwb.XML import XmlFpo
-
+from transportationwb.corridor.alignment import HA_Validate
 
 _CLASS_NAME = 'HorizontalAlignment'
 _TYPE = 'Part::Part2DObjectPython'
@@ -150,35 +150,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         self.Object.Units = units
 
-    def assign_meta_data(self, data):
-        '''
-        Extract the meta data for the alignment from the data set
-        Check it for errors
-        Assign properties
-        '''
-
-        obj = self.Object
-
-        if data['ID']:
-            obj.ID = data['ID']
-
-    def assign_station_data(self, data):
-        '''
-        Assign the station equation data
-        '''
-
-        obj = self.Object
-
-        for key in data.keys():
-
-            back = key[0]
-            ahead = key[1]
-
-            eqns = obj.Station_Equations
-            eqns.append(App.Vector(back, ahead, 0.0))
-
-            obj.Station_Equations = eqns
-
     def assign_geometry_data(self, data):
         '''
         Validate the coordinate geometry data by ensuring
@@ -187,17 +158,15 @@ class _HorizontalAlignment(Draft._Wire):
         data - a list of curve dictionaries
         '''
 
-        #XML_CURVE_KEYS = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radius': 'Radius'}
-        #XML_LINE_KEYS = {'dir': 'Direction', 'length': 'Length', 'staStart': 'PcStation'}
-
         matches = []
 
-        data_len = len(data)
+        curve_data = data['curve']
+        data_len = len(curve_data)
 
         for _i in range(0, data_len):
             
             ################# Test for coincident endpoints
-            curve_1 = data[_i]
+            curve_1 = curve_data[_i]
             end_point = curve_1.get('End')
 
             if end_point:
@@ -205,7 +174,7 @@ class _HorizontalAlignment(Draft._Wire):
                 #test for coincident start / end points
                 for _j in range(0, data_len):
 
-                    start_point = data[_j].get('Start')
+                    start_point = curve_data[_j].get('Start')
 
                     if start_point:
 
@@ -228,7 +197,7 @@ class _HorizontalAlignment(Draft._Wire):
                 for _j in range(0, data_len):
 
                     #matching bearings may be adjacent curves
-                    if out_bearing == data[_j].get('InBearing'):
+                    if out_bearing == curve_data[_j].get('InBearing'):
                         lst.append(_j)
 
                 #no matches found, skip the remainder of the iteration
@@ -243,14 +212,13 @@ class _HorizontalAlignment(Draft._Wire):
                 #still here?  Multiple matches found.
                 #test for more than one curve with a matching bearing,
                 #picking the shortest as the adjacent curve
-                match = lst[0]
                 max_dist = None
                 nearest_pi = None
 
                 for _x in lst:
 
                     pi_1 = curve_1.get('PI')
-                    pi_2 = data[_j].get('PI')
+                    pi_2 = curve_data[_j].get('PI')
 
                     if not pi_1 or not pi_2:
                         print ('Missing PI in ' + self.Object.ID)
@@ -280,11 +248,13 @@ class _HorizontalAlignment(Draft._Wire):
             old_len = len(ordered_list)
             ordered_list = self._order_list(ordered_list)
 
-        self.geometry = data
+        self.geometry = curve_data
 
         #with an ordered list of indices, create a new data set in the correct order
-        if ordered_list[0] != list(range(0,data_len)):
-            self.geometry = [data[_i] for _i in ordered_list[0]]
+        if ordered_list[0] != list(range(0, data_len)):
+            self.geometry = [curve_data[_i] for _i in ordered_list[0]]
+
+        
 
     def _order_list(self, tuples):
         '''
@@ -319,6 +289,35 @@ class _HorizontalAlignment(Draft._Wire):
 
         return tuple_pairs
 
+    def _get_station_position(self, station):
+        '''
+        Using the station equations, determine the position along the alingment
+        '''
+
+        start_sta = self.Object.Station_Equations[0].y
+
+        eqs = self.Object.Station_Equations
+
+        #shortcut if only the starting station is specified
+        if len(eqs) == 1:
+            return station - start_sta
+
+        position = 0.0
+
+        for _eq in eqs[1:]:
+
+            #return the internal position if the station falls within the equation
+            if start_sta < station < _eq.x:
+                return position + station - start_sta
+
+            #increment the position by the equaion length and
+            #set the starting station to the next equation
+            position += _eq.x - start_sta
+            start_sta = _eq.y
+
+        #no more equations - station falls outside of last equation
+        return position + station - start_sta
+
     def set_data(self, data):
         '''
         Assign curve data to object, parsing and converting to coordinate form
@@ -326,15 +325,16 @@ class _HorizontalAlignment(Draft._Wire):
 
         self.no_execute = True
 
-        self.assign_meta_data(data['meta'])
-        self.assign_station_data(data['station'])
+        self.Object.ID = HA_Validate.metadata(data['meta'])['ID']
+        self.Object.Station_Equations = HA_Validate.station_data(data['station'])
+        self.geometry = HA_Validate.geometry_data(data['curve'])
 
         #int_eq = self.Object.Intersection_Equation
 
         #if int_eq.Length:
         #    datum = self._get_coordinate_at_station(int_eq[0], self.Object.Parent_Alignment) / 304.80
 
-        self.assign_geometry_data(data['curve'])
+        #self.assign_geometry_data(data)
 
         delattr(self, 'no_execute')
 
@@ -583,10 +583,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         geometry = self.geometry
 
-        if len(geometry) > 1:
-            geometry = geometry[1:]
-            geometry.append(geometry[-1])
-
         prev_curve_tan = 0.0
         coords = App.Vector(0.0, 0.0, 0.0)
 
@@ -594,7 +590,7 @@ class _HorizontalAlignment(Draft._Wire):
 
             direction = 1.0
 
-            if curve['Direction'] == 'ccw'':
+            if curve['Direction'] == 'ccw':
                 direction = -1.0
 
             bearing_in = math.radians(curve['InBearing'])
@@ -610,10 +606,10 @@ class _HorizontalAlignment(Draft._Wire):
             if prev_tan_len >= 1:
                 coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
 
-            #zero radius means no curve.  We're done
-            if curve['Radius'] > 0.0:
-                if curve['type'] == 'spiral'and curve['Length'] > 0.0:
-                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_curve['Radius'], central_angle * direction, ))
+            #zero radius means no curve.
+            if prev_curve['Radius'] > 0.0:
+                if prev_curve['type'] == 'spiral'and prev_curve['Length'] > 0.0:
+                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_curve['Radius'], central_angle * direction, prev_curve['Length']))
                 coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * direction, interval, interval_type))
 
             #zero radius means no curve.  We're done

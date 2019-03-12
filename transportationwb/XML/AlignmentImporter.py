@@ -32,30 +32,7 @@ import FreeCAD as App
 
 from transportationwb.ScriptedObjectSupport import Units, LandXml
 from transportationwb.ScriptedObjectSupport.Const import Const
-
-class XmlKeyMaps(Const):
-
-    XML_META_KEYS = {'name': 'ID', 'staStart': 'StartStation', 'desc': 'Description', 'state': 'Status', 'length': 'Length', 'units': 'Units'}
-    XML_META_TYPES = {'name': 'string', 'staStart': 'float', 'desc': 'string', 'state': 'string', 'length': 'float', 'units': 'string'}
-    XML_STATION_KEYS = {'staAhead': 'Ahead', 'staBack': 'Back', 'staInternal': 'Position', 'staIncrement': 'Direction', 'desc': 'Description'}
-    XML_STATION_TYPES = {'staAhead': 'float', 'staBack': 'float', 'staInternal': 'float', 'staIncrement': 'int', 'desc': 'string'}
-    XML_CURVE_KEYS = {}
-    XML_CURVE_KEYS_TYPES = {}
-    XML_CURVE_KEYS_OPT = {}
-    XML_CURVE_KEYS_OPT_TYPES = {}
-
-    XML_CURVE_KEYS['arc'] = {'rot':'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radius': 'Radius'}
-    XML_CURVE_KEYS_TYPES['arc'] = {'rot': 'string', 'dirStart': 'float', 'dirEnd': 'float', 'staStart': 'float', 'radius': 'float'}
-    XML_CURVE_KEYS_OPT['arc'] = {'chord': 'Chord', 'delta': 'Delta', 'external': 'External', 'length': 'Length', 'midOrd': 'MiddleOrd', 'tangent': 'Tangent'}
-    XML_CURVE_KEYS_OPT_TYPES['arc'] = {'chord': 'float', 'delta': 'float', 'external': 'float', 'length': 'float', 'midOrd': 'float', 'tangent': 'float'}
-    XML_CURVE_KEYS['spiral'] = {'rot': 'Direction', 'dirStart': 'InBearing', 'dirEnd': 'OutBearing', 'staStart': 'PcStation', 'radiusStart': 'Radius', 'length': 'Length'}
-    XML_CURVE_KEYS_TYPES['spiral'] = {'rot': 'string', 'dirStart': 'float', 'dirEnd': 'float', 'staStart': 'float', 'radius': 'float', 'length': 'float'}
-    XML_CURVE_KEYS_OPT['spiral'] = {{'chord': 'Chord', 'theta': 'Delta', 'constant': 'Constant', 'desc': 'Description', 'totalX': 'TotalX', 'totalY': 'TotalY', 'tanLong': 'Tangent', 'tanShort': 'InternalTangent'}}
-    XML_CURVE_KEYS_OPT_TYPES['spiral'] = {{'chord': 'float', 'theta': 'float', 'constant': 'float', 'totalX': 'float', 'totalY': 'float', 'tanLong': 'float', 'tanShort': 'float'}}
-
-    #A line is simply a curve with zero radius.  It's direction is the out-going bearing, it's PI is the starting point
-    XML_LINE_KEYS = {'dir': 'OutBearing','length': 'Length', 'staStart': 'PcStation'}
-    XML_LINE_KEYS_TYPES = {'dir': 'float', 'length': 'float', 'staStart': 'float'}
+from transportationwb.XML.HorizontalKeyMaps import HorizontalKeyMaps
 
 class AlignmentImporter(object):
     '''
@@ -65,7 +42,7 @@ class AlignmentImporter(object):
     def __init__(self):
 
         self.errors = []
-        self.maps = XmlKeyMaps()
+        self.maps = HorizontalKeyMaps()
 
     def _validate_units(self, units):
         '''
@@ -224,7 +201,9 @@ class AlignmentImporter(object):
         for alignment in alignments:
 
             align_name = alignment.attrib.get('name')
-            result[align_name] = {}
+
+            #save the starting station as a station equation (ahead-only)
+            result[align_name] = {(-1), self._convert_token(alignment.attrib.get('staStart'), 'float')}
 
             sta_eqs = LandXml.get_children(alignment, 'StaEquation')
 
