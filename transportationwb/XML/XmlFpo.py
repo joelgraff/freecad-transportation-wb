@@ -101,7 +101,8 @@ class _XmlFpo():
         obj.Proxy = self
 
         #add class properties
-        Properties.add(obj, 'FileIncluded', 'Alignment XML', 'Internal XML for Alignments', None, is_hidden=True)
+        for _id in self.XML_ID:
+            Properties.add(obj, 'FileIncluded', _id, 'Internal XML for ' + _id, None, is_hidden=True)
 
         self.Enabled = True
 
@@ -169,5 +170,7 @@ class _XmlFpo():
             self.last_action[xml_id] = 'write'
             return
 
+        setattr(self.Object, xmi_id, App.ActiveDocument.TransientDir + '/' + xml_id + '.xml')
+
         tree = etree.parse(self.template_path)
-        self.exporter.write(tree, self.data, App.ActiveDocument.TransientDir + '/' + xml_id + '.xml')            
+        self.exporter.write(tree, self.data, self.Object.getPropertyByName(xml_id))            
