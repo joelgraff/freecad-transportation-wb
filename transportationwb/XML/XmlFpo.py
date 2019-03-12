@@ -101,7 +101,8 @@ class _XmlFpo():
         obj.Proxy = self
 
         #add class properties
-        Properties.add(obj, 'FileIncluded', 'Alignment XML', 'Internal XML for Alignments', None, is_hidden=True)
+        for _id in self.XML_ID:
+            Properties.add(obj, 'FileIncluded', _id, 'Internal XML for ' + _id, None, is_hidden=True)
 
         self.Enabled = True
 
