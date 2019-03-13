@@ -89,8 +89,6 @@ def _validate_arc(curve):
 
         curve[value] = _lambdas[value](radius, delta)
 
-XML_CURVE_KEYS_OPT['spiral'] = {{'chord': 'Chord', 'theta': 'Delta', 'constant': 'Constant', 'desc': 'Description', 'totalX': 'TotalX', 'totalY': 'TotalY', 'tanLong': 'Tangent', 'tanShort': 'InternalTangent'}}
-
 def _validate_spiral(curve):
     '''
     Validate a spiral curve

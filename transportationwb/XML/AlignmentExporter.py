@@ -31,7 +31,6 @@ from xml.etree import ElementTree as etree
 import FreeCAD as App
 
 from transportationwb.ScriptedObjectSupport import Units, LandXml
-from transportationwb.XML.AlignmentImporter import XmlKeyMaps
 
 class AlignmentExporter(object):
     '''
@@ -44,15 +43,15 @@ class AlignmentExporter(object):
     def __init__(self):
 
         self.errors = []
-        self.maps = XmlKeyMaps()
+        self.maps = None
 
     def _write_meta_data(self, data, root):
         '''
         Write out the meta data into the internal XML file
         '''
-
-        LandXml.get_child(root, 'Project').set('name', data['meta'][self.maps['name']])
-        LandXml.get_child(root, 'Application').set('version', '.'.join(App.version()[:3]))
+        pass
+        #LandXml.get_child(root, 'Project').set('name', data['meta'][self.maps['name']])
+        #LandXml.get_child(root, 'Application').set('version', '.'.join(App.version()[:3]))
 
     def _write_curve_data(self, data, root):
         '''

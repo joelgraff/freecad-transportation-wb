@@ -25,24 +25,77 @@
 Importer for Alignments in LandXML files
 '''
 
-from shutil import copyfile
 from xml.etree import ElementTree as etree
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Units, LandXml
-from transportationwb.ScriptedObjectSupport.Const import Const
-from transportationwb.XML.HorizontalKeyMaps import HorizontalKeyMaps
+from transportationwb.ScriptedObjectSupport import Units, LandXml, Utils
 
 class AlignmentImporter(object):
     '''
     LandXML parsing class for alignments
     '''
 
+    #LandXML attribute tags and corresponding data types - empty type defaults to 'string'
+    #'name' is required, but is tested for explictly, so it is considered optional here
+    META_TAGS = {
+        'req': {'length': ('Length', 'float'), 'staStart': ('StartStaion', 'float')},
+        'opt': {'name': ('ID', ''), 'desc': ('Description', ''), 'oID': ('ObjectID', ''),
+                'state': ('Status', '')}
+    }
+
+    STATION_TAGS = {
+        'req': {'staAhead': ('Ahead', 'float'), 'staInternal': ('Position', 'float')},
+        'opt': {    'staBack': ('Back', 'float'), 'staIncrement': ('Direction', ''),
+                    'desc': ('Description', '')}
+    }
+
+    GEOM_TAGS = {}
+    GEOM_TAGS['line'] = {
+        'req': {},
+        'opt': {
+            'desc': ('Description', ''), 'dir': ('BearingOut', 'float'),
+            'length': ('Length', 'float'), 'name': ('Name', ''),
+            'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
+            'oID': ('ObjectID', ''), 'note': ('Note', '')
+        }
+    }
+
+    GEOM_TAGS['spiral'] = {
+        'req': {
+            'length': ('Length', 'float'), 'radiusEnd': ('RadiusEnd',  'float'),
+            'radiusStart': ('RadiusStart', 'float'), 'rot': ('Direction', ''),
+            'spiType': ('SpiralType', '')
+        },
+        'opt': {
+            'chord': ('Chord', 'float'), 'constant': ('Constant', 'float'),
+            'desc': ('Description', ''), 'dirEnd': ('OutBearing', 'float'),
+            'dirStart': ('InBearing', 'float'), 'external': ('External', 'float'),
+            'length': ('length', 'float'), 'midOrd': ('MiddleOrdinate', 'float'),
+            'name': ('Name', ''), 'radius': ('Radius', 'float'),
+            'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
+            'tangent': ('Tangent', 'float'), 'oID': ('ObjectID', ''), 'note': ('Note', '')
+        }
+    }
+
+
+    GEOM_TAGS['arc'] = {
+        'req': {'rot': ('Direction', '')},
+        'opt': {
+            'chord': ('Chord', 'float'), 'crvType': ('CurveType', ''), 'delta': ('Delta', 'float'),
+            'desc': ('Description', ''), 'dirEnd': ('OutBearing', 'float'),
+            'dirStart': ('InBearing', 'float'), 'external': ('External', 'float'),
+            'length': ('length', 'float'), 'midOrd': ('MiddleOrdinate', 'float'),
+            'name': ('Name', ''), 'radius': ('Radius', 'float'),
+            'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
+            'tangent': ('Tangent', 'float'), 'oID': ('ObjectID', ''), 'note': ('Note', '')
+        }
+    }
+
+
     def __init__(self):
 
         self.errors = []
-        self.maps = HorizontalKeyMaps()
 
     def _validate_units(self, units):
         '''
@@ -56,65 +109,12 @@ class AlignmentImporter(object):
         xml_units = units[0].attrib['linearUnit']
 
         if xml_units != Units.get_doc_units()[1]:
-            self.errors.append('Document units of ' + Units.get_doc_units()[1] + ' expected, units of ' + xml_units + 'found')
+            self.errors.append(
+                'Document units of ' + Units.get_doc_units()[1] + ' expected, units of ' +
+                xml_units + 'found')
             return ''
 
         return xml_units
-
-    def _validate_alignments(self, alignments):
-        '''
-        Validate the alignments in the XML file, ensuring the minimum data is found
-        '''
-
-        if alignments is None:
-            self.errors.append('Missing alignments')
-            return False
-
-        for alignment in alignments:
-
-            align_name = alignment.attrib['name']
-
-            if not all(_key in alignment.attrib for _key in list(self.maps.XML_META_KEYS.keys())[:2]):
-               self.errors.append('Incomplete alignment attributes found for ' + align_name)
-
-            coord_geo = LandXml.get_child(alignment, 'CoordGeom')
-            sta_eqs = LandXml.get_children(alignment, 'StaEquation')
-
-            for sta_eq in sta_eqs:
-
-                if not all(_key in sta_eq.attrib for _key in list(self.maps.XML_STATION_KEYS.keys())[:2]):
-                    self.errors.append('Missing back / ahead station equation data for ' + align_name)
-
-                if not LandXml.is_float([sta_eq.attrib['staBack'], sta_eq.attrib['staAhead']]):
-                    self.errors.append('Invalid back / ahead station equation data for ' + align_name)
-
-            if coord_geo is None:
-                self.errors.append('Missing CoordGeom for ' + align_name)
-
-            if not coord_geo:
-                self.errors.append('Missing curve data for ' + align_name)
-
-            curve_idx = 0
-
-            if coord_geo:
-
-                for curve in coord_geo:
-
-                    curve_idx += 1
-
-                    if not all(_key in curve.attrib for _key in list(self.maps.XML_CURVE_KEYS.keys())):
-                        self.errors.append('Missing curve attributes for cuve ' + str(curve_idx) + ' in ' + align_name)
-
-                    if not curve:
-                        self.errors.append('Missing PI for curve ' + str(curve_idx) + ' in ' + align_name)
-                        continue
-
-                    values = LandXml.get_float_list(curve[0].text)
-
-                    if not LandXml.is_float(values):
-                        self.errors.append('Invalid or missing PI coordinates for curve ' + str(curve_idx) + ' in ' + align_name)
-
-        return len(self.errors) == 0
 
     @staticmethod
     def _convert_token(value, typ):
@@ -122,275 +122,172 @@ class AlignmentImporter(object):
         Converts a string token to a float or integer value as indicated by type
         Returns None if fails
         value = string token
-        typ = numeric type: 'float' or 'int'
+        typ = numeric type: 'float', 'int', 'vector'
         '''
 
         if not value:
             return None
 
+        if typ == 'string' or not typ:
+            return value
+
         if typ == 'int':
             return Utils.to_int(value)
-        elif typ == 'float':
+
+        if typ == 'float':
             return Utils.to_float(value)
 
+        if typ == 'vector':
+            coords = Utils.to_float(value.split(' '))
+
+            if coords:
+                return App.vector(coords)
+
         return None
-        
-    def _parse_meta_data(self, alignments):
-        '''
-        Parse the alignment elements and strip out meta data for each alignment, returning it as a dictionary
-        '''
-
-        result = {}
-
-        for alignment in alignments:
-
-            align_name = alignment.attrib.get('name')
-            attribs = alignment.attrib
-            result[align_name] = {}
-
-            for key, value in self.maps.XML_META_KEYS.items():
-
-                typ = maps.XML_META_KEYS[key]:
-                attr_val = self._convert_token(attribs.get(key), typ)
-
-                if not attr_val:
-                    self.errors.append('Missing or invalid %s attrubte in alignment %s' % (typ, alilgn_name))
-
-                else:
-                    result[align_name][value] = attribs.get(key)
-
-        return result
 
     @staticmethod
-    def _build_tuple_station_key(back, ahead):
+    def _get_alignment_name(alignment, alignment_keys):
         '''
-        Convert a station string to a floating point value,
-        returning none if it contains invalid characters
-        '''
-
-        _b = back.replace('+', '')
-        _a = ahead.replace('+', '')
-
-        if _b == '':
-            _b = '0.0'
-
-        if _a == '':
-            _a = '0.0'
-
-        try:
-            float(_b)
-            float(_a)
-        except:
-            return None
-
-        return (float(_b), float(_a))
-
-    def _parse_station_data(self, alignments):
-        '''
-        Parse the alignment data to get station equations and return a dictionary
-
-        Station equations are stored in a sub-dictionary for each alignment keyed to the alignment name.
-        Each sub-dictionary item is another dictionary keyed to the station equation attributes.
-        Each sub-dictioanry item is keyed in the main dictionary with a tuple of the back / forward stations.
-
-        Thus: station_data['align_name'][-1]['desc'] = description of last station equation in the specified alignment
+        Return a valid alignment name, if not defiend or otherwise duplicate
         '''
 
+        align_name = alignment.attrib.get('name')
+
+        #alignment name is requiredand must be unique
+        if align_name is None:
+            align_name = 'Unkown Alignment '
+
+        counter = 0
+
+        #test for key uniqueness
+        while align_name + str(counter) in alignment_keys:
+            counter += 1
+
+        if counter:
+            align_name += str(counter)
+
+        return align_name
+
+    def _parse_data(self, align_name, tags, attrib):
+        '''
+        '''
         result = {}
 
-        for alignment in alignments:
+        #test to ensure all required tags are in the imrpoted XML data
+        missing_tags = set(
+            list(tags['req'].keys())
+        ).difference(
+            set(list(attrib.keys()))
+        )
 
-            align_name = alignment.attrib.get('name')
+        #report error and skip the alignment if required tags are missing
+        if missing_tags:
+            self.errors.append(
+                'The required XML tags were not found in alignment %s:\n%s'
+                % (align_name, missing_tags)
+            )
+            return None
 
-            #save the starting station as a station equation (ahead-only)
-            result[align_name] = {(-1), self._convert_token(alignment.attrib.get('staStart'), 'float')}
+        #merge the required / optional tag dictionaries and iterate the items
+        for key, _tuple in  {**tags['req'], **tags['opt']}.items():
 
-            sta_eqs = LandXml.get_children(alignment, 'StaEquation')
+            attr_val = self._convert_token(attrib.get(key), _tuple[1])
 
-            for sta_eq in sta_eqs:
+            if attr_val is None:
 
-                attribs = sta_eq.attrib
+                if key in tags['req']:
+                    self.errors.append(
+                        'Missing or invalid %s attribute in alignment %s'
+                        % (_tuple[0], align_name)
+                    )
 
-                back_sta = attribs.get('staBack')
-                ahead_sta = attribs.get('staAhead')
-
-                if back_sta is None or ahead_sta is None:
-                    self.errors.append('Missing station equation data for %s: %s, %s' % (align_name, back_sta, ahead_sta))
-                    continue
-
-                tuple_key = self._build_tuple_station_key(back_sta, ahead_sta)
-
-                if tuple_key is None:
-                    self.errors.append('Invalid station equation for %s: %s, %s' % (align_name, back_sta, ahead_sta))
-                    continue
-
-                result[align_name][tuple_key] = {}
-
-                for key, value in self.maps.XML_STATION_KEYS.items():
-
-                    typ = maps.XML_STATION_KEYS[key]:
-                    attr_val = self._convert_token(attribs.get(key), typ)
-
-                    if not attr_val:
-                        self.errors.append('Missing or invalid %s attrubte in alignment %s' % (typ, alilgn_name))
-
-                    else:
-                        result[align_name][tuple_key][value] = attribs.get(key)
+            result[_tuple[0]] = attr_val
 
         return result
 
-    def _parse_curve_data(self, align_name, curves, curve_type = 'arc'):
+    def _parse_meta_data(self, align_name, alignment):
         '''
-        Parse curve data.  Returns a list of dictionaries describing:
-
-        - curve PI coordinates
-        - curve attributes
-        - geometry type (curve)
+        Parse the alignment elements and strip out meta data for each alignment,
+        returning it as a dictionary keyed to the alignment name
         '''
 
-        if not curves:
-            return None
+        return self._parse_data(align_name, self.META_TAGS, alignment.attrib)
+
+    def _parse_station_data(self, align_name, alignment):
+        '''
+        Parse the alignment data to get station equations and return a list of equation dictionaries
+        '''
 
         result = []
 
-        for curve in curves:
+        equations = LandXml.get_children(alignment, 'StaEquation')
 
-            result.append({'type': curve_type})
+        for equation in equations:
+            result.append(self._parse_data(align_name, self.STATION_TAGS, equation.attrib))
 
-            attribs = curve.attrib
+        return result
 
-            _pi = LandXml.get_child(curve, 'PI')
-            _start = LandXml.get_child(curve, 'Start')
-            _center = LandXml.get_child(curve, 'Center')
-            _end = LandXml.get_child(curve, 'End')
-
-            #required attributes - skip curve if any are missing
-            for key, value in self.maps.XML_CURVE_KEYS[curve_type].items():
-
-                typ = maps.XML_CURVE_KEYS[curve_type][key]:
-                attr_val = self._convert_token(attribs.get(key), typ)
-
-                if not attr_val:
-                    self.errors.append('Missing or invalid %s attribute in alignment %s' % (typ, alilgn_name))
-
-                else:
-                    result[-1][value] = attr_val
-
-            #optional attributes
-            for key, value in self.maps.XML_CURVE_KEYS_OPT[curve_type].items():
-
-                    typ = maps.XML_CURVE_OPT_KEYS[curve_type][key]:
-                    attr_val = self._convert_token(attribs.get(key), typ)
-
-                    if not attr_val:
-                        self.errors.append('Missing or invalid %s attribute in alignment %s' % (typ, alilgn_name))
-
-                    else:
-                        result[-1][value] = attribs.get(key)
-
-            if _pi is None:
-                self.errors.append('No PI found for curve in %s' % align_name)
-
-            if not _pi.text:
-                self.errors.append('No coordinate information provided for PI in %s ' % align_name)
-
-            result[-1]['PI'] = LandXml.build_vector(LandXml.get_float_list(_pi.text))
-
-            if _start:
-                result[-1]['Start'] = LandXml.build_vector(LandXml.get_float_list(_start.text))
-
-            if _center:
-                result[-1]['Center'] = LandXml.build_vector(LandXml.get_float_list(_center.text))
-
-            if _end:
-                result[-1]['End'] = LandXml.build_vector(LandXml.get_float_list(_end.text))
-
-        return result        
-
-    def _parse_line_data(self, align_name, lines):
+    def _parse_geo_data(self, align_name, geometry, curve_type):
         '''
-        Parse line data.  Returns a list of dicitonaries describing:
-        - line start / end coordinates
-        - line attributes
-        - geometry type 'line'
+        Parse curve data and return as a dictionary
         '''
-
-        if not lines:
-            return None
 
         result = []
+        _geom_tags = self.GEOM_TAGS[curve_type]
 
-        for line in lines:
+        for curve in geometry:
 
-            result.append({})
+            #add the curve / line start / center / end coordinates, skipping if any are missing
+            _start = Utils.to_float(LandXml.get_child(curve, 'Start'))
+            _center = Utils.to_float(LandXml.get_child(curve, 'Center'))
+            _end = Utils.to_float(LandXml.get_child(curve, 'End'))
+            _pi = Utils.to_float(LandXml.get_child(curve, 'PI'))
 
-            line_start = LandXml.get_child(line, 'Start')
-            line_end = LandXml.get_child(line, 'End')
+            if curve_type == 'line' and not (_start and _end):
+                self.errors.append(
+                    'Missing %s points in alignment %s'
+                    % (curve_type, align_name)
+                )
 
-            if line_start is None or line_end is None:
-                self.errors.append('Alignment %s missing line data' % align_name)
-                continue
+            elif not (_start and _center and _end):
+                self.errors.append(
+                    'Missing %s points in alignment %s'
+                    % (curve_type, align_name)
+                )
 
-            attribs = line.attrib
+            coords = {'Type': curve_type, 'Start': _start, 'Center': _center, 'End': _end, 
+                      'PI': _pi}
 
-            for key, value in self.maps.XML_LINE_KEYS:
-
-                result[-1][value] = attribs.get(key)
-
-            result[-1]['Start'] = LandXml.build_vector(line_start.split(' '))
-            result[-1]['End'] = LandXml.build_vector(line_end.split(' '))
-        
-        result[-1]['type'] = 'line'
-
-        return result
-
-    def _parse_coord_geo_data(self, alignments):
-        '''
-        Parse the alignment data to get curve information and return as a dictionary
-        Dictionary contains a list of curves for each alignment, keyed to the alignment name
-        List contains a dictionary for each curve containing it's attributes and PI location
-        '''
-
-        result = {}
-
-        for alignment in alignments:
-
-            align_name = alignment.attrib.get('name')
-            result[align_name] = []
-
-            coord_geo = LandXml.get_child(alignment, 'CoordGeom')
-
-            if not coord_geo:
-                print('Missing coordinate geometry for ', align_name)
-                continue
-
-            curves = LandXml.get_children(coord_geo, 'Curve')
-            spirals = LandXml.get_children(coord_geo, 'Spirals')
-            lines = LandXml.get_children(coord_geo, 'Lines')
-
-            if curves:
-                result[align_name] = self._parse_curve_data(align_name, curves)
-
-            if spirals:
-                result[align_name] = self._parse_spiral_data(align_name, spirals)
-
-            if lines:
-                result[align_name].extend(self._parse_line_data(align_name, lines))
-
-            #spirals, 2-center, 3-center, superelevation...
+            result.append({
+                **coords,
+                **self._parse_data(align_name, self.GEOM_TAGS[curve_type], curve.attrib)
+            })
 
         return result
 
-    @staticmethod
-    def _merge_dictionaries(meta, station, curve):
+    def _parse_coord_geo_data(self, align_name, alignment):
         '''
-        Merge the three dictionaries into one, preserving alignment structure
+        Parse the alignment coorinate geometry data to get curve information and
+        return as a dictionary
         '''
+
+        coord_geo = LandXml.get_child(alignment, 'CoordGeom')
+
+        if not coord_geo:
+            print('Missing coordinate geometry for ', align_name)
+            return None
 
         result = {}
 
-        for key in curve.keys():
-            result[key] = {'meta': meta[key], 'station': station[key], 'curve': curve[key]}
+        curves = LandXml.get_children(coord_geo, 'Curve')
+        spirals = LandXml.get_children(coord_geo, 'Spiral')
+        lines = LandXml.get_children(coord_geo, 'Line')
+
+        result['arc'] = self._parse_geo_data(align_name, curves, 'arc')
+        result['spiral'] = self._parse_geo_data(align_name, spirals, 'spiral')
+        result['line'] = self._parse_geo_data(align_name, lines, 'line')
+
+        #spirals, 2-center, 3-center, superelevation...
 
         return result
 
@@ -399,6 +296,7 @@ class AlignmentImporter(object):
         Import a LandXML and build the Python dictionary fronm the appropriate elements
         '''
 
+        #get element tree and key nodes for parsing
         doc = etree.parse(filepath)
         root = doc.getroot()
 
@@ -406,6 +304,7 @@ class AlignmentImporter(object):
         units = LandXml.get_child(root, 'Units')
         alignments = LandXml.get_child(root, 'Alignments')
 
+        #aport if key nodes are missing
         if not units:
             self.errors.append('Missing project units')
             return None
@@ -416,23 +315,27 @@ class AlignmentImporter(object):
             self.errors.append('Invalid project units')
             return None
 
-        if not self._validate_alignments(alignments):
-            self.errors.append('Alignment validation failure')
-            return None
-
-        project_name = ''
+        #default project name if missing
+        project_name = 'Unknown Project'
 
         if not project is None:
             project_name = project.attrib['name']
 
-        meta_data = self._parse_meta_data(alignments)
-        station_data = self._parse_station_data(alignments)
-        curve_data = self._parse_coord_geo_data(alignments)
-
+        #build final dictionary and return
         result = {}
-        result['Alignments'] = self._merge_dictionaries(meta_data, station_data, curve_data)
         result['Project'] = {}
-        result['Project'][self.maps.XML_META_KEYS['name']] = project_name
-        result['Project'][self.maps.XML_META_KEYS['units']] = unit_name
+        result['Project'][self.META_TAGS['opt']['name'][0]] = project_name
+        result['Alignments'] = {}
+
+        for alignment in alignments:
+
+            align_name = self._get_alignment_name(alignment, list(result.keys()))
+
+            result['Alignments'][align_name] = {}
+            align_dict = result['Alignments'][align_name]
+
+            align_dict['meta'] = self._parse_meta_data(align_name, alignment)
+            align_dict['station'] = self._parse_station_data(align_name, alignment)
+            align_dict['geometry'] = self._parse_coord_geo_data(align_name, alignment)
 
         return result

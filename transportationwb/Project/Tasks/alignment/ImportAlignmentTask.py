@@ -61,6 +61,9 @@ class ImportAlignmentTask:
 
         errors = []
 
+        print(data)
+
+        return
         for key, value in data['Alignments'].items():
 
             result = HorizontalAlignment.create(value, value['meta']['ID'] + ' Horiz').errors

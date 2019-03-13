@@ -46,6 +46,16 @@ class ImportXmlSubtask:
         self.parser = AlignmentImporter()
         self.data = self.parser.import_file(filepath)
 
+        for key, item in self.data.items():
+            print('\n' + key + '\n')
+
+            if isinstance(item, dict):
+                for key_1, item_1 in item.items():
+                    print(key_1 + '\n')
+                    print(item_1)
+            else:
+                print(item)
+
         if self.parser.errors:
 
             for _err in self.parser.errors:
@@ -76,36 +86,37 @@ class ImportXmlSubtask:
         subset = self.data['Alignments'][value]
 
         if subset['meta'].get('StartStation'):
-            self.panel.startStationValueLabel.setText(subset['meta']['StartStation'])
+            self.panel.startStationValueLabel.setText(str(subset['meta']['StartStation']))
 
         if subset['meta'].get('Length'):
-            self.panel.lengthValueLabel.setText(subset['meta']['Length'])
+            self.panel.lengthValueLabel.setText(str(subset['meta']['Length']))
 
         sta_model = []
 
-        for key, st_eq in subset['station'].items():
-            sta_model.append([key[0], key[1], st_eq['Description']])
+        if subset['station']:
+            for st_eq in subset['station']:
+                sta_model.append(st_eq['Back'], st_eq['Ahead'], st_eq['Position'])
 
-        headers = ['Back', 'Ahead', 'Description']
+        headers = ['Back', 'Ahead', 'Position']
 
         widget_model = WidgetModel.create(sta_model, headers)
 
         self.panel.staEqTableView.setModel(widget_model)
 
         curve_model = []
-        headers = list(subset['curve'][0].keys())
+        #headers = list(subset['geometry'][0].keys())
+        headers = ['Type', 'Direction', 'Start', 'Radius']
 
-        for curve in subset['curve']:
+        for key, geo in subset['geometry'].items():
 
-            curve_model.append([])
+            for curve in geo:
 
-            for key, attrib in curve.items():
+                row = '{0:s}, {1:s}, {2:.2f}, {3:.2f}'.format(
+                    curve['Type'], curve['Direction'], curve['StartStation'], curve['Radius']
+                )
+                curve_model.append(row.split(','))
 
-                if isinstance(attrib, App.Vector):
-                    attrib = '{0:.2f}, {1:.2f}, {2:.2f}'.format(attrib.x, attrib.y, attrib.z)
-
-                curve_model[-1].append([attrib])
-
+        print(curve_model)
         widget_model_2 = WidgetModel.create(curve_model, headers)
 
         self.panel.curveTableView.setModel(widget_model_2)

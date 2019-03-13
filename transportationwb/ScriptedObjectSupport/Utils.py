@@ -37,7 +37,7 @@ from transportationwb.ScriptedObjectSupport.Const import Const
 
     #Regular expressions for detecting stations
     #rex_station = re.compile(r'[0-9]+\+[0-9]{2}\.[0-9]{2,}')
-    #rex_near_station = re.compile(r'(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')        
+    #rex_near_station = re.compile(r'(?:[0-9]+\+?)?[0-9]{1,2}(?:\.[0-9]*)?')
 class Constants(Const):
     '''
     Useful math constants
@@ -54,8 +54,24 @@ def to_float(value):
 
     result = None
 
+    if isinstance(value, list):
+
+        result = []
+
+        for _v in value:
+
+            _f = to_float(_v)
+
+            if not _f:
+                return None
+
+            result.append(_f)
+
+        return result
+
     try:
-        result=float(value)
+        result = float(value)
+
     except:
         pass
 
@@ -68,11 +84,27 @@ def to_int(value):
 
     result = None
 
+    if isinstance(value, list):
+
+        result = []
+
+        for _v in value:
+
+            _f = to_int(_v)
+
+            if not _f:
+                return None
+
+            result.append(_f)
+
+        return result
+
     try:
         result = int(float(value))
+
     except:
         pass
-    
+
     return result
 
 def directed_angle(in_vector, out_vector):
@@ -102,17 +134,7 @@ def distance_bearing_to_coordinates(distance, bearing):
     #convert the bearing to radians, ensuring it falls witin [0.0, 2 * pi)]
     _b = math.radians(bearing) % Constants.two_pi
 
-    deltas = App.Vector(math.sin(_b), math.cos(_b), 0.0).multiply(distance)
-
-    #quad = int(_b / Constants.half_pi) + 1
-
-    #if quad in [3, 4]:
-    #    deltas.x *= -1
-
-    #if quad in [2, 3]:
-    #    deltas.y *= -1
-
-    return deltas
+    return App.Vector(math.sin(_b), math.cos(_b), 0.0).multiply(distance)
 
 def coordinates_to_distance_bearing(prev_coord, next_coord):
     '''
@@ -120,10 +142,6 @@ def coordinates_to_distance_bearing(prev_coord, next_coord):
     and the bearing from prev to next
     '''
 
-    distance = 0.0
-    deltas = []
-
-    print('converting ', prev_coord, next_coord)
     distance = (next_coord-prev_coord).Length
     deltas = next_coord - prev_coord
 
@@ -133,7 +151,6 @@ def coordinates_to_distance_bearing(prev_coord, next_coord):
     if bearing < 0.0:
         bearing += math.pi * 2.0
 
-    print('distance = ', distance, '\nbearing = ', bearing, '(', math.degrees(bearing), ')')
     return (distance, math.degrees(bearing))
 
 def doc_to_radius(value, is_metric=False, station_length=0):
@@ -162,6 +179,7 @@ def station_to_distance(station, equations):
 
     try:
         _s = float(station)
+
     except:
         print('Station not floating point value')
         return 0
@@ -178,12 +196,12 @@ def station_to_distance(station, equations):
         #less than zero - initial station equation
         if not (start_sta < 0.0 or end_sta < 0.0):
 
-            #if the station falls between two values, 
+            #if the station falls between two values,
             #calculate the final segment length and break out
             if _s <= end_sta and _s >= start_sta:
                 distance += _s - start_sta
                 break
-            
+
             #accumulate distance across this station range
             distance += end_sta - start_sta
 
@@ -202,6 +220,7 @@ def scrub_stationing(station):
 
     try:
         float(scrub)
+
     except:
         return -1
 
