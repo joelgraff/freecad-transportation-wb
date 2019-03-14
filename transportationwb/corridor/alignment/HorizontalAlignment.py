@@ -36,6 +36,7 @@ import numpy
 from xml.etree import ElementTree as etree
 
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties, Singleton
+from transportationwb.Geometry import Arc
 from transportationwb.XML import XmlFpo
 from transportationwb.corridor.alignment import HA_Validate
 
@@ -70,13 +71,7 @@ def create(data, object_name='', units='English', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    result = _HorizontalAlignment(_obj)
-    result.set_data(data)
-
-    #if not units == 'English':
-        #result.set_units(units)
-
-    
+    result = _HorizontalAlignment(_obj, data, _name)
 
     Draft._ViewProviderWire(_obj.ViewObject)
 
@@ -85,7 +80,7 @@ def create(data, object_name='', units='English', parent=None):
 
 class _HorizontalAlignment(Draft._Wire):
 
-    def __init__(self, obj, label=''):
+    def __init__(self, obj, geometry, label=''):
         '''
         Default Constructor
         '''
@@ -98,8 +93,9 @@ class _HorizontalAlignment(Draft._Wire):
         self.Type = _CLASS_NAME
         self.Object = obj
         self.errors = []
-        self.geometry = None
         self.xml_fpo = None
+        self.geometry = self.sort_geometry(geometry)
+        self.Object.Points = self.discretize_geometry()
 
         obj.Label = label
         obj.Closed = False
@@ -139,15 +135,96 @@ class _HorizontalAlignment(Draft._Wire):
 
         self.Object = fp
 
-    def set_units(self, units):
+    @staticmethod
+    def _find_adjacent(index, data):
         '''
-        Sets the units of the alignment
-        Does not recompute values
+        Return the first match of adjacent curves
         '''
 
-        self.Object.Units = units
+        curve = data[index]
+        end_point = curve['End']
 
-    def assign_geometry_data(self, data):
+        if not end_point:
+            return None
+
+        for _i in range(0, len(data)):
+
+            if _i == index:
+                continue
+
+            start_point = data[_i].get['Start']
+
+            if not start_point:
+                continue
+
+            #Points must be within a millimeter to be coincident
+            if end_point.distanceToPoint(start_point) < 1.0:
+                return _i
+
+        return None
+
+    def _find_nearest(self, index, data):
+        '''
+        Return the nearest geometry with the same bearing
+        '''
+        curve = data[index]
+        out_bearing = curve.get('OutBearing')
+
+        if not out_bearing:
+            return None
+
+        lst = []
+
+        #matching bearings may be adjacent curves
+        for _i, _v in enumerate(data):
+
+            if out_bearing == _v.get('InBearing'):
+                lst.append(_i)
+
+        #no matches found
+        if not lst:
+            return None
+
+        #one match found 
+        if len(lst) == 1:
+            return lst[0]
+
+        #Multiple matches found.
+        #Pick the nearest adjacent curve
+        max_dist = None
+        nearest_pi = None
+        pi_1 = curve.get('PI')
+
+        if not pi_1:
+            self.errors.append('Missing PI in ' + self.Object.ID)
+            return None
+
+        for _i in lst:
+
+            if _i == index:
+                continue
+
+            pi_2 = data[_i].get('PI')
+
+            if not pi_2:
+                self.errors.append('Missing PI in ' + self.Object.ID)
+                return None
+
+            dist = pi_1.distanceToPoint(pi_2)
+
+            if not dist:
+                continue
+
+            if max_dist is None:
+                max_dist = dist
+
+            elif dist < max_dist:
+                max_dist = dist
+                nearest_pi = _i
+
+        return nearest_pi
+
+    def sort_geometry(self, data):
         '''
         Validate the coordinate geometry data by ensuring
         PI data is continuous within the alignment and ordering the
@@ -163,81 +240,26 @@ class _HorizontalAlignment(Draft._Wire):
         for _i in range(0, data_len):
             
             ################# Test for coincident endpoints
-            curve_1 = curve_data[_i]
-            end_point = curve_1.get('End')
+            _j = self._find_coincident(_i, curve_data)
 
-            if end_point:
-
-                #test for coincident start / end points
-                for _j in range(0, data_len):
-
-                    start_point = curve_data[_j].get('Start')
-
-                    if start_point:
-
-                        #arbitrary tolerance check to determine if points are close enough to be merged
-                        if end_point.distanceToPoint(start_point) < 1.0:
-                            matches.append([_i, _j])
-                            break
-
-                #skip the rest if a match was found
-                if matches[-1][0] == _i:
-                    continue
+            if not _j is None:
+                matches.append(_i, _j)
 
             ############## Test for identical bearings
-            out_bearing = curve_1.get('OutBearing')
+            _j = self._find_nearest(_i, curve_data)
 
-            if out_bearing:
+            if not _j is None:
+                matches.append(_i, _j)
 
-                lst = []
-
-                for _j in range(0, data_len):
-
-                    #matching bearings may be adjacent curves
-                    if out_bearing == curve_data[_j].get('InBearing'):
-                        lst.append(_j)
-
-                #no matches found, skip the remainder of the iteration
-                if not lst:
-                    continue
-
-                #one match found, save it and move on
-                if len(lst) == 1:
-                    matches.append([_i, lst[0]])
-                    continue
-
-                #still here?  Multiple matches found.
-                #test for more than one curve with a matching bearing,
-                #picking the shortest as the adjacent curve
-                max_dist = None
-                nearest_pi = None
-
-                for _x in lst:
-
-                    pi_1 = curve_1.get('PI')
-                    pi_2 = curve_data[_j].get('PI')
-
-                    if not pi_1 or not pi_2:
-                        print ('Missing PI in ' + self.Object.ID)
-                        return None
-
-                    if pi_1 != pi_2:
-
-                        dist = pi_1.distanceToPoint(pi_2)
-
-                        if max_dist:
-                            if dist < max_dist:
-                                max_dist = dist
-                                nearest_pi = _j
-
-                if nearest_pi:
-                    matches.append([_i, nearest_pi])
-
+        #the number of matches (pairs) should be
+        #one less than the number of curves
         if len(matches) != data_len - 1:
-            print('%d curves found, %d unmatched' % (data_len, data_len - len(matches) - 1))
-            print('Alignment ', self.Object.ID, ' is discontinuous.')
+            self.errors.append('%d curves found, %d unmatched' 
+                               % (data_len, data_len - len(matches) - 1))
+            self.errors.append('Alignment ', self.Object.ID, ' is discontinuous.')
             return None
 
+        ############## Order the list of matches
         ordered_list = matches
         old_len = len(ordered_list) + 1
 
@@ -247,13 +269,12 @@ class _HorizontalAlignment(Draft._Wire):
 
         self.geometry = curve_data
 
-        #with an ordered list of indices, create a new data set in the correct order
+        ############### Rebuild the data set in the correct order
         if ordered_list[0] != list(range(0, data_len)):
             self.geometry = [curve_data[_i] for _i in ordered_list[0]]
 
-        
-
-    def _order_list(self, tuples):
+    @staticmethod
+    def _order_list(tuples):
         '''
         Combine a list of tuples where endpoints of two tuples match
         '''
@@ -278,7 +299,7 @@ class _HorizontalAlignment(Draft._Wire):
                     ordered_tuple.extend(_tpl1[1:])
 
                 elif _tpl1[tuple_end] == _tpl2[0]:
-                    ordered_tuple = _tpl1 
+                    ordered_tuple = _tpl1
                     ordered_tuple.extend(_tpl2[1:])
 
                 if ordered_tuple:
@@ -314,29 +335,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         #no more equations - station falls outside of last equation
         return position + station - start_sta
-
-    def set_data(self, data):
-        '''
-        Assign curve data to object, parsing and converting to coordinate form
-        '''
-
-        self.no_execute = True
-
-        #update the document data FPO with the new alignment dataset
-        if not self.xml_fpo:
-            self.xml_fpo = XmlFpo.create()
-
-        self.data = data
-
-        
-
-        delattr(self, 'no_execute')
-
-        self.Object.Points = self._discretize_geometry()
-
-
-
-        self.xml_fpo.update('alignment', self.ID, self.data)            
 
     def _get_coordinate_at_station(self, station, parent):
         '''
@@ -388,298 +386,48 @@ class _HorizontalAlignment(Draft._Wire):
 
         return result
 
-    @staticmethod
-    def calc_angle_increment(central_angle, radius, interval, interval_type):
-        '''
-        Calculate the radian increment for the specified
-        subdivision method
-        '''
-
-        if central_angle == 0.0:
-            return 0.0
-
-        if interval <= 0.0:
-            print('Invalid interval value', interval, 'for interval type ', interval_type)
-            return 0.0
-
-        if interval_type == 'Segment':
-            return central_angle / interval
-
-        if interval_type == 'Interval':
-            return interval / radius
-
-        if interval_type == 'Tolerance':
-            return 2 * math.acos(1 - (interval / radius))
-
-        return 0.0
-
-    @staticmethod
-    def discretize_arc(start_coord, bearing, radius, angle, interval, interval_type):
-        '''
-        Discretize an arc into the specified segments.
-        Resulting list of coordinates omits provided starting point and concludes with end point
-
-        Radius in feet
-        Central Angle in radians
-        bearing - angle from true north of starting tangent of arc
-        segments - number of evenly-spaced segments to subdivide arc
-        interval - fixed length foreach arc subdivision
-        interval_type - one of three options:
-            'segment' - subdivide the curve into n equal segments
-            'fixed' - subdivide the curve into segments of fixed length
-            'tolerance' - subdivide the curve, minimizing the error between the segment and curve at or below the tolerance value
-        '''
-
-        _forward = App.Vector(math.sin(bearing), math.cos(bearing), 0.0)
-        _right = App.Vector(_forward.y, -_forward.x, 0.0)
-        
-        partial_segment = False
-
-        curve_dir = 1.0
-
-        if angle < 0.0:
-            curve_dir = -1.0
-            angle = abs(angle)
-
-        seg_rad = _HorizontalAlignment.calc_angle_increment(angle, radius, interval, interval_type)
-
-        segments = 1
-
-        if angle != 0.0:
-            segments = int(angle / seg_rad)
-
-        #partial segments where the remainder angle creates a curve longer than one ten-thousandth of a foot.
-        partial_segment = (abs(seg_rad * float(segments) - angle) * radius > 0.0001)
-
-        radius_mm = radius * 304.80
-
-        result = []
-
-        for _i in range(0, int(segments)):
-            
-            delta = float(_i + 1) * seg_rad
-
-            _dfw = App.Vector(_forward)
-            _drt = App.Vector()
-
-            if delta != 0.0:
-
-                _dfw.multiply(math.sin(delta))
-                _drt = App.Vector(_right).multiply(curve_dir * (1 - math.cos(delta)))
-
-            result.append(start_coord.add(_dfw.add(_drt).multiply(radius_mm)))
-
-        #remainder of distance must be greater than one ten-thousandth of a foot
-        if partial_segment:
-
-            _dfw = _forward.multiply(math.sin(angle))
-            _drt = App.Vector(_right).multiply(curve_dir * (1 - math.cos(angle)))
-
-            result.append(start_coord.add(_dfw.add(_drt).multiply(radius_mm)))
-
-        return result
-
-    @staticmethod
-    def discretize_spiral(start_coord, bearing, radius, angle, length, interval, interval_type):
-        '''
-        Discretizes a spiral curve using the length parameter.  
-        '''
-
-        #generate inbound spiral
-        #generate circular arc
-        #generate outbound spiral
-
-        points = []
-
-        length_mm = length * 304.80
-        radius_mm = radius * 304.80
-
-        bearing_in = App.Vector(math.sin(bearing), math.cos(bearing))
-
-        curve_dir = 1.0
-
-        if angle < 0.0:
-            curve_dir = -1.0
-            angle = abs(angle)
-
-        _Xc = ((length_mm**2) / (6.0 * radius_mm))
-        _Yc = (length_mm - ((length_mm**3) / (40 * radius_mm**2)))
-
-        _dY = App.Vector(bearing_in).multiply(_Yc)
-        _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(curve_dir).multiply(_Xc)
-
-        theta_spiral = length_mm/(2 * radius_mm)
-        arc_start = start_coord.add(_dX.add(_dY))
-        arc_coords = [arc_start]
-        arc_coords.extend(_HorizontalAlignment.discretize_arc(arc_start, bearing + (theta_spiral * curve_dir), radius, curve_dir * (angle - (2 * theta_spiral)), interval, interval_type))
-
-        if len(arc_coords) < 2:
-            print('Invalid central arc defined for spiral')
-            return None
-
-        segment_length = arc_coords[0].distanceToPoint(arc_coords[1])
-        segments = int(length_mm / segment_length) + 1
-
-        for _i in range(0, segments):
-
-            _len = float(_i) * segment_length
-
-            _x = (_len ** 3) / (6.0 * radius_mm * length_mm)
-            _y = _len - ((_len**5) / (40 * (radius_mm ** 2) * (length_mm**2)))
-
-            _dY = App.Vector(bearing_in).multiply(_y)
-            _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(curve_dir).multiply(_x)
-
-            points.append(start_coord.add(_dY.add(_dX)))
-
-        points.extend(arc_coords)
-
-        exit_bearing = bearing + (angle * curve_dir)
-        bearing_out = App.Vector(math.sin(exit_bearing), math.cos(exit_bearing), 0.0)
-
-        _dY = App.Vector(bearing_out).multiply(_Yc)
-        _dX = App.Vector(-bearing_out.y, bearing_out.x, 0.0).multiply(curve_dir).multiply(_Xc)
-
-        end_coord = points[-1].add(_dY.add(_dX))
-
-        temp = [end_coord]
-
-        for _i in range(1, segments):
-
-            _len = float(_i) * segment_length
-
-            if _len > length_mm:
-                _len = length_mm
-
-            _x = (_len ** 3) / (6.0 * radius_mm * length_mm)
-            _y = _len - ((_len ** 5) / (40 * (radius_mm ** 2) * (length_mm**2)))
-
-            _dY = App.Vector(-bearing_out).multiply(_y)
-            _dX = App.Vector(bearing_out.y, -bearing_out.x, 0.0).multiply(curve_dir).multiply(_x)
-
-            temp.append(end_coord.add(_dY.add(_dX)))
-
-        points.extend(temp[::-1])
-
-        return points
-
-    def _discretize_geometry(self):
+    def discretize_geometry(self):
         '''
         Discretizes the alignment geometry to a series of vector points
         '''
 
         interval = self.Object.Seg_Value
         interval_type = self.Object.Method
-
-        prev_curve = self.geometry[0]
-
         geometry = self.geometry
-
-        prev_curve_tan = 0.0
-        coords = App.Vector(0.0, 0.0, 0.0)
+        points = []
 
         for curve in geometry:
 
-            direction = 1.0
+            if curve['Type'] == 'arc':
 
-            if curve['Direction'] == 'ccw':
-                direction = -1.0
+                curve_points = [curve[_key] for _key in ['Start', 'End', 'Center']]
 
-            bearing_in = math.radians(curve['InBearing'])
-            bearing_out = math.radians(curve['OutBearing'])
-            central_angle = Utils.vector_from_angle(bearing_in).getAngle(Utils.vector_from_angle(bearing_out))
-            curve_tangent = curve['Radius'] * math.tan(central_angle / 2.0)
+                if all(curve_points):
 
-            #get the length of the previous tangent
-            pi_dist = curve['PI'].distanceToPoint(prev_curve['PI'])
-            prev_tan_len = pi_dist - prev_curve_tan - curve_tangent
+                    curve_params = Arc.calc_arc_parameters(curve_points)
 
-            #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
-            if prev_tan_len >= 1:
-                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
+                    for key, value in curve_params.items():
+                        curve[key] = value
 
-            #zero radius means no curve.
-            if prev_curve['Radius'] > 0.0:
-                if prev_curve['type'] == 'spiral'and prev_curve['Length'] > 0.0:
-                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_curve['Radius'], central_angle * direction, prev_curve['Length']))
-                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * direction, interval, interval_type))
+                points.append(Arc.get_points(curve, interval, interval_type))
 
-            #zero radius means no curve.  We're done
-            if prev_geo[2] > 0.0:
-                if prev_geo[3] > 0.0:
-                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, prev_geo[3], interval, interval_type))
-                else:
-                    coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, interval, interval_type))
+            if curve['Type'] == 'line':
 
+                points.append([curve['Start'], curve['End']])
 
-            prev_curve = curve
-            prev_curve_tangent = curve_tangent
+        _prev = points[0][-1]
+        obj_points = points[0]
 
-        return coords
+        for item in points:
 
-    def _discretize_geometry_dep(self):
-        '''
-        Discretizes the alignment geometry to a series of vector points
-        '''
+            if _prev.sub(points[0]).Length < 0.0001:
+                obj_points.extend(item[1:])
+            else:
+                obj_points.extend(item)
 
-        interval = self.Object.Seg_Value
-        interval_type = self.Object.Method
+            _prev = item[-1]
 
-        #alignment construction requires a 'look ahead' at the next element
-        #This implementation does a 'look back' at the previous.
-        #Thus, iteration starts at the second element and
-        #the last element is duplicated to ensure it is constructed.
-        geometry = self.geometry
-
-        if not geometry:
-            print('No geometry defined.  Unnable to discretize')
-            return None
-
-        prev_geo = [float(_i) for _i in geometry[0].split(',')]
-
-        #test in case we only have one geometric element
-        if len(geometry) > 1:
-            geometry = geometry[1:]
-            geometry.append(geometry[-1])
-
-        prev_curve_tangent = 0.0
-
-        coords = [App.Vector(0.0, 0.0, 0.0)]
-
-        for geo_string in geometry:
-
-            #convert the commo-delimited string of floats into a list of strings, then to floats
-            _geo = [float(_i) for _i in geo_string.split(',')]
-
-            bearing_in = math.radians(prev_geo[1])
-            bearing_out = math.radians(_geo[1])
-
-            curve_dir, central_angle = Utils.directed_angle(Utils.vector_from_angle(bearing_in), Utils.vector_from_angle(bearing_out))
-
-            curve_tangent = prev_geo[2] * math.tan(central_angle / 2.0)
-
-            #alternate calculation for spiral curves
-            if prev_geo[3] > 0.0:
-                curve_tangent = (prev_geo[3] / 2.0) + (prev_geo[2] + ((prev_geo[3]**2)/(24 * prev_geo[2]))) * math.tan(central_angle / 2.0)
-
-            #previous tangent length = distance between PI's minus the two curve tangents
-            prev_tan_len = prev_geo[0] - curve_tangent - prev_curve_tangent
-
-            #skip if our tangent length is too short leadng up to a curve (likely a compound curve)
-            if prev_tan_len >= 1:
-                coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_tan_len, 0.0, 0.0, 'Segment'))
-
-            #zero radius means no curve.  We're done
-            if prev_geo[2] > 0.0:
-                if prev_geo[3] > 0.0:
-                    coords.extend(self.discretize_spiral(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, prev_geo[3], interval, interval_type))
-                else:
-                    coords.extend(self.discretize_arc(coords[-1], bearing_in, prev_geo[2], central_angle * curve_dir, interval, interval_type))
-
-            prev_geo = _geo
-            prev_curve_tangent = curve_tangent
-
-        return coords
+        return obj_points
 
     def onChanged(self, obj, prop):
 

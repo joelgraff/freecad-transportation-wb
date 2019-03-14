@@ -48,7 +48,7 @@ class WidgetModel(QtCore.QAbstractTableModel):
 
     def __init__(self, parent=None):
 
-        QtCore.QAbstractTableModel.__init__(self, parent)
+        QtCore.QAbstractTableModel.__init__(self)
 
         self.data_model = None
         self.headers = None

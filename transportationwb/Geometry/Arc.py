@@ -28,80 +28,24 @@ Arc generation tools
 import math
 import FreeCAD as App
 import Draft
-import time
 
+from transportationwb.ScriptedObjectSupport import Units
 
-def gen_arc():
-
-    start = time.time()
-
-    bearing = math.radians(45)
-    delta = math.radians(27)
-    start_vec = App.Vector()
-
-    for i in range(0, 500):
-        Draft.makeWire(discretize_arc(start_vec, bearing, 100, delta, 1000, 'Segment'))
-
-    print ('discretize_arc: ', time.time() - start)
-
-    pl = App.Placement()
-    pl.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
-    pl.Base = (21689.728516, -21912.738281, 0.0)
-
-    circle = Draft.makeCircle(radius=30480, placement = pl, startangle=-252.0, endangle=-225.0)
-
-    start = time.time()
-
-    for i in range(0, 500):
-
-        Draft.makeWire(circle.Shape.discretize(Number=1000))
-
-    print('draft.makewire: ', time.time() - start)
-
-def calc_angle_increment(central_angle, radius, interval, interval_type):
+def discretize_spiral(start_coord, bearing, radius, angle, length, interval, interval_type):
     '''
-    Calculate the radian increment for the specified
-    subdivision method
+    Discretizes a spiral curve using the length parameter.  
     '''
 
-    if central_angle == 0.0:
-        return 0.0
+    #generate inbound spiral
+    #generate circular arc
+    #generate outbound spiral
 
-    if interval <= 0.0:
-        print('Invalid interval value', interval, 'for interval type ', interval_type)
-        return 0.0
+    points = []
 
-    if interval_type == 'Segment':
-        return central_angle / interval
+    length_mm = length * 304.80
+    radius_mm = radius * 304.80
 
-    if interval_type == 'Interval':
-        return interval / radius
-
-    if interval_type == 'Tolerance':
-        return 2 * math.acos(1 - (interval / radius))
-
-    return 0.0
-    
-def discretize_arc(start_coord, bearing, radius, angle, interval, interval_type):
-    '''
-    Discretize an arc into the specified segments.
-    Resulting list of coordinates omits provided starting point and concludes with end point
-
-    Radius in feet
-    Central Angle in radians
-    bearing - angle from true north of starting tangent of arc
-    segments - number of evenly-spaced segments to subdivide arc
-    interval - fixed length foreach arc subdivision
-    interval_type - one of three options:
-        'segment' - subdivide the curve into n equal segments
-        'fixed' - subdivide the curve into segments of fixed length
-        'tolerance' - subdivide the curve, minimizing the error between the segment and curve at or below the tolerance value
-    '''
-
-    _forward = App.Vector(math.sin(bearing), math.cos(bearing), 0.0)
-    _right = App.Vector(_forward.y, -_forward.x, 0.0)
-    
-    partial_segment = False
+    bearing_in = App.Vector(math.sin(bearing), math.cos(bearing))
 
     curve_dir = 1.0
 
@@ -109,40 +53,184 @@ def discretize_arc(start_coord, bearing, radius, angle, interval, interval_type)
         curve_dir = -1.0
         angle = abs(angle)
 
-    seg_rad = calc_angle_increment(angle, radius, interval, interval_type)
+    _Xc = ((length_mm**2) / (6.0 * radius_mm))
+    _Yc = (length_mm - ((length_mm**3) / (40 * radius_mm**2)))
 
-    segments = 1
+    _dY = App.Vector(bearing_in).multiply(_Yc)
+    _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(curve_dir).multiply(_Xc)
 
-    if angle != 0.0:
-        segments = int(angle / seg_rad)
+    theta_spiral = length_mm/(2 * radius_mm)
+    arc_start = start_coord.add(_dX.add(_dY))
+    arc_coords = [arc_start]
+    #arc_coords.extend(_HorizontalAlignment.discretize_arc(arc_start, bearing + (theta_spiral * curve_dir), radius, curve_dir * (angle - (2 * theta_spiral)), interval, interval_type))
 
-    #partial segments where the remainder angle creates a curve longer than one ten-thousandth of a foot.
-    partial_segment = (abs(seg_rad * float(segments) - angle) * radius > 0.0001)
+    if len(arc_coords) < 2:
+        print('Invalid central arc defined for spiral')
+        return None
 
-    radius_mm = radius * 304.80
+    segment_length = arc_coords[0].distanceToPoint(arc_coords[1])
+    segments = int(length_mm / segment_length) + 1
 
-    result = []
+    for _i in range(0, segments):
 
-    for _i in range(0, int(segments)):
-        
-        delta = float(_i + 1) * seg_rad
+        _len = float(_i) * segment_length
 
-        _dfw = App.Vector(_forward)
-        _drt = App.Vector()
+        _x = (_len ** 3) / (6.0 * radius_mm * length_mm)
+        _y = _len - ((_len**5) / (40 * (radius_mm ** 2) * (length_mm**2)))
 
-        if delta != 0.0:
+        _dY = App.Vector(bearing_in).multiply(_y)
+        _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(curve_dir).multiply(_x)
 
-            _dfw.multiply(math.sin(delta))
-            _drt = App.Vector(_right).multiply(curve_dir * (1 - math.cos(delta)))
+        points.append(start_coord.add(_dY.add(_dX)))
 
-        result.append(start_coord.add(_dfw.add(_drt).multiply(radius_mm)))
+    points.extend(arc_coords)
 
-    #remainder of distance must be greater than one ten-thousandth of a foot
-    if partial_segment:
+    exit_bearing = bearing + (angle * curve_dir)
+    bearing_out = App.Vector(math.sin(exit_bearing), math.cos(exit_bearing), 0.0)
 
-        _dfw = _forward.multiply(math.sin(angle))
-        _drt = App.Vector(_right).multiply(curve_dir * (1 - math.cos(angle)))
+    _dY = App.Vector(bearing_out).multiply(_Yc)
+    _dX = App.Vector(-bearing_out.y, bearing_out.x, 0.0).multiply(curve_dir).multiply(_Xc)
 
-        result.append(start_coord.add(_dfw.add(_drt).multiply(radius_mm)))
+    end_coord = points[-1].add(_dY.add(_dX))
+
+    temp = [end_coord]
+
+    for _i in range(1, segments):
+
+        _len = float(_i) * segment_length
+
+        if _len > length_mm:
+            _len = length_mm
+
+        _x = (_len ** 3) / (6.0 * radius_mm * length_mm)
+        _y = _len - ((_len ** 5) / (40 * (radius_mm ** 2) * (length_mm**2)))
+
+        _dY = App.Vector(-bearing_out).multiply(_y)
+        _dX = App.Vector(bearing_out.y, -bearing_out.x, 0.0).multiply(curve_dir).multiply(_x)
+
+        temp.append(end_coord.add(_dY.add(_dX)))
+
+    points.extend(temp[::-1])
+
+    return points
+
+def calc_arc_parameters(points):
+    '''
+    Returns a list of the key parameters of an arc based on it's start,
+    end, and center coordinates.
+    points[0] - Start
+    points[1] - End
+    points[2] - Center
+    '''
+    up_vec = App.Vector(0.0, 1.0, 0.0)
+
+    start_point = points[0]
+    end_point = points[1]
+    center_point = points[2]
+
+    start_rad = center_point.sub(start_point).normalize()
+    end_rad = center_point.sub(end_point).normalize()
+
+    radius = start_rad.Length
+
+    #arbitrary check to ensure start / end radius vectors are the same length
+    if radius - end_rad.Length > 0.0001:
+        print('Points do not form a circular arc')
+        return None
+
+    angle = start_rad.getAngle(end_rad)
+    direction = start_rad.cross(end_rad).z
+    start_dir = App.Vector(start_rad.y, -start_rad.x, 0.0)
+    end_dir = App.Vector(end_rad.y, -end_rad.x, 0.0)
+    bearing_in = up_vec.getAngle(start_dir)
+    bearing_out = up_vec.getAngle(end_dir)
+
+    if up_vec.cross(start_dir).z > 0.0:
+        bearing_in += math.pi
+
+    if up_vec.cross(end_dir).z > 0.0:
+        bearing_out += math.pi
+
+    clock_dir = 'cw'
+
+    if direction > 0.0:
+        clock_dir = 'ccw'
+
+    return {
+        'Radius': radius, 'Delta': angle, 'Direction': clock_dir, 'BearingIn': bearing_in,
+        'BearingOut': bearing_out
+    }
+
+def get_points(arc_dict, interval, interval_type='Segment'):
+    '''
+    Discretize an arc into the specified segments.
+    Resulting list of coordinates omits provided starting point and
+    concludes with end point
+
+    arc_dict    - A dictionary containing key elemnts:
+        Direction   - non-zero.  <0 = ccw, >0 = cw
+        Radius      - in document units (non-zero, positive)
+        Delta       - in radians (non-zero, positive)
+        BearingIn   - true north starting bearing in radians (0 to 2*pi)
+        BearingOut  - true north ending bearing in radians (0 to 2*pi)
+    
+    interval    - value for the interval type (non-zero, positive)
+
+    interval_type: (defaults to segment for invalid values)
+        'Segment'   - subdivide into n equal segments
+        'Interval'  - subdivide into fixed length segments
+        'Tolerance' - limit error between segment and curve
+
+    Points are returned references to (0.0, 0.0, 0.0)
+    '''
+
+    angle = arc_dict['Delta']
+    direction = arc_dict['Direction']
+    bearing = arc_dict['BearingIn']
+    radius = arc_dict['Radius']
+
+    #validate paramters
+    if not direction:
+        return None
+
+    if radius <= 0.0:
+        return None
+
+    if angke <= 0.0:
+        return None
+
+    if interval <= 0:
+        return None
+
+    if not 0.0 < bearing < math.pi * 2.0:
+        return None
+
+    scale_factor = Units.scale_factor()
+
+    _forward = App.Vector(math.sin(bearing), math.cos(bearing), 0.0)
+    _right = App.Vector(_forward.y, -_forward.x, 0.0)
+
+    radius_mm = radius * scale_factor
+    result = [App.Vector()]
+
+    #define the incremental angle for segment calculations, defaulting to 'Segment'
+    _delta = angle / interval
+
+    if interval_type == 'Interval':
+        _delta = interval / radius
+
+    elif interval_type == 'Tolerance':
+        _delta = 2.0 * math.acos(1 - (interval / radius))
+
+    #pre-calculate the segment deltas, increasing from zero to the central angle
+    segment_deltas = [float(_i + 1) * _delta for _i in range(0, int(angle / _delta) + 1)]
+    segment_deltas[-1] = angle
+
+    for delta in segment_deltas:
+
+        _dfw = App.Vector(_forward).multiply(math.sin(delta))
+        _drt = App.Vector(_right).multiply(direction * (1 - math.cos(delta)))
+
+        result.append(_dfw.add(_drt).multiply(radius_mm))
 
     return result

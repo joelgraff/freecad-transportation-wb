@@ -55,6 +55,15 @@ def is_metric_doc():
 
     return 'm' in get_doc_units()
 
+def scale_factor():
+    '''
+    Return the scale factor to convert the document units to mm
+    '''
+
+    if get_doc_units()[0] == 'ft':
+        return 304.80
+    
+    return 1000.0
 
 class UnitNames(Const):
     '''
