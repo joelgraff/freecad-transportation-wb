@@ -29,7 +29,8 @@ from xml.etree import ElementTree as etree
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Units, LandXml, Utils
+from transportationwb.ScriptedObjectSupport import Units, Utils
+from transportationwb.XML import LandXML
 
 class AlignmentImporter(object):
     '''

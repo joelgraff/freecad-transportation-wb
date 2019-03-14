@@ -30,7 +30,8 @@ from xml.etree import ElementTree as etree
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Units, LandXml
+from transportationwb.ScriptedObjectSupport import Units
+from transportationwb.XML import LandXml
 
 class AlignmentExporter(object):
     '''

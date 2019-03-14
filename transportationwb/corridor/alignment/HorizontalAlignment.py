@@ -322,24 +322,19 @@ class _HorizontalAlignment(Draft._Wire):
 
         self.no_execute = True
 
-        self.Object.ID = HA_Validate.metadata(data['meta'])['ID']
-        self.Object.Station_Equations = HA_Validate.station_data(data['station'])
-        self.geometry = HA_Validate.geometry_data(data['curve'])
+        #update the document data FPO with the new alignment dataset
+        if not self.xml_fpo:
+            self.xml_fpo = XmlFpo.create()
 
-        #int_eq = self.Object.Intersection_Equation
+        self.data = data
 
-        #if int_eq.Length:
-        #    datum = self._get_coordinate_at_station(int_eq[0], self.Object.Parent_Alignment) / 304.80
-
-        #self.assign_geometry_data(data)
+        
 
         delattr(self, 'no_execute')
 
         self.Object.Points = self._discretize_geometry()
 
-        #update the document data FPO with the new alignment dataset
-        if not self.xml_fpo:
-            self.xml_fpo = XmlFpo.create()
+
 
         self.xml_fpo.update('alignment', self.ID, self.data)            
 
