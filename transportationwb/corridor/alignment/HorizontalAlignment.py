@@ -113,9 +113,6 @@ class _HorizontalAlignment(Draft._Wire):
         Properties.add(obj, 'VectorList', 'Station Equations', 'Station equation along the alignment', [])
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
 
-        #THIS SHOULD BE MANAGED UNDER CUSTOM ALIGNMENTS GROUP OBJECT
-        #Properties.add(obj, 'FileIncluded','Alignment XML File', 'Filepath for alignment XML', )
-
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
         Properties.add(obj, 'VectorList', 'PIs', 'Discretization of Points of Intersection (PIs) as a list of vectors', [])
         Properties.add(obj, 'Link', 'Parent Alignment', 'Links to parent alignment object', None)

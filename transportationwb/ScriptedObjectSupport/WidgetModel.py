@@ -129,3 +129,4 @@ class WidgetModel(QtCore.QAbstractTableModel):
             return self.default_flags & ~QtCore.Qt.ItemIsEditable
 
         return self.default_flags
+

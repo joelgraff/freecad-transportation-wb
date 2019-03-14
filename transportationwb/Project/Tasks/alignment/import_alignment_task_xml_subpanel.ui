@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>478</width>
-    <height>385</height>
+    <height>410</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -138,10 +138,10 @@
             <widget class="QWidget" name="layoutWidget">
              <property name="geometry">
               <rect>
-               <x>10</x>
-               <y>10</y>
-               <width>144</width>
-               <height>34</height>
+               <x>0</x>
+               <y>0</y>
+               <width>171</width>
+               <height>101</height>
               </rect>
              </property>
              <layout class="QFormLayout" name="formLayout_2">
@@ -149,6 +149,12 @@
                <number>4</number>
               </property>
               <property name="verticalSpacing">
+               <number>4</number>
+              </property>
+              <property name="leftMargin">
+               <number>6</number>
+              </property>
+              <property name="topMargin">
                <number>6</number>
               </property>
               <item row="0" column="0">
@@ -164,8 +170,21 @@
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
-               <widget class="QLabel" name="startStationValueLabel">
+              <item row="2" column="0">
+               <widget class="QLabel" name="lengthTitleLabel">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Length (units):</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QLabel" name="lengthValueLabel">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                   <horstretch>0</horstretch>
@@ -177,21 +196,8 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_4">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Length (units):</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="lengthValueLabel">
+              <item row="0" column="1">
+               <widget class="QLabel" name="startStationValueLabel">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                   <horstretch>0</horstretch>

@@ -31,7 +31,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from transportationwb.XML.AlignmentImporter import AlignmentImporter
-from transportationwb.ScriptedObjectSupport import WidgetModel
+from transportationwb.ScriptedObjectSupport import WidgetModel, Units
 
 def create(panel, filepath):
 
@@ -45,21 +45,6 @@ class ImportXmlSubtask:
 
         self.parser = AlignmentImporter()
         self.data = self.parser.import_file(filepath)
-
-        for key, item in self.data.items():
-            print('\n' + key + '\n')
-
-            if isinstance(item, dict):
-                for key_1, item_1 in item.items():
-                    print(key_1 + '\n')
-                    print(item_1)
-            else:
-                print(item)
-
-        if self.parser.errors:
-
-            for _err in self.parser.errors:
-                print(_err)
 
         self._setup_panel()
 
@@ -86,40 +71,38 @@ class ImportXmlSubtask:
         subset = self.data['Alignments'][value]
 
         if subset['meta'].get('StartStation'):
-            self.panel.startStationValueLabel.setText(str(subset['meta']['StartStation']))
+            self.panel.startStationValueLabel.setText('{0:.2f}'.format(subset['meta']['StartStation']))
 
         if subset['meta'].get('Length'):
-            self.panel.lengthValueLabel.setText(str(subset['meta']['Length']))
+            self.panel.lengthTitleLabel.setText('Length ({0:s}):'.format(Units.get_doc_units()[0]))
+            self.panel.lengthValueLabel.setText('{0:.2f}'.format(subset['meta']['Length']))
 
         sta_model = []
 
         if subset['station']:
             for st_eq in subset['station']:
-                sta_model.append(st_eq['Back'], st_eq['Ahead'], st_eq['Position'])
+                sta_model.append([st_eq['Back'], st_eq['Ahead']])
 
-        headers = ['Back', 'Ahead', 'Position']
-
-        widget_model = WidgetModel.create(sta_model, headers)
+        widget_model = WidgetModel.create(sta_model, ['Back'], ['Ahead'])
 
         self.panel.staEqTableView.setModel(widget_model)
 
         curve_model = []
-        #headers = list(subset['geometry'][0].keys())
-        headers = ['Type', 'Direction', 'Start', 'Radius']
 
         for key, geo in subset['geometry'].items():
 
             for curve in geo:
 
-                row = '{0:s}, {1:s}, {2:.2f}, {3:.2f}'.format(
-                    curve['Type'], curve['Direction'], curve['StartStation'], curve['Radius']
+                row = '{0:s}, {1:s}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
+                    curve['Type'], curve['Direction'], curve['StartStation'],
+                    curve['InBearing'], curve['OutBearing'], curve['Radius']
                 )
                 curve_model.append(row.split(','))
 
-        print(curve_model)
-        widget_model_2 = WidgetModel.create(curve_model, headers)
+        widget_model_2 = WidgetModel.create(curve_model, ['Type', 'Dir', 'Start', 'In', 'Out', 'Radius'])
 
         self.panel.curveTableView.setModel(widget_model_2)
+        self.panel.curveTableView.resizeColumnsToContents()
 
     def _update_curve_list(self, value):
 

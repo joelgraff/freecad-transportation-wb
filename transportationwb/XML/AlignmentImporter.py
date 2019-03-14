@@ -39,7 +39,7 @@ class AlignmentImporter(object):
     #LandXML attribute tags and corresponding data types - empty type defaults to 'string'
     #'name' is required, but is tested for explictly, so it is considered optional here
     META_TAGS = {
-        'req': {'length': ('Length', 'float'), 'staStart': ('StartStaion', 'float')},
+        'req': {'length': ('Length', 'float'), 'staStart': ('StartStation', 'float')},
         'opt': {'name': ('ID', ''), 'desc': ('Description', ''), 'oID': ('ObjectID', ''),
                 'state': ('Status', '')}
     }
