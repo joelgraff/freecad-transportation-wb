@@ -57,6 +57,7 @@ def gen_arc():
         Draft.makeWire(circle.Shape.discretize(Number=1000))
 
     print('draft.makewire: ', time.time() - start)
+
 def calc_angle_increment(central_angle, radius, interval, interval_type):
     '''
     Calculate the radian increment for the specified
