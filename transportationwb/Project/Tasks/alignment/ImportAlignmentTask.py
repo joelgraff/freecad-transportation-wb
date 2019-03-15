@@ -65,10 +65,11 @@ class ImportAlignmentTask:
 
         for key, value in data['Alignments'].items():
 
-            result = HorizontalAlignment.create(value, value['meta']['ID'] + ' Horiz').errors
+            result = HorizontalAlignment.create(value, value['meta']['ID'] + ' Horiz')
 
-            if result:
-                errors += result
+            if result.errors:
+                errors += result.errors
+                result.errors = []
 
             App.ActiveDocument.recompute()
 

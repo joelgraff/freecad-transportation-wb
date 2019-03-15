@@ -48,7 +48,7 @@ __author__ = 'Joel Graff'
 __url__ = "https://www.freecadweb.org"
 
 
-def create(data, object_name='', units='English', parent=None):
+def create(geometry, object_name='', units='English', parent=None):
     '''
     Class construction method
     object_name - Optional. Name of new object.  Defaults to class name.
@@ -56,8 +56,8 @@ def create(data, object_name='', units='English', parent=None):
     data - a list of the curve data in tuple('label', 'value') format
     '''
 
-    if not data:
-        print('No curve data supplied')
+    if not geometry:
+        print('No curve geometry supplied')
         return
 
     _obj = None
@@ -71,7 +71,8 @@ def create(data, object_name='', units='English', parent=None):
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    result = _HorizontalAlignment(_obj, data, _name)
+    result = _HorizontalAlignment(_obj, _name)
+    result.set_geometry(geometry)
 
     Draft._ViewProviderWire(_obj.ViewObject)
 
@@ -80,7 +81,7 @@ def create(data, object_name='', units='English', parent=None):
 
 class _HorizontalAlignment(Draft._Wire):
 
-    def __init__(self, obj, geometry, label=''):
+    def __init__(self, obj, label=''):
         '''
         Default Constructor
         '''
@@ -94,8 +95,6 @@ class _HorizontalAlignment(Draft._Wire):
         self.Object = obj
         self.errors = []
         self.xml_fpo = None
-        self.geometry = self.sort_geometry(geometry)
-        self.Object.Points = self.discretize_geometry()
 
         obj.Label = label
         obj.Closed = False
@@ -105,19 +104,25 @@ class _HorizontalAlignment(Draft._Wire):
 
         #add class properties
         Properties.add(obj, 'String', 'ID', 'ID of alignment', '')
-        Properties.add(obj, 'Vector', 'Intersection Equation', 'Equation for intersection with parent alignment', App.Vector(0.0, 0.0, 0.0))
-        Properties.add(obj, 'VectorList', 'Station Equations', 'Station equation along the alignment', [])
-        Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting', App.Vector(0.0, 0.0, 0.0))
+        Properties.add(obj, 'Vector', 'Intersection Equation', 
+                      'Equation for intersection with parent alignment', App.Vector(0.0, 0.0, 0.0))
+        Properties.add(obj, 'VectorList', 'Station Equations', 
+                      'Station equation along the alignment', [])
+        Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting',
+                       App.Vector(0.0, 0.0, 0.0))
 
         Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
-        Properties.add(obj, 'VectorList', 'PIs', 'Discretization of Points of Intersection (PIs) as a list of vectors', [])
+        Properties.add(obj, 'VectorList', 'PIs',
+                       'Discretization of Points of Intersection (PIs) as a list of vectors', [])
         Properties.add(obj, 'Link', 'Parent Alignment', 'Links to parent alignment object', None)
 
         subdivision_desc = 'Method of Curve Subdivision\n\nTolerance - ensure error between segments and curve is approximately (n)\nInterval - Subdivide curve into segments of a fixed length (n)\nSegment - Subdivide curve into (n) equal-length segments'
 
-        obj.addProperty('App::PropertyEnumeration', 'Method', 'Segment', subdivision_desc).Method = ['Tolerance', 'Interval','Segment']
+        obj.addProperty('App::PropertyEnumeration', 'Method', 'Segment', subdivision_desc
+                       ).Method = ['Tolerance', 'Interval','Segment']
 
-        Properties.add(obj, 'Float', 'Segment.Seg_Value', 'Set the curve segments to control accuracy', 1.0)
+        Properties.add(obj, 'Float', 'Segment.Seg_Value',
+                      'Set the curve segments to control accuracy', 1.0)
 
         delattr(self, 'no_execute')
 
@@ -134,6 +139,14 @@ class _HorizontalAlignment(Draft._Wire):
         '''
 
         self.Object = fp
+
+    def set_geometry(self, geometry):
+        '''
+        Assign geometry to the alignment object
+        '''
+
+        self.geometry = self.sort_geometry(geometry)
+        self.Object.Points = self.discretize_geometry()
 
     @staticmethod
     def _find_adjacent(index, data):
@@ -244,13 +257,13 @@ class _HorizontalAlignment(Draft._Wire):
             _j = self._find_adjacent(_i, curve_data)
 
             if not _j is None:
-                matches.append(_i, _j)
+                matches.append([_i, _j])
 
             ############## Test for identical bearings
             _j = self._find_nearest(_i, curve_data)
 
             if not _j is None:
-                matches.append(_i, _j)
+                matches.append([_i, _j])
 
         #the number of matches (pairs) should be
         #one less than the number of curves

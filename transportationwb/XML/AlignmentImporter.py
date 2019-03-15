@@ -286,15 +286,14 @@ class AlignmentImporter(object):
             print('Missing coordinate geometry for ', align_name)
             return None
 
-        result = {}
-
         curves = LandXml.get_children(coord_geo, 'Curve')
         spirals = LandXml.get_children(coord_geo, 'Spiral')
         lines = LandXml.get_children(coord_geo, 'Line')
 
-        result['arc'] = self._parse_geo_data(align_name, curves, 'arc')
-        result['spiral'] = self._parse_geo_data(align_name, spirals, 'spiral')
-        result['line'] = self._parse_geo_data(align_name, lines, 'line')
+        #concatenate all types into a single list of dictionaries
+        result = (self._parse_geo_data(align_name, curves, 'arc'))
+        result.extend(self._parse_geo_data(align_name, spirals, 'spiral'))
+        result.extend(self._parse_geo_data(align_name, lines, 'line'))
 
         #spirals, 2-center, 3-center, superelevation...
 

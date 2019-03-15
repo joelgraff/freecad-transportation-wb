@@ -89,15 +89,13 @@ class ImportXmlSubtask:
 
         curve_model = []
 
-        for key, geo in subset['geometry'].items():
+        for curve in subset['geometry']:
 
-            for curve in geo:
-
-                row = '{0:s}, {1:s}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
-                    curve['Type'], curve['Direction'], curve['StartStation'],
-                    curve['InBearing'], curve['OutBearing'], curve['Radius']
-                )
-                curve_model.append(row.split(','))
+            row = '{0:s}, {1:s}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
+                curve['Type'], curve['Direction'], curve['StartStation'],
+                curve['InBearing'], curve['OutBearing'], curve['Radius']
+            )
+            curve_model.append(row.split(','))
 
         widget_model_2 = WidgetModel.create(curve_model, ['Type', 'Dir', 'Start', 'In', 'Out', 'Radius'])
 
