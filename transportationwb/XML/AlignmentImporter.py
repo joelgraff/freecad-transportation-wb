@@ -239,25 +239,33 @@ class AlignmentImporter(object):
         for curve in geometry:
 
             #add the curve / line start / center / end coordinates, skipping if any are missing
-            _start = Utils.to_float(LandXml.get_child(curve, 'Start'))
-            _center = Utils.to_float(LandXml.get_child(curve, 'Center'))
-            _end = Utils.to_float(LandXml.get_child(curve, 'End'))
-            _pi = Utils.to_float(LandXml.get_child(curve, 'PI'))
+            _points = []
 
-            if curve_type == 'line' and not (_start and _end):
+            for _tag in ['Start', 'Center', 'End', 'PI']:
+
+                _pt = LandXml.get_child(curve, _tag)
+
+                value = None
+
+                if _pt is not None:
+                    value = Utils.to_float(_pt.text.strip().split(' '))
+
+                _points.append(value)
+
+            if curve_type == 'line' and not (_points[0] and _points[2]):
                 self.errors.append(
                     'Missing %s points in alignment %s'
                     % (curve_type, align_name)
                 )
 
-            elif not (_start and _center and _end):
+            elif not all(_points[0:3]):
                 self.errors.append(
                     'Missing %s points in alignment %s'
                     % (curve_type, align_name)
                 )
 
-            coords = {'Type': curve_type, 'Start': _start, 'Center': _center, 'End': _end, 
-                      'PI': _pi}
+            coords = {'Type': curve_type, 'Start': _points[0], 'Center': _points[1],
+                      'End': _points[2], 'PI': _points[3]}
 
             result.append({
                 **coords,

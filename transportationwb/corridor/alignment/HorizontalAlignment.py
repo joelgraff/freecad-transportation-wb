@@ -141,6 +141,7 @@ class _HorizontalAlignment(Draft._Wire):
         Return the first match of adjacent curves
         '''
 
+        print(data)
         curve = data[index]
         end_point = curve['End']
 
@@ -234,13 +235,13 @@ class _HorizontalAlignment(Draft._Wire):
 
         matches = []
 
-        curve_data = data['curve']
+        curve_data = data['geometry']
         data_len = len(curve_data)
 
         for _i in range(0, data_len):
             
             ################# Test for coincident endpoints
-            _j = self._find_coincident(_i, curve_data)
+            _j = self._find_adjacent(_i, curve_data)
 
             if not _j is None:
                 matches.append(_i, _j)

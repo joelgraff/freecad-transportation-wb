@@ -62,7 +62,7 @@ def to_float(value):
 
             _f = to_float(_v)
 
-            if not _f:
+            if _f is None:
                 return None
 
             result.append(_f)
