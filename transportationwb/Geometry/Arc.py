@@ -29,7 +29,7 @@ import math
 import FreeCAD as App
 import Draft
 
-from transportationwb.ScriptedObjectSupport import Units
+from transportationwb.ScriptedObjectSupport import Units, Utils
 
 def discretize_spiral(start_coord, bearing, radius, angle, length, interval, interval_type):
     '''
@@ -114,6 +114,19 @@ def discretize_spiral(start_coord, bearing, radius, angle, length, interval, int
 
     return points
 
+def calc_arc_delta(bearing_in, bearing_out):
+    '''
+    Returns the curve direction and central angle (dir, delta)
+    bearing_in / out = bearings in radians
+
+    dir = -1 for ccw, 1 for cw
+    delta = central angle in radians
+    '''
+
+    _ca = bearing_out - bearing_in
+
+    return _ca / abs(_ca), abs(_ca)
+
 def calc_arc_parameters(points):
     '''
     Returns a list of the key parameters of an arc based on it's start,
@@ -142,6 +155,8 @@ def calc_arc_parameters(points):
     direction = start_rad.cross(end_rad).z
     start_dir = App.Vector(start_rad.y, -start_rad.x, 0.0)
     end_dir = App.Vector(end_rad.y, -end_rad.x, 0.0)
+
+    #calcualte the bearings
     bearing_in = up_vec.getAngle(start_dir)
     bearing_out = up_vec.getAngle(end_dir)
 
@@ -157,11 +172,11 @@ def calc_arc_parameters(points):
         clock_dir = 'ccw'
 
     return {
-        'Radius': radius, 'Delta': angle, 'Direction': clock_dir, 'BearingIn': bearing_in,
+        'Radius': radius, 'Delta': angle, 'Direction': clock_dir, 'InBearing': bearing_in,
         'BearingOut': bearing_out
     }
 
-def get_points(arc_dict, interval, interval_type='Segment'):
+def get_points(arc_dict, interval, interval_type='Segment', start_coord = App.Vector()):
     '''
     Discretize an arc into the specified segments.
     Resulting list of coordinates omits provided starting point and
@@ -173,7 +188,7 @@ def get_points(arc_dict, interval, interval_type='Segment'):
         Delta       - in radians (non-zero, positive)
         BearingIn   - true north starting bearing in radians (0 to 2*pi)
         BearingOut  - true north ending bearing in radians (0 to 2*pi)
-    
+
     interval    - value for the interval type (non-zero, positive)
 
     interval_type: (defaults to segment for invalid values)
@@ -181,33 +196,27 @@ def get_points(arc_dict, interval, interval_type='Segment'):
         'Interval'  - subdivide into fixed length segments
         'Tolerance' - limit error between segment and curve
 
-    Points are returned references to (0.0, 0.0, 0.0)
+    Points are returned references to start_coord
     '''
 
     angle = arc_dict['Delta']
     direction = arc_dict['Direction']
-    bearing = arc_dict['BearingIn']
+    bearing_in = math.radians(arc_dict['InBearing'])
     radius = arc_dict['Radius']
 
     #validate paramters
-    if not direction:
+    if not direction or not angle:
+        direction, angle = calc_arc_delta(bearing_in, math.radians(arc_dict['OutBearing']))
+
+    if any([_x <= 0 for _x in [radius, angle, interval]]):
         return None
 
-    if radius <= 0.0:
-        return None
-
-    if angke <= 0.0:
-        return None
-
-    if interval <= 0:
-        return None
-
-    if not 0.0 < bearing < math.pi * 2.0:
+    if not 0.0 < bearing_in < (math.pi * 2.0):
         return None
 
     scale_factor = Units.scale_factor()
 
-    _forward = App.Vector(math.sin(bearing), math.cos(bearing), 0.0)
+    _forward = App.Vector(math.sin(bearing_in), math.cos(bearing_in), 0.0)
     _right = App.Vector(_forward.y, -_forward.x, 0.0)
 
     radius_mm = radius * scale_factor
@@ -231,6 +240,6 @@ def get_points(arc_dict, interval, interval_type='Segment'):
         _dfw = App.Vector(_forward).multiply(math.sin(delta))
         _drt = App.Vector(_right).multiply(direction * (1 - math.cos(delta)))
 
-        result.append(_dfw.add(_drt).multiply(radius_mm))
+        result.append(start_coord.add(_dfw.add(_drt).multiply(radius_mm)))
 
     return result

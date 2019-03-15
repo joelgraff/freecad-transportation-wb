@@ -95,6 +95,7 @@ class _HorizontalAlignment(Draft._Wire):
         self.Object = obj
         self.errors = []
         self.xml_fpo = None
+        self.geometry = None
 
         obj.Label = label
         obj.Closed = False
@@ -146,7 +147,6 @@ class _HorizontalAlignment(Draft._Wire):
         '''
 
         self.geometry = self.sort_geometry(geometry)
-        self.Object.Points = self.discretize_geometry()
 
     @staticmethod
     def _find_adjacent(index, data):
@@ -281,11 +281,13 @@ class _HorizontalAlignment(Draft._Wire):
             old_len = len(ordered_list)
             ordered_list = self._order_list(ordered_list)
 
-        self.geometry = curve_data
+        geo = curve_data
 
         ############### Rebuild the data set in the correct order
         if ordered_list[0] != list(range(0, data_len)):
-            self.geometry = [curve_data[_i] for _i in ordered_list[0]]
+            geo = [curve_data[_i] for _i in ordered_list[0]]
+
+        return geo
 
     @staticmethod
     def _order_list(tuples):
@@ -410,6 +412,8 @@ class _HorizontalAlignment(Draft._Wire):
         geometry = self.geometry
         points = []
 
+        #discretize each arc in the geometry list,
+        #store each point set as a sublist in the main points list
         for curve in geometry:
 
             if curve['Type'] == 'arc':
@@ -423,25 +427,28 @@ class _HorizontalAlignment(Draft._Wire):
                     for key, value in curve_params.items():
                         curve[key] = value
 
-                points.append(Arc.get_points(curve, interval, interval_type))
+                points.append(Arc.get_points(curve, interval, interval_type, start_coord))
 
             if curve['Type'] == 'line':
 
                 points.append([curve['Start'], curve['End']])
 
+        #store the last point of the first geometry for the next iteration
         _prev = points[0][-1]
-        obj_points = points[0]
+        result = points[0]
 
-        for item in points:
+        #iterate the point sets, adding them to the result set
+        #and eliminating any duplicate points
+        for item in points[1:]:
 
-            if _prev.sub(points[0]).Length < 0.0001:
-                obj_points.extend(item[1:])
+            if _prev.sub(item[0]).Length < 0.0001:
+                result.extend(item[1:])
             else:
-                obj_points.extend(item)
+                result.extend(item)
 
             _prev = item[-1]
 
-        return obj_points
+        return result
 
     def onChanged(self, obj, prop):
 
@@ -469,11 +476,11 @@ class _HorizontalAlignment(Draft._Wire):
 
         print('executing ', self.Object.Label)
 
-        self.Object.Points = self._discretize_geometry()
+        self.Object.Points = self.discretize_geometry()
 
         super(_HorizontalAlignment, self).execute(obj)
-        self.Object.Placement.Base = self.Object.Placement.Base.add(self.get_intersection_delta())
-        super(_HorizontalAlignment, self).execute(obj)
+        #self.Object.Placement.Base = self.Object.Placement.Base.add(self.get_intersection_delta())
+        #super(_HorizontalAlignment, self).execute(obj)
 
 class _ViewProviderHorizontalAlignment:
 
