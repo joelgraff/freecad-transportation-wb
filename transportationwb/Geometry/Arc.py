@@ -114,6 +114,89 @@ def discretize_spiral(start_coord, bearing, radius, angle, length, interval, int
 
     return points
 
+def calc_arc_parameters(points):
+    '''
+    points:
+    0 - PC
+    1 - CTR
+    2 - PT
+    3 - PI
+    '''
+
+    '''
+    TEST PARAMETERS:
+
+    a = [App.Vector (-86.952232, 94.215736, 0.0), App.Vector (0.0, 0.0, 0.0), App.Vector (96.326775, 84.60762, 0.0), App.Vector (9.611027, 183.334518, 0.0)]
+    a1 = [App.Vector (-87.275208, -93.916885, 0.0), App.Vector (0.0, 0.0, 0.0), App.Vector (96.63192, -84.259216, 0.0), App.Vector (9.628621, -183.354034, 0.0)]
+    '''
+    #must have at least three points
+    if len([True for _i in points if _i]) < 3:
+        return None
+
+    #piecemeal assembly to test for missing PI or Center point
+    vectors = [App.Vector()] * 4
+
+    bearing_only = points[1] is None
+    radius_only = points[3] is None
+
+    if bearing_only:
+        vectors[2:] = [points[3].sub(points[0]), points[2].sub(points[3])]
+
+    if radius_only:
+        vectors[0:2] = [points[1].sub(points[0]), points[1].sub(points[2])]
+
+    length = [_i.Length for _i in vectors if _i.Length > 0.0][0]
+
+    #vector pairs for angle computations
+    pairs = [(0, 1), (2, 3)]
+
+    delta = [vectors[_i[0]].getAngle(vectors[_i[1]]) for _i in pairs]
+    delta = [_i for _i in delta if abs(_i) < math.pi]
+
+    #first, second, fifth and sixth for -cw, +ccw
+    rot = [vectors[_i[0]].cross(vectors[_i[1]]) for _i in pairs]
+    rot = -1 * math.copysign(1, [_i for _i in rot if _i != App.Vector()][0].z)
+
+    _up = App.Vector(0.0, 1.0, 0.0)
+
+    bearings = [_up.getAngle(vectors[_i]) for _i in range(0, 4)]
+    bearings = [_i for _i in bearings if abs(_i) < math.pi]
+
+    ###### Calc all arc values and return a dictionary
+    direction = 'cw'
+
+    ###radius_only: calc tangent, bearing
+    ###bearing_only: calc delta, radius
+
+    half_delta = delta / 2.0
+
+    radius = length
+    tangent = length
+
+    if bearing_only:
+        radius /= math.atan(half_delta)
+
+    if radius_only:
+        tangent *= math.tan(half_delta)
+
+    result = {
+        'Direction': rot,
+        'Delta': delta,
+        'Radius': radius,
+        'Length': radius * delta,
+        'Tangent': tangent,
+        'Chord': 2 * radius * math.sin(half_delta),
+        'External': radius * ((1 / math.cos(half_delta) - 1)),
+        'MiddleOrd': radius * (1 - math.cos(half_delta))
+        'BearingIn':,
+        'BearingOut':,
+        'Start':,
+        'Center':,
+        'End':
+    }
+
+    return [points, vectors, lengths, delta, rot, bearings]
+
 def calc_arc_delta(bearing_in, bearing_out):
     '''
     Returns the curve direction and central angle (dir, delta)
@@ -127,7 +210,7 @@ def calc_arc_delta(bearing_in, bearing_out):
 
     return _ca / abs(_ca), abs(_ca)
 
-def calc_arc_parameters(points):
+def calc_arc_parameters_dep(points):
     '''
     Returns a list of the key parameters of an arc based on it's start,
     end, and center coordinates.
@@ -176,6 +259,16 @@ def calc_arc_parameters(points):
         'BearingOut': bearing_out
     }
 
+def valiate(arc):
+    '''
+    Validate the arc parameters
+
+    arc must containg either 3 coordinates (PI, Start, End, Center)
+    or two angles (bearings, delta), a length (radius, tangent) and 1 coord (start, end, center, pi)
+    '''
+
+    
+    #arcs need start / center / end points, or PI, bearing_in
 def get_points(arc_dict, interval, interval_type='Segment', start_coord = App.Vector()):
     '''
     Discretize an arc into the specified segments.

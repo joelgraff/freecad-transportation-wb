@@ -238,6 +238,18 @@ class _HorizontalAlignment(Draft._Wire):
 
         return nearest_pi
 
+    def validate_geometry(self, data):
+        '''
+        Iterate the passed geometry, adding missing data
+        and ensuring the geometry is valid
+        '''
+
+        result = []
+
+        for curve in data:
+
+            if curve['Type'] == 'arc':
+                result = arc.validate(curve)
     def sort_geometry(self, data):
         '''
         Validate the coordinate geometry data by ensuring
@@ -427,7 +439,7 @@ class _HorizontalAlignment(Draft._Wire):
                     for key, value in curve_params.items():
                         curve[key] = value
 
-                points.append(Arc.get_points(curve, interval, interval_type, start_coord))
+                points.append(Arc.get_points(curve, interval, interval_type))
 
             if curve['Type'] == 'line':
 
