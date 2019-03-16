@@ -139,10 +139,10 @@ def calc_arc_parameters(points):
     bearing_only = points[1] is None
     radius_only = points[3] is None
 
-    if bearing_only:
+    if not radius_only:
         vectors[2:] = [points[3].sub(points[0]), points[2].sub(points[3])]
 
-    if radius_only:
+    if not bearing_only:
         vectors[0:2] = [points[1].sub(points[0]), points[1].sub(points[2])]
 
     length = [_i.Length for _i in vectors if _i.Length > 0.0][0]
@@ -151,7 +151,7 @@ def calc_arc_parameters(points):
     pairs = [(0, 1), (2, 3)]
 
     delta = [vectors[_i[0]].getAngle(vectors[_i[1]]) for _i in pairs]
-    delta = [_i for _i in delta if abs(_i) < math.pi]
+    delta = [_i for _i in delta if abs(_i) < math.pi][0]
 
     #first, second, fifth and sixth for -cw, +ccw
     rot = [vectors[_i[0]].cross(vectors[_i[1]]) for _i in pairs]
@@ -172,12 +172,26 @@ def calc_arc_parameters(points):
 
     radius = length
     tangent = length
+    bearing_in = bearings[0]
+    bearing_out = bearings[1]
+    radius_in = bearings[0]
+    radius_out = bearings[1]
+    _ctr = points[1]
+    _pi = points[3]
 
     if bearing_only:
-        radius /= math.atan(half_delta)
+        print('bearing only')
+        radius /= math.tan(half_delta)
+        #radius_in -= rot * 180.0
+        #radius_out += rot * 180.0
+        _ctr = points[0].sub(App.Vector(-vectors[2].y, vectors[2].x, 0.0).normalize().multiply(radius))
 
     if radius_only:
         tangent *= math.tan(half_delta)
+        #bearing_in += rot * 180.0
+        #bearing_out -= rot * 180.0
+        _pi = points[0].sub(App.Vector(-vectors[0].y, vectors[0].x, 0.0).normalize().multiply
+        (tangent))
 
     result = {
         'Direction': rot,
@@ -187,15 +201,16 @@ def calc_arc_parameters(points):
         'Tangent': tangent,
         'Chord': 2 * radius * math.sin(half_delta),
         'External': radius * ((1 / math.cos(half_delta) - 1)),
-        'MiddleOrd': radius * (1 - math.cos(half_delta))
-        'BearingIn':,
-        'BearingOut':,
-        'Start':,
-        'Center':,
-        'End':
+        'MiddleOrd': radius * (1 - math.cos(half_delta)),
+        'BearingIn': bearing_in,
+        'BearingOut': bearing_out,
+        'Start': points[0],
+        'Center': _ctr,
+        'End': points[2],
+        'PI': points[3]
     }
 
-    return [points, vectors, lengths, delta, rot, bearings]
+    return [result, points, vectors, length, delta, rot, bearings]
 
 def calc_arc_delta(bearing_in, bearing_out):
     '''
