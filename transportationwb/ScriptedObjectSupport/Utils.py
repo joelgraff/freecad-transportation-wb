@@ -43,9 +43,11 @@ class Constants(Const):
     Useful math constants
     '''
 
-    two_pi = math.pi * 2.0      #   2 * pi in radians
-    half_pi = math.pi / 2.0     #   1/2 * pi in radians
-    one_radian = 180 / math.pi  #   one radian in degrees
+    TWO_PI      = math.pi * 2.0             #   2 * pi in radians
+    HALF_PI     = math.pi / 2.0             #   1/2 * pi in radians
+    ONE_RADIAN  = 180 / math.pi             #   one radian in degrees
+    TOLERANCE   = 0.0001                    #   tolerance for differences in measurements
+    UP          = App.Vector(0.0, 1.0, 0.0) #   Up vector
 
 def to_float(value):
     '''
@@ -118,6 +120,33 @@ def directed_angle(in_vector, out_vector):
         direction = 1.0
 
     return -(direction / abs(direction)), in_vector.getAngle(out_vector)
+
+def within_tolerance(lhs, rhs):
+    '''
+    Determine if two values are within a pre-defined tolerance
+    '''
+
+    return abs(lhr-rhs) < Constants.TOLERANCE
+
+def vector_ortho(vector):
+    '''
+    Returns the orthogonal of a 2D vector as (-y, x)
+    '''
+    
+    vec_list = vector
+
+    if not isinstance(vector, list):
+        vec_list = [vector]
+
+    result = []
+
+    for vec in vec_list:
+        result.append(App.Vector(-vec.y, vec.x, 0.0))
+
+    if len(result) == 1:
+        return result[0]
+
+    return result
 
 def vector_from_angle(angle):
     '''
