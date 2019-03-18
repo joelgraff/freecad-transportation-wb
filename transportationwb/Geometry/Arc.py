@@ -32,99 +32,15 @@ import Draft
 from transportationwb.ScriptedObjectSupport import Units, Utils
 from transportationwb.ScriptedObjectSupport.Utils import Constants as C
 
-def discretize_spiral(start_coord, bearing, radius, angle, length, interval, interval_type):
-    '''
-    Discretizes a spiral curve using the length parameter.  
-    '''
-
-    #generate inbound spiral
-    #generate circular arc
-    #generate outbound spiral
-
-    points = []
-
-    length_mm = length * 304.80
-    radius_mm = radius * 304.80
-
-    bearing_in = App.Vector(math.sin(bearing), math.cos(bearing))
-
-    curve_dir = 1.0
-
-    if angle < 0.0:
-        curve_dir = -1.0
-        angle = abs(angle)
-
-    _Xc = ((length_mm**2) / (6.0 * radius_mm))
-    _Yc = (length_mm - ((length_mm**3) / (40 * radius_mm**2)))
-
-    _dY = App.Vector(bearing_in).multiply(_Yc)
-    _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(curve_dir).multiply(_Xc)
-
-    theta_spiral = length_mm/(2 * radius_mm)
-    arc_start = start_coord.add(_dX.add(_dY))
-    arc_coords = [arc_start]
-    #arc_coords.extend(_HorizontalAlignment.discretize_arc(arc_start, bearing + (theta_spiral * curve_dir), radius, curve_dir * (angle - (2 * theta_spiral)), interval, interval_type))
-
-    if len(arc_coords) < 2:
-        print('Invalid central arc defined for spiral')
-        return None
-
-    segment_length = arc_coords[0].distanceToPoint(arc_coords[1])
-    segments = int(length_mm / segment_length) + 1
-
-    for _i in range(0, segments):
-
-        _len = float(_i) * segment_length
-
-        _x = (_len ** 3) / (6.0 * radius_mm * length_mm)
-        _y = _len - ((_len**5) / (40 * (radius_mm ** 2) * (length_mm**2)))
-
-        _dY = App.Vector(bearing_in).multiply(_y)
-        _dX = App.Vector(bearing_in.y, -bearing_in.x, 0.0).multiply(curve_dir).multiply(_x)
-
-        points.append(start_coord.add(_dY.add(_dX)))
-
-    points.extend(arc_coords)
-
-    exit_bearing = bearing + (angle * curve_dir)
-    bearing_out = App.Vector(math.sin(exit_bearing), math.cos(exit_bearing), 0.0)
-
-    _dY = App.Vector(bearing_out).multiply(_Yc)
-    _dX = App.Vector(-bearing_out.y, bearing_out.x, 0.0).multiply(curve_dir).multiply(_Xc)
-
-    end_coord = points[-1].add(_dY.add(_dX))
-
-    temp = [end_coord]
-
-    for _i in range(1, segments):
-
-        _len = float(_i) * segment_length
-
-        if _len > length_mm:
-            _len = length_mm
-
-        _x = (_len ** 3) / (6.0 * radius_mm * length_mm)
-        _y = _len - ((_len ** 5) / (40 * (radius_mm ** 2) * (length_mm**2)))
-
-        _dY = App.Vector(-bearing_out).multiply(_y)
-        _dX = App.Vector(bearing_out.y, -bearing_out.x, 0.0).multiply(curve_dir).multiply(_x)
-
-        temp.append(end_coord.add(_dY.add(_dX)))
-
-    points.extend(temp[::-1])
-
-    return points
-
-def matrix_test(ST, CT, EN, PI):
+def calc_matrix(ST, CT, EN, PI):
     '''
     '''
-
     result = []
 
-    R_ST = ST.sub(CT)
-    R_EN = EN.sub(CT)
-    B_ST = PI.sub(ST)
-    B_EN = EN.sub(PI)
+    R_ST = Utils.safe_sub(ST, CT)
+    R_EN = Utils.safe_sub(EN, CT)
+    B_ST = Utils.safe_sub(PI, ST)
+    B_EN = Utils.safe_sub(EN, PI)
 
     points = [R_ST, R_EN, B_ST, B_EN]
 
@@ -139,13 +55,59 @@ def matrix_test(ST, CT, EN, PI):
 
     mat_mult = mat.multiply(mat_t)
 
-    result = []
+    #square root the length values along the diagonal
+    for _i in [0, 5, 10, 15]:
+        mat_mult.a[_i] = math.sqrt(mat_list[_i])
 
-    mat_mult.A11 = math.sqrt(mat_mult.A11)
-    mat_mult.A22 = math.sqrt(mat_mult.A22)
-    mat_mult.A33 = math.sqrt(mat_mult.A33)
-    mat_mult.A44 = math.sqrt(mat_mult.A44)
+    return mat_mult
 
+def calc_arc_parameters(arc):
+
+    mat = calc_matrix(arc.get['Start'], arc.get['Center'], arc.get['End'], arc.get['PI'])
+
+    #indices of the length and delta values
+    delta_indices = [4, 9, 12, 14]
+
+    #sort deltas so [0] & [1] are the direct values
+    deltas = [mat.A[_i] for _i in [4, 14, 9, 12]]
+
+    delta = 0.0
+
+    if not any(deltas):
+        if not arc['delta']:
+            print('Invalid curve definition: Cannot compute central angle')
+            return None
+
+        else:
+            delta = arc['delta']
+            
+
+    if all(deltas[:2]):
+        if not Utils.within_tolerance(deltas[:2]):
+            print('Invalid curve definition: Invalid radius and/or tangents')
+            return None
+
+    if all(deltas[2:]):
+        if not Utils.within_tolerance():
+            print('Invalid curve definition: Invalid radius and/or tangents')
+
+
+    if deltas[1]:
+        deltas[1] -= C.half_pi
+
+    if deltas[2]:
+        deltas[2] = 90 - deltas[2]
+
+    length_indices = [0, 5, 10, 15]
+
+    lengths = [mat.A[_i] for _i in [0, 5, 10, 15]]
+
+    if all(lengths[2:]):
+        if not Utils.within_tolerance(lengths[0:2]):
+            print('Invalid curve definition: Unequal tangent lengths')
+            return None
+
+    #build list of angles
     for _i in range(0, 3):
 
         angles = []
@@ -153,17 +115,14 @@ def matrix_test(ST, CT, EN, PI):
         for _j in range(_i + 1, 4):
 
             numerator = mat_mult.A[(_i * 4) + _j]
-
-            mag_i = mat_mult.A[(_i * 4) + _i]
-            mag_j = mat_mult.A[_j * 4 + _j]
+            mag_i = mat_mult.A[_i * 5]
+            mag_j = mat_mult.A[_j * 5]
 
             val = numerator / (mag_i * mag_j)
 
             angles.append(math.degrees(math.acos(val)))
 
         result.append(angles[:])
-
-    return mat_mult, result
 
 def arc_parameter_test(excludes = None):
     '''
@@ -194,53 +153,6 @@ def arc_parameter_test(excludes = None):
 
     return calc_arc_parameters(arc)
 
-def calc_arc_parameters(arc):
-
-    vectors = None
-    bearings = [None, None]
-
-    if all([arc['Start'], arc['PI'], arc['End']]):
-        vectors = [arc['PI'].sub(arc['Start']), arc['End'].sub(arc['PI'])]
-
-    elif not (arc['BearingIn']  is None or arc['BearingOut'] is None):
-        vectors = [
-            Utils.vector_from_angle(arc['BearingIn']),
-            Utils.vector_from_angle(arc['BearingOut'])
-        ]
-        bearings = [arc.get('BearingIn'), arc.get('BearingOut')]
-
-    elif all([arc['Start'], arc['Center'], arc['End']]):
-        radii = [arc['Start'].sub(arc['Center']), arc['End'].sub(arc['Center'])]
-        vectors = [Utils.vector_ortho(radii)]
-
-    elif arc['Delta'] is None:
-        print ('Incomplete arc definition.')
-        return None
-
-    #if we've gotten this far and vectors are not defiend, we know:
-    # 1. At most, one bearing angle was provided
-    # 2. We're missing start / center / end / pi coords
-    # 3. We do have a valid delta
-    # 
-    # Therefore, we can still get what we need if:
-    # 1. Start, PI, and Center are defined
-    # 2. End, PI and Center are defined
-    # 3. Any one of the coords plus
-    if not vectors:
-        pass
-
-    tangents = [_i.Length for _i in vectors]
-
-    if not Utils.within_tolerance(tangents[0], tangents[1]):
-        print ('Inequal tangent lengths')
-        return None
-
-    delta = vectors[0].getAngle(vectors[1])
-    rot = -1 * math.copysign(1, vectors[0].cross([vectors[1]]).z)
-
-    #calc bearings if the vectors weren't derived from bearing angles
-    if (bearings[0] is None or bearings[1] is None):
-        bearings = [C.UP.getAngle(_v) for _v in vectors]
 
 
 def calc_arc_parameters_dep(arc):

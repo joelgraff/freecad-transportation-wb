@@ -49,6 +49,17 @@ class Constants(Const):
     TOLERANCE   = 0.0001                    #   tolerance for differences in measurements
     UP          = App.Vector(0.0, 1.0, 0.0) #   Up vector
 
+def safe_sub(lhs, rhs):
+    '''
+    Safely subtract two vectors,
+    returning an empty vector if one is None
+    '''
+
+    if not lhs or not rhs:
+        return App.Vector()
+
+    return lhs.sub(rhs)
+
 def to_float(value):
     '''
     Return true if string value is float
