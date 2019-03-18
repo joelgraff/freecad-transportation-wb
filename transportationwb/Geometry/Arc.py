@@ -38,12 +38,11 @@ def calc_matrix(ST, CT, EN, PI):
     '''
     result = []
 
-    R_ST = Utils.safe_sub(ST, CT)
-    R_EN = Utils.safe_sub(EN, CT)
-    B_ST = Utils.safe_sub(PI, ST)
-    B_EN = Utils.safe_sub(EN, PI)
-
-    points = [R_ST, R_EN, B_ST, B_EN]
+    points = [Utils.safe_sub(ST, CT),
+              Utils.safe_sub(EN, CT),
+              Utils.safe_sub(PI, ST),
+              Utils.safe_sub(EN, PI)
+             ]
 
     for _i in points:
         result.extend(_i)
@@ -71,6 +70,40 @@ def calc_matrix(ST, CT, EN, PI):
     mat_mult.A = mat_list
 
     return points, mat_mult
+
+def calc_bearings(points):
+    '''
+    Calculate the bearings from the provided coordinates and angles
+    '''
+
+    angles = [-1 * C.UP.getAngle(points[0]),
+              -1 * C.UP.getAngle(points[1]),
+              -1 * C.UP.getAngle(points[2]),
+              -1 * C.UP.getAngle(points[3])
+             ]
+
+    rots = [math.copysign(1, C.UP.cross(points[0]).z),
+            math.copysign(1, C.UP.cross(points[1]).z),
+            math.copysign(1, C.UP.cross(points[2]).z),
+            math.copysign(1, C.UP.cross(points[3]).z)
+           ]
+
+    #define our bearings by multiplying them by the direction of rotation
+    bearings = [_v * rots[_i] for _i, _v in enumerate(angles)]
+
+    print('b1: ', bearings)
+    #zero bearings where the result exceeds 2 * pi
+    #and adjust for bearings rotating the opposite direction (> pi radians)
+    bearings = [_v if abs(_v) < C.TWO_PI else 0.0 for _v in bearings]
+
+    print('b2: ', bearings)
+    bearings = [C.TWO_PI + _v if _v < 0.0 else _v for _v in bearings]
+
+    print('b3: ', bearings)
+    #adjust the first two (radius) bearings to match the tangent bearings
+    bearings[:2] = [_v - C.HALF_PI if _v else 0.0 for _i, _v in enumerate(bearings[:2])]
+
+    return bearings
 
 def calc_delta(mat, arc_delta):
     '''
@@ -153,9 +186,13 @@ def calc_lengths(mat, arc_radius, arc_tangent, arc_delta):
 def calc_arc_parameters(arc):
 
     #compute matrix of coordinate dot-products
-    vecs, mat = calc_matrix(arc.get('Start'), arc.get('Center'), arc.get('End'), arc.get('PI'))
+    vecs, mat = calc_matrix(
+        arc.get('Start'), arc.get('Center'), arc.get('End'), arc.get('PI')
+    )
 
-    return vecs, mat
+    #calculate the bearings - returns a list of four values
+    #first two - start bearing, alst two - end bearing
+    bearings = calc_bearings(vecs)
 
     #validate the delta
     delta = calc_delta(mat, arc.get('Delta'))
