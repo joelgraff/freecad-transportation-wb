@@ -34,6 +34,7 @@ from transportationwb.ScriptedObjectSupport.Utils import Constants as C
 
 def calc_matrix(ST, CT, EN, PI):
     '''
+    Calculate the dot products of the vectors among the supplied coordinates
     '''
     result = []
 
@@ -55,74 +56,152 @@ def calc_matrix(ST, CT, EN, PI):
 
     mat_mult = mat.multiply(mat_t)
 
+    mat_list = list(mat_mult.A)
+
     #square root the length values along the diagonal
     for _i in [0, 5, 10, 15]:
-        mat_mult.a[_i] = math.sqrt(mat_list[_i])
+        mat_list[_i] = math.sqrt(mat_mult.A[_i])
 
-    return mat_mult
+    #compute the angles in radians
+    mat_list[4] = math.acos(mat_list[4] / (mat_list[0] * mat_list[5]))
+    mat_list[9] = math.acos(mat_list[9] / (mat_list[5] * mat_list[10]))
+    mat_list[12] = math.acos(mat_list[12] / (mat_list[0] * mat_list[15]))
+    mat_list[14] = math.acos(mat_list[14] / (mat_list[10] * mat_list[15]))
 
-def calc_arc_parameters(arc):
+    mat_mult.A = mat_list
 
-    mat = calc_matrix(arc.get['Start'], arc.get['Center'], arc.get['End'], arc.get['PI'])
+    return points, mat_mult
 
-    #indices of the length and delta values
-    delta_indices = [4, 9, 12, 14]
+def calc_delta(mat, arc_delta):
+    '''
+    Calculate / validate the delta from the matrix
+    or user-defined arc parameter
+    '''
 
-    #sort deltas so [0] & [1] are the direct values
+    #sort deltas so [0] & [1] are the direct central angles
     deltas = [mat.A[_i] for _i in [4, 14, 9, 12]]
 
-    delta = 0.0
+    #adjust opposing bearing / radius deltas to solve for central angle
+    if deltas[2]:
+        deltas[2] -= C.HALF_PI
 
+    if deltas[3]:
+        deltas[3] = C.HALF_PI - deltas[3]
+
+    #default unless the calculated deltas work out
     if not any(deltas):
-        if not arc['delta']:
-            print('Invalid curve definition: Cannot compute central angle')
+        if not arc_delta:
             return None
 
-        else:
-            delta = arc['delta']
-            
-
+    #test to see if adjacent bearing / radius deltas match
     if all(deltas[:2]):
         if not Utils.within_tolerance(deltas[:2]):
-            print('Invalid curve definition: Invalid radius and/or tangents')
             return None
 
+    #test tp see if opposing bearing / radius deltas match
     if all(deltas[2:]):
-        if not Utils.within_tolerance():
-            print('Invalid curve definition: Invalid radius and/or tangents')
+        if not Utils.within_tolerance(deltas[2:]):
+            return None
 
+    #get the first non-zero calcualted delta.
+    if not arc_delta:
+        arc_delta = [_v for _v in deltas if _v][0]
 
-    if deltas[1]:
-        deltas[1] -= C.half_pi
+    return arc_delta
 
-    if deltas[2]:
-        deltas[2] = 90 - deltas[2]
+def calc_rotation(vectors):
+    '''
+    Calculate the rotation of the curve based on the radius / tangent vector pairs
+    '''
 
-    length_indices = [0, 5, 10, 15]
+    rad_rot = -1 * math.copysign(1, vectors[0].cross(vectors[1].z))
+    tan_rot = -1 * math.copysign(1, vectors[2].cross(vectors[3].z))
+
+    if tan_rot != rad_rot:
+        return 0
+
+    return rad_rot
+
+def calc_lengths(mat, arc_radius, arc_tangent, arc_delta):
+    '''
+    Calculate / validate the arc radius and tangent from the
+    matrix and / or user-defined arc parameters
+    '''
 
     lengths = [mat.A[_i] for _i in [0, 5, 10, 15]]
 
-    if all(lengths[2:]):
-        if not Utils.within_tolerance(lengths[0:2]):
-            print('Invalid curve definition: Unequal tangent lengths')
-            return None
+    if not any(lengths) and not any([arc_tangent, arc_radius]):
+        return None
 
-    #build list of angles
-    for _i in range(0, 3):
+    radii = [_v for _v in lengths[:2] if _v]
+    tangents = [_v for _v in lengths[2:] if _v]
 
-        angles = []
+    if radii:
+        arc_radius = radii[0]
 
-        for _j in range(_i + 1, 4):
+    if tangents:
+        arc_tangent = tangents[0]
 
-            numerator = mat_mult.A[(_i * 4) + _j]
-            mag_i = mat_mult.A[_i * 5]
-            mag_j = mat_mult.A[_j * 5]
+    if not arc_radius:
+        arc_radius = arc_tangent / math.tan(arc_delta / 2.0)
 
-            val = numerator / (mag_i * mag_j)
+    elif not arc_tangent:
+        arc_tangent = arc_radius * math.tan(arc_delta / 2.0)
 
-            angles.append(math.degrees(math.acos(val)))
+    return [arc_radius, arc_tangent]
 
-        result.append(angles[:])
+def calc_arc_parameters(arc):
+
+    #compute matrix of coordinate dot-products
+    vecs, mat = calc_matrix(arc.get('Start'), arc.get('Center'), arc.get('End'), arc.get('PI'))
+
+    return vecs, mat
+
+    #validate the delta
+    delta = calc_delta(mat, arc.get('Delta'))
+
+    if not delta:
+        print('Invalid curve definition: Cannot compute central angle')
+        return None
+
+    #calculate the curve direction
+    rot = calc_rotation(vecs)
+
+    if not rot:
+        print('Unable to determine curve rotation')
+        return None
+
+    #validate the [radius, tangent]
+    lengths = calc_lengths(mat, arc.get('Radius'), arc.get('Tangent'), delta)
+
+    if not lengths:
+        print('Invalid curve definition: Cannot calculate tangent / radius lengths')
+        return None
+
+    radius = lengths[0]
+    half_delta = delta / 2.0
+
+    #with a valid delta and radius, compute remaining values
+    arc = {
+        'Direction': rot,
+        'Delta': delta,
+        'Radius': radius,
+        'Length': radius * delta,
+        'Tangent': radius * math.tan(half_delta),
+        'Chord': 2 * radius * math.sin(half_delta),
+        'External': radius * ((1 / math.cos(half_delta) - 1)),
+        'MiddleOrd': radius * (1 - math.cos(half_delta)),
+        'BearingIn': math.radians(139.3986),
+        'BearingOut': math.radians(89.0825),
+        'Start': App.Vector(122056.0603640062, -142398.20717496306, 0.0).multiply(scale_factor),
+        'Center': App.Vector (277108.1622932797, -9495.910944558627, 0.0).multiply(scale_factor),
+        'End': App.Vector (280378.2141876281, -213685.7280672748, 0.0).multiply(scale_factor),
+        'PI': App.Vector (184476.32163324804, -215221.57431973785, 0.0).multiply(scale_factor)
+    }
+
+    #with all arc parameters, compute missing coordinates
+
+    #return the fully defined arc object
 
 def arc_parameter_test(excludes = None):
     '''

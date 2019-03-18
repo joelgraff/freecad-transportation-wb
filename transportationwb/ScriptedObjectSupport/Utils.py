@@ -132,12 +132,35 @@ def directed_angle(in_vector, out_vector):
 
     return -(direction / abs(direction)), in_vector.getAngle(out_vector)
 
-def within_tolerance(lhs, rhs):
+def within_tolerance(lhs, rhs=None):
     '''
     Determine if two values are within a pre-defined tolerance
+
+    lhs / rhs - values to compare.  rhs may be none if lhs is an array
+
+    Array comparisons check every value against every other, and error if any checks fail
     '''
 
-    return abs(lhr-rhs) < Constants.TOLERANCE
+    tol_check = True
+
+    if isinstance(lhs, list):
+
+        for _i in range(0, len(lhs) - 1):
+
+            rhs = [lhs[_i:]]
+
+            for _val in rhs:
+
+                if not  abs(lhs[_i] - _val) < Constants.TOLEARANCE:
+                    return False
+
+    elif rhs is None:
+        return False
+
+    else:
+        return abs(lhs-rhs) < Constants.TOLERANCE
+
+    return tol_check
 
 def vector_ortho(vector):
     '''
