@@ -147,11 +147,11 @@ def within_tolerance(lhs, rhs=None):
 
         for _i in range(0, len(lhs) - 1):
 
-            rhs = [lhs[_i:]]
+            rhs = lhs[_i:]
 
             for _val in rhs:
 
-                if not  abs(lhs[_i] - _val) < Constants.TOLEARANCE:
+                if not abs(lhs[_i] - _val) < Constants.TOLERANCE:
                     return False
 
     elif rhs is None:

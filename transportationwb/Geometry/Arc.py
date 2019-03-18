@@ -147,8 +147,8 @@ def calc_rotation(vectors):
     Calculate the rotation of the curve based on the radius / tangent vector pairs
     '''
 
-    rad_rot = -1 * math.copysign(1, vectors[0].cross(vectors[1].z))
-    tan_rot = -1 * math.copysign(1, vectors[2].cross(vectors[3].z))
+    rad_rot = -1 * math.copysign(1, vectors[0].cross(vectors[1]).z)
+    tan_rot = -1 * math.copysign(1, vectors[2].cross(vectors[3]).z)
 
     if tan_rot != rad_rot:
         return 0
@@ -217,6 +217,7 @@ def calc_arc_parameters(arc):
 
     radius = lengths[0]
     half_delta = delta / 2.0
+    scale_factor = 1.0 / Units.scale_factor()
 
     #with a valid delta and radius, compute remaining values
     arc = {
@@ -239,7 +240,8 @@ def calc_arc_parameters(arc):
     #with all arc parameters, compute missing coordinates
 
     #return the fully defined arc object
-
+    return arc
+    
 def arc_parameter_test(excludes = None):
     '''
     '''
