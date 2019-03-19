@@ -49,13 +49,17 @@ class Constants(Const):
     TOLERANCE   = 0.0001                    #   tolerance for differences in measurements
     UP          = App.Vector(0.0, 1.0, 0.0) #   Up vector
 
-def safe_sub(lhs, rhs):
+def safe_sub(lhs, rhs, return_None=False):
     '''
-    Safely subtract two vectors,
-    returning an empty vector if one is None
+    Safely subtract two vectors.
+    Returns an empty vector or None if either vector is None
     '''
 
     if not lhs or not rhs:
+
+        if return_None:
+            return None
+
         return App.Vector()
 
     return lhs.sub(rhs)
@@ -134,17 +138,22 @@ def to_int(value):
 
     return result
 
-def directed_angle(in_vector, out_vector):
+def get_rotation(in_vector, out_vector = None):
     '''
-    Returns a signed angle in radians, < 0 == CCW, > 0 = CW
-    in_vector / out_vector - Two App.Vector() objects
+    Returns the rotation as a signed integer:
+    1 = cw, -1 = ccw, 0 = fail
+
+    if in_vector is an instance, out_vector is ignored.
     '''
-    direction = (in_vector.x * out_vector.y) - (in_vector.y * out_vector.x)
 
-    if direction == 0.0:
-        direction = 1.0
+    if isinstance(in_vector, list):
+        if not all(in_vector):
+            return 0
 
-    return -(direction / abs(direction)), in_vector.getAngle(out_vector)
+        out_vector = in_vector[1]
+        in_vector = in_vector[0]
+
+    return math.copysign(1, in_vector.cross(out_vector).z)
 
 def within_tolerance(lhs, rhs=None):
     '''
