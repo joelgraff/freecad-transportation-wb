@@ -136,9 +136,11 @@ def calc_delta(mat, arc_delta):
         if not Utils.within_tolerance(deltas[2:]):
             return None
 
+    delta = [_v for _v in deltas if _v][0]
+
     #get the first non-zero calcualted delta.
-    if not arc_delta:
-        arc_delta = [_v for _v in deltas if _v][0]
+    if not arc_delta or not Utils.within_tolerance(arc_delta, delta):
+        arc_delta = delta
 
     return arc_delta
 
@@ -170,10 +172,12 @@ def calc_lengths(mat, arc_radius, arc_tangent, arc_delta):
     tangents = [_v for _v in lengths[2:] if _v]
 
     if radii:
-        arc_radius = radii[0]
+        if not Utils.within_tolerance(radii[0], arc_radius)
+            arc_radius = radii[0]
 
     if tangents:
-        arc_tangent = tangents[0]
+        if not Utils.within_tolerance(tangents[0], arc_tangnt)
+            arc_tangent = tangents[0]
 
     if not arc_radius:
         arc_radius = arc_tangent / math.tan(arc_delta / 2.0)
@@ -195,7 +199,7 @@ def calc_arc_parameters(arc):
     bearings = calc_bearings(vecs)
 
     #validate the delta
-    delta = calc_delta(mat, arc.get('Delta'))
+    delta = calc_delta(mat, Utils.safe_radians(arc.get('Delta')))
 
     if not delta:
         print('Invalid curve definition: Cannot compute central angle')
@@ -241,7 +245,7 @@ def calc_arc_parameters(arc):
 
     #return the fully defined arc object
     return arc
-    
+
 def arc_parameter_test(excludes = None):
     '''
     '''

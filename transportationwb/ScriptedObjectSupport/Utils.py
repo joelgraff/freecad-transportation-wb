@@ -60,6 +60,20 @@ def safe_sub(lhs, rhs):
 
     return lhs.sub(rhs)
 
+def safe_radians(value):
+    '''
+    Convert a floating point value from degrees to radians,
+    handle None / invalid type conditions
+    '''
+
+    if value is None:
+        return 0.0
+
+    if not isinstance(value, float):
+        return 0.0
+
+    return math.radians(value)
+
 def to_float(value):
     '''
     Return true if string value is float
