@@ -63,7 +63,11 @@ def calc_delta(arc, vecs):
     Calculate / validate the delta from the matrix
     or user-defined arc parameter
     '''
-    delta = arc.get('Delta')
+
+    delta = math.radians(arc.get('Delta'))
+
+    rot = arc['Direction']
+
     angle_scale = 1.0
 
     _vecs = None
@@ -86,13 +90,22 @@ def calc_delta(arc, vecs):
         if not vecs['Radius'][1]:
             _vecs[0], _vecs[1] = _vecs[1], _vecs[0]
 
-    if not _vecs:
-        return None
-
-    print('delta vecs = ', _vecs)
     #left hand rule for absolute bearings from north
     _rot = Utils.get_rotation(_vecs)
-    _delta = _vecs[0].getAngle(_vecs[1]) * angle_scale
+
+    if not _rot:
+        _rot = rot
+
+    if not _rot:
+        return None, None
+
+    _delta = 0.0
+
+    if _vecs:
+        _delta = _vecs[0].getAngle(_vecs[1]) * angle_scale
+
+    if not _delta:
+        _delta = delta
 
     #default to user-defined value if within tolerance
     if Utils.within_tolerance(_delta, delta):
@@ -149,11 +162,21 @@ def fix_vectors(vecs, lengths, delta, rot):
 
     _delta = 0.0
 
+    print('vecs - ', vecs, '\ndelta - ', delta)
+
+    if tan_vec[0] and not rad_vec[0]:
+        rad_vec[0] = Utils.get_ortho(tan_vec[0], -1 * rot).multiply(lengths[0])
+
+    if tan_vec[1] and not rad_vec[1]:
+        rad_vec[1] = Utils.get_ortho(tan_vec[1], -1 * rot).multiply(lengths[0])
+
+    print('ortho rad vec = ', rad_vec)
     if mid_vec:
         _delta = Utils.get_bearing(mid_vec)
     elif rad_vec[0]:
         _delta = Utils.get_bearing(rad_vec[0]) + rot * (delta / 2.0)
     elif rad_vec[1]:
+#        print ('calcs: ', rad_vec[1], Utils.get_bearing(rad_vec[1]), rot, delta)
         _delta = Utils.get_bearing(rad_vec[1]) - rot * (delta / 2.0)
     elif tan_vec[0]:
         _delta = Utils.get_bearing(tan_vec[0]) - rot * (math.pi - delta) / 2.0
@@ -239,16 +262,58 @@ def calc_coordinates(arc, vecs, lengths):
 
     return [_start, _end, _center, _pi]
 
+def middle_chord_check(arc, vecs):
+    '''
+    Test for middle / chord-only vectors and
+    convert to radius / tangent vectors
+    '''
+
+    delta = arc.get('Delta')
+    rot = arc.get('Direction')
+
+    if not delta:
+        return None
+
+    delta = math.radians(delta)
+
+    radius = arc.get('Radius')
+    tangent = arc.get('Tangent')
+
+    if radius and not tangent:
+        tangent = radius * math.tan(delta / 2.0)
+
+    elif tangent and not radius:
+        radius = tangent / math.tan(delta / 2.0)
+
+    if any(vecs['Radius']) or any(vecs['Tangent']):
+        return vecs
+
+    if vecs['Chord']:
+        angle = Utils.get_bearing(vecs['Chord']) - (rot * delta / 2.0)
+        
+        vecs['Tangent'][0] = App.Vector(math.sin(angle), math.cos(angle)).multiply(tangent)
+        vecs['Radius'][0] = Utils.get_ortho(vecs['Tangent'][0], -1 * rot).multiply(radius)
+
+    if vecs['Middle']:
+        angle = Utils.get_bearing(vecs['Middle']) - (rot * delta / 2.0)
+        vecs['Radius'][0] = App.Vector(math.sin(angle), math.cos(angle)).multiply(radius)
+        vecs['Tangent'][0] = Utils.get_ortho(vecs['Radius'][0], rot).multiply(tangent)
+
+    return vecs
+
 def calc_arc_parameters(arc):
 
     vecs = {'Radius': [Utils.safe_sub(arc.get('Start'), arc.get('Center'), True),
                        Utils.safe_sub(arc.get('End'), arc.get('Center'), True)],
             'Tangent': [Utils.safe_sub(arc.get('PI'), arc.get('Start'), True),
                         Utils.safe_sub(arc.get('End'), arc.get('PI'), True)],
-            'Middle': Utils.safe_sub(arc.get('PI'), arc.get('Center'), True)
+            'Middle': Utils.safe_sub(arc.get('PI'), arc.get('Center'), True),
+            'Chord': Utils.safe_sub(arc.get('End'), arc.get('Start'), True)
            }
 
-    print ('initial vecs: ', vecs)
+    #test for chord / middle ordinate only cases
+    if not (any(vecs['Radius']) or any(vecs['Tangent'])):
+        vecs = middle_chord_check(arc, vecs)
 
     #validate the delta
     rot, delta = calc_delta(arc, vecs)

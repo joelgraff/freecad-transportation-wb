@@ -155,7 +155,25 @@ def get_rotation(in_vector, out_vector = None):
         _out = in_vector[1]
         _in = in_vector[0]
 
-    return -1.0 * math.copysign(1, _in.cross(_out).z)
+    if not all([_out, _in]):
+        return 0
+
+    return -1 * math.copysign(1, _in.cross(_out).z)
+
+def get_ortho(vector, rot):
+    '''
+    Calculate the normalized orthogonal of the passed vector
+    '''
+
+    result = vector
+
+    if isinstance(vector, list):
+        result = App.Vector(vector)
+
+    if not isinstance(result, App.Vector):
+        return None
+
+    return App.Vector(result.y, -result.x, 0.0).normalize().multiply(rot)
 
 def get_bearing(vector):
     '''
@@ -176,8 +194,6 @@ def get_bearing(vector):
 
     angle = rot * Constants.UP.getAngle(result)
 
-    print ('bearing_rot = ', rot)
-    print('bearing_angle = ', angle)
     if angle < 0.0:
         angle += Constants.TWO_PI
 
