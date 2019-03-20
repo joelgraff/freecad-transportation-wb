@@ -116,11 +116,11 @@ def calc_bearings(arc, vecs, delta):
 
     #vecs[0, 1] - Radius start / end
     #vecs[2, 3] - Tangent start / end
-    angles = [-1 * C.UP.getAngle(vecs['Bearing'][0]),
-              -1 * C.UP.getAngle(vecs['Bearing'][1])]
+    angles = [-1 * C.UP.getAngle(vecs['Tangent'][0]),
+              -1 * C.UP.getAngle(vecs['Tangent'][1])]
 
-    rots = [math.copysign(1, C.UP.cross(vecs['Bearing'][0]).z),
-            math.copysign(1, C.UP.cross(vecs['Bearing'][1]).z)]
+    rots = [math.copysign(1, C.UP.cross(vecs['Tangent'][0]).z),
+            math.copysign(1, C.UP.cross(vecs['Tangent'][1]).z)]
 
     #define our bearings by multiplying them by the direction of rotation
     bearings = [_v * rots[_i] for _i, _v in enumerate(angles)]
@@ -137,11 +137,6 @@ def calc_bearings(arc, vecs, delta):
 
     #abort if we have absolutely no bearing data to work with
     if not bearings and not result:
-        return None
-
-    #abort if calculated difference exceeds tolerance (bad curve definition)
-    if all(bearings) and not Utils.within_tolerance(bearings):
-        print('Incorrect curve definition: bearing mismatch')
         return None
 
     for _i, _bearing in enumerate(bearings):
@@ -172,14 +167,14 @@ def calc_delta(arc, vecs):
     if all(vecs['Radius']):
         _vecs = vecs['Radius']
 
-    elif all(vecs['Bearing']):
-        _vecs = vecs['Bearing']
+    elif all(vecs['Tangent']):
+        _vecs = vecs['Tangent']
 
     elif vecs['Middle']:
         _vecs = [vecs['Middle']]
         _vecs.append([_v for _v in vecs['Radius'] if _v][0])
 
-    return Utils.get_rotation(vecs), vecs[0].getAngle(vecs[1])
+    return Utils.get_rotation(_vecs), _vecs[0].getAngle(_vecs[1])
 
 def calc_lengths(arc, vecs, delta):
     '''
@@ -220,7 +215,7 @@ def calc_lengths(arc, vecs, delta):
 
     return [radius, tangent]
 
-def fix_vectors(vecs, delta, rot):
+def fix_vectors(vecs, lengths, delta, rot):
     '''
     Given the passed data, fill in any missing vectors
     '''
@@ -248,30 +243,78 @@ def fix_vectors(vecs, delta, rot):
 
     if not rad_vec[0]:
         rad_vec[0] = App.Vector(math.sin(angle / 2.0),
-                                math.cos(angle / 2.0)).multiply(-1.0 * rot)
+                                math.cos(angle / 2.0)).multiply(-1.0 * rot * lengths[0])
 
     if not rad_vec[1]:
         rad_vec[1] = App.Vector(math.sin(angle / 2.0),
-                                math.cos(angle / 2.0)).multiply(rot)
+                                math.cos(angle / 2.0)).multiply(rot * lengths[0])
 
     if not tan_vec[0]:
         tan_vec[0] = App.Vector(math.sin((math.pi - angle) / 2.0),
-                                math.cos((math.pi - angle) / 2.0)).multiply(-1.0 * rot)
+                                math.cos((math.pi - angle) / 2.0)).multiply(-1.0 * rot * lengths[1])
 
     if not tan_vec[1]:
         tan_vec[1] = App.Vector(math.sin((math.pi - angle) / 2.0),
-                                math.cos((math.pi - angle) / 2.0)).multiply(-1.0 * rot)
+                                math.cos((math.pi - angle) / 2.0)).multiply(-1.0 * rot * lengths[1])
 
-    if not vecs['Middle']:
+    middle_vec = vecs.get('Middle')
+ 
+    if not middle_vec:
         middle_vec = App.Vector(math.sin(init_delta), math.cos(init_delta)).multiply(rot)
 
     return {'Radius': rad_vec, 'Tangent': tan_vec, 'Middle': middle_vec}
+
+def calc_coordinates(arc, vecs, lengths):
+    '''
+    Calculate the coordinates (if undefined) for the arc
+    '''
+
+    _start = arc['Start']
+    _center = arc['Center']
+    _end = arc['End']
+    _pi = arc['PI']
+
+    undefined_coords = True
+
+    while undefined_coords:
+
+        if _start:
+            _pi = _start.add(App.Vector(vecs['Tangent'][0]))
+            _center = _start.sub(App.Vector(vecs['Radius'][0]))
+
+        if _center:
+            _start = _center.add(App.Vector(vecs['Radius'][0]))
+            _end = _center.add(App.Vector(vecs['Radius'][1]))
+
+        if _end:
+            _pi = _end.sub(App.Vector(vecs['Tangent'][1]))
+            _center = _start.sub(App.Vector(vecs['Radius'][1]))
+
+        if _pi:
+            _start = _pi.sub(App.Vector(vecs['Tangent'][0]))
+            _end = _pi.add(App.Vector(vecs['Tangent'][1]))
+
+        undefined_coords = not all([_start, _end, _center, _pi])
+
+    if Utils.within_tolerance(_start.Length, arc['Start'].Length):
+        _start = arc['Start']
+
+    if Utils.within_tolerance(_end.Length, arc['End'].Length):
+        _end = arc['End']
+
+    if Utils.within_tolerance(_center.Length, arc['Center'].Length):
+        _center = arc['Center']
+
+    if Utils.within_tolerance(_pi.Length, arc['PI'].Length):
+        _pi = arc['PI']
+
+    return [_start, _end, _center, _pi]
 
 def calc_arc_parameters(arc):
 
     vecs = {'Radius': [Utils.safe_sub(arc.get('Start'), arc.get('Center'), True),
                        Utils.safe_sub(arc.get('End'), arc.get('Center'), True)],
-            'Bearing': [Utils.safe_sub(arc.get('PI'), arc.get('Start'), True),
+            'Tangent': [Utils.safe_sub(arc.get('PI'), arc.get('Start'), True),
                         Utils.safe_sub(arc.get('End'), arc.get('PI'), True)],
             'Middle': Utils.safe_sub(arc.get('PI'), arc.get('Center'), True)
            }
@@ -289,7 +332,7 @@ def calc_arc_parameters(arc):
         print('Invalid curve definition: Cannot compute tangent or radius lengths')
         return None
 
-    vecs = fix_vectors(vecs, delta, rot)
+    vecs = fix_vectors(vecs, lengths, delta, rot)
 
     #calculate the bearings - returns a list of four values
     #first two - start bearing, last two - end bearing
@@ -301,6 +344,9 @@ def calc_arc_parameters(arc):
 
     radius = lengths[0]
     half_delta = delta / 2.0
+
+    coords = calc_coordinates(arc, vecs, lengths)
+
     #scale_factor = 1.0 / Units.scale_factor()
 
     #with a valid delta and radius, compute remaining values
@@ -315,10 +361,10 @@ def calc_arc_parameters(arc):
         'MiddleOrd': radius * (1 - math.cos(half_delta)),
         'BearingIn': math.degrees(bearings[0]),
         'BearingOut': math.degrees(bearings[1]),
-        'Start': arc['Start'],
-        'Center': arc['Center'],
-        'End': arc['End'],
-        'PI': arc['PI']
+        'Start': coords[0],
+        'Center': coords[2],
+        'End': coords[1],
+        'PI': coords[3]
     }
 
 def arc_parameter_test(excludes=None):
