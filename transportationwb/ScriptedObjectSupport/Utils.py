@@ -145,15 +145,43 @@ def get_rotation(in_vector, out_vector = None):
 
     if in_vector is an instance, out_vector is ignored.
     '''
+    _in = in_vector
+    _out = out_vector
 
-    if isinstance(in_vector, list):
-        if not all(in_vector):
+    if isinstance(_in, list):
+        if not all(_in):
             return 0
 
-        out_vector = in_vector[1]
-        in_vector = in_vector[0]
+        _out = in_vector[1]
+        _in = in_vector[0]
 
-    return math.copysign(1, in_vector.cross(out_vector).z)
+    return -1.0 * math.copysign(1, _in.cross(_out).z)
+
+def get_bearing(vector):
+    '''
+    Returns the absolute bearing of the passed vector.
+    Bearing is measured clockwise from +y 'north' (0,1,0)
+    Vector is a list of coordinates or an App.Vector
+    '''
+
+    result = vector
+
+    if isinstance(vector, list):
+        result = App.Vector(vector)
+
+    if not isinstance(vector, App.Vector):
+        return None
+
+    rot = get_rotation(Constants.UP, result)
+
+    angle = rot * Constants.UP.getAngle(result)
+
+    print ('bearing_rot = ', rot)
+    print('bearing_angle = ', angle)
+    if angle < 0.0:
+        angle += Constants.TWO_PI
+
+    return angle
 
 def within_tolerance(lhs, rhs=None):
     '''

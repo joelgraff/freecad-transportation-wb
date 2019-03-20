@@ -32,104 +32,13 @@ import Draft
 from transportationwb.ScriptedObjectSupport import Units, Utils
 from transportationwb.ScriptedObjectSupport.Utils import Constants as C
 
-def calc_matrix(vecs):
-    '''
-    Calculate the 4x4 matrix for the provided points
-    '''
-
-    result = []
-
-    for _i in vecs:
-        _t = list(_i)
-
-        if len(_t) < 4:
-            _t.extend([0.0] * 4 - len(_t))
-
-        result.append(_t)
-
-    mat = App.Matrix()
-    mat.A = result
-
-    mat_t = App.Matrix(mat)
-    mat_t.transpose()
-
-    mat_mult = mat.multiply(mat_t)
-
-    mat_list = list(mat_mult.A)
-
-    #calculate the vector magnitude on diagonal
-    for _i in range[0, 16, 5]:
-        mat_list[_i] = math.sqrt(mat_list[_i])
-
-    
-
-def calc_matrix_dep(ST, CT, EN, PI):
-    '''
-    Calculate the dot products of the vectors among the supplied coordinates
-    '''
-    result = []
-
-    points = [Utils.safe_sub(ST, CT),
-              Utils.safe_sub(EN, CT),
-              Utils.safe_sub(PI, ST),
-              Utils.safe_sub(EN, PI)
-             ]
-
-    for _i in points:
-        result.extend(_i)
-        result.append(0.0)
-
-    mat = App.Matrix()
-    mat.A = result
-    mat_t = App.Matrix(mat)
-    mat_t.transpose()
-
-    mat_mult = mat.multiply(mat_t)
-
-    mat_list = list(mat_mult.A)
-
-    #square root the length values along the diagonal
-    for _i in [0, 5, 10, 15]:
-        mat_list[_i] = math.sqrt(mat_mult.A[_i])
-
-    #safely calcualte arc cosine
-    def acos(_a, _b, _c):
-        if not (_b and _c):
-            return 0.0
-        return math.acos(_a / (_b * _c))
-
-    #compute the angles in radians
-    mat_list[4] = acos(mat_list[4], mat_list[0], mat_list[5])
-    mat_list[9] = acos(mat_list[9], mat_list[5], mat_list[10])
-    mat_list[12] = acos(mat_list[12], mat_list[0], mat_list[15])
-    mat_list[13] = acos(mat_list[13], mat_list[5], mat_list[15])
-    mat_list[14] = acos(mat_list[14], mat_list[10], mat_list[15])
-
-    mat_mult.A = mat_list
-
-    return points, mat_mult
-
-def calc_bearings(arc, vecs, delta):
+def calc_bearings(arc, vecs):
     '''
     Calculate the bearings from the provided coordinates and angles
     '''
 
-    #vecs[0, 1] - Radius start / end
-    #vecs[2, 3] - Tangent start / end
-    angles = [-1 * C.UP.getAngle(vecs['Tangent'][0]),
-              -1 * C.UP.getAngle(vecs['Tangent'][1])]
-
-    rots = [math.copysign(1, C.UP.cross(vecs['Tangent'][0]).z),
-            math.copysign(1, C.UP.cross(vecs['Tangent'][1]).z)]
-
     #define our bearings by multiplying them by the direction of rotation
-    bearings = [_v * rots[_i] for _i, _v in enumerate(angles)]
-
-    #zero bearings where the result exceeds 2 * pi
-    #and adjust for bearings rotating the opposite direction (> pi radians)
-    bearings = [_v if abs(_v) < C.TWO_PI else 0.0 for _v in bearings]
-
-    bearings = [C.TWO_PI + _v if _v < 0.0 else _v for _v in bearings]
+    bearings = [Utils.get_bearing(_v) for _v in vecs['Tangent']]
 
     print('bearings: ', bearings)
 
@@ -155,14 +64,9 @@ def calc_delta(arc, vecs):
     or user-defined arc parameter
     '''
     delta = arc.get('Delta')
-    angle = 0.0
-    rot = arc.get('Direction')
-    
-    if rot:
-        if rot == 'cw':
-            rot = 1
-        else:
-            rot = -1
+    angle_scale = 1.0
+
+    _vecs = None
 
     if all(vecs['Radius']):
         _vecs = vecs['Radius']
@@ -170,11 +74,31 @@ def calc_delta(arc, vecs):
     elif all(vecs['Tangent']):
         _vecs = vecs['Tangent']
 
+    #double angle scale because angle between middle vector and radius ends is half delta
     elif vecs['Middle']:
+
         _vecs = [vecs['Middle']]
         _vecs.append([_v for _v in vecs['Radius'] if _v][0])
+        angle_scale = 2.0
 
-    return Utils.get_rotation(_vecs), _vecs[0].getAngle(_vecs[1])
+        #if the starting radius vector is missing, the end vector is what's used
+        #which means rotations is right-handed, so swap the vector order
+        if not vecs['Radius'][1]:
+            _vecs[0], _vecs[1] = _vecs[1], _vecs[0]
+
+    if not _vecs:
+        return None
+
+    print('delta vecs = ', _vecs)
+    #left hand rule for absolute bearings from north
+    _rot = Utils.get_rotation(_vecs)
+    _delta = _vecs[0].getAngle(_vecs[1]) * angle_scale
+
+    #default to user-defined value if within tolerance
+    if Utils.within_tolerance(_delta, delta):
+        _delta = delta
+
+    return _rot, _delta
 
 def calc_lengths(arc, vecs, delta):
     '''
@@ -223,45 +147,46 @@ def fix_vectors(vecs, lengths, delta, rot):
     tan_vec = vecs['Tangent']
     mid_vec = vecs['Middle']
 
-    _sin = rot * math.sin(delta / 2.0)
-    _cos = rot * math.cos(delta / 2.0)
-
-    _init_delta = 0.0
+    _delta = 0.0
 
     if mid_vec:
-        init_delta = C.UP.getAngle(mid_vec)
+        _delta = Utils.get_bearing(mid_vec)
     elif rad_vec[0]:
-        init_delta = C.UP.getAngle(rad_vec[0]) + (delta / 2.0)
+        _delta = Utils.get_bearing(rad_vec[0]) + rot * (delta / 2.0)
     elif rad_vec[1]:
-        init_delta = C.UP.getAngle(rad_vec[1]) - (delta / 2.0)
+        _delta = Utils.get_bearing(rad_vec[1]) - rot * (delta / 2.0)
     elif tan_vec[0]:
-        init_delta = C.UP.getAngle(tan_vec[0]) - (math.pi - delta) / 2.0
+        _delta = Utils.get_bearing(tan_vec[0]) - rot * (math.pi - delta) / 2.0
     elif tan_vec[1]:
-        init_delta = C.Up.getAngle(tan_vec[1]) - (math.pi + delta) / 2.0
+        _delta = Utils.get_bearing(tan_vec[1]) + rot * (math.pi + delta) / 2.0
 
-    angle = init_delta + delta
-
+    print ('mo_delta = ', _delta, '\nrot = ', rot)
     if not rad_vec[0]:
-        rad_vec[0] = App.Vector(math.sin(angle / 2.0),
-                                math.cos(angle / 2.0)).multiply(-1.0 * rot * lengths[0])
+        _d = _delta - rot * delta / 2.0
+        rad_vec[0] = App.Vector(math.sin(_d),
+                                math.cos(_d)).multiply(lengths[0])
 
     if not rad_vec[1]:
-        rad_vec[1] = App.Vector(math.sin(angle / 2.0),
-                                math.cos(angle / 2.0)).multiply(rot * lengths[0])
+        _d = _delta + rot * delta / 2.0
+        rad_vec[1] = App.Vector(math.sin(_d),
+                                math.cos(_d)).multiply(lengths[0])
 
     if not tan_vec[0]:
-        tan_vec[0] = App.Vector(math.sin((math.pi - angle) / 2.0),
-                                math.cos((math.pi - angle) / 2.0)).multiply(-1.0 * rot * lengths[1])
+        _d = _delta - rot * ((delta - math.pi) / 2.0)
+        tan_vec[0] = App.Vector(math.sin(_d),
+                                math.cos(_d)).multiply(lengths[1])
 
     if not tan_vec[1]:
-        tan_vec[1] = App.Vector(math.sin((math.pi - angle) / 2.0),
-                                math.cos((math.pi - angle) / 2.0)).multiply(-1.0 * rot * lengths[1])
+        _d = _delta + rot * ((delta + math.pi) / 2.0)
+        tan_vec[1] = App.Vector(math.sin(_d),
+                                math.cos(_d)).multiply(lengths[1])
 
     middle_vec = vecs.get('Middle')
- 
-    if not middle_vec:
-        middle_vec = App.Vector(math.sin(init_delta), math.cos(init_delta)).multiply(rot)
 
+    if not middle_vec:
+        middle_vec = App.Vector(math.sin(_delta), math.cos(_delta)).multiply(rot)
+
+    print('Radius vectors: ', rad_vec, '\nTangent vectors: ', tan_vec, '\nMiddle vector: ', middle_vec)
     return {'Radius': rad_vec, 'Tangent': tan_vec, 'Middle': middle_vec}
 
 def calc_coordinates(arc, vecs, lengths):
@@ -288,7 +213,7 @@ def calc_coordinates(arc, vecs, lengths):
 
         if _end:
             _pi = _end.sub(App.Vector(vecs['Tangent'][1]))
-            _center = _start.sub(App.Vector(vecs['Radius'][1]))
+            _center = _end.sub(App.Vector(vecs['Radius'][1]))
 
         if _pi:
             _start = _pi.sub(App.Vector(vecs['Tangent'][0]))
@@ -296,17 +221,21 @@ def calc_coordinates(arc, vecs, lengths):
 
         undefined_coords = not all([_start, _end, _center, _pi])
 
-    if Utils.within_tolerance(_start.Length, arc['Start'].Length):
-        _start = arc['Start']
+    if arc['Start']:
+        if Utils.within_tolerance(_start.Length, arc['Start'].Length):
+            _start = arc['Start']
 
-    if Utils.within_tolerance(_end.Length, arc['End'].Length):
-        _end = arc['End']
+    if arc['End']:
+        if Utils.within_tolerance(_end.Length, arc['End'].Length):
+            _end = arc['End']
 
-    if Utils.within_tolerance(_center.Length, arc['Center'].Length):
-        _center = arc['Center']
+    if arc['Center']:
+        if Utils.within_tolerance(_center.Length, arc['Center'].Length):
+            _center = arc['Center']
 
-    if Utils.within_tolerance(_pi.Length, arc['PI'].Length):
-        _pi = arc['PI']
+    if arc['PI']:
+        if Utils.within_tolerance(_pi.Length, arc['PI'].Length):
+            _pi = arc['PI']
 
     return [_start, _end, _center, _pi]
 
@@ -318,6 +247,8 @@ def calc_arc_parameters(arc):
                         Utils.safe_sub(arc.get('End'), arc.get('PI'), True)],
             'Middle': Utils.safe_sub(arc.get('PI'), arc.get('Center'), True)
            }
+
+    print ('initial vecs: ', vecs)
 
     #validate the delta
     rot, delta = calc_delta(arc, vecs)
@@ -336,7 +267,7 @@ def calc_arc_parameters(arc):
 
     #calculate the bearings - returns a list of four values
     #first two - start bearing, last two - end bearing
-    bearings = calc_bearings(arc, vecs, delta)
+    bearings = calc_bearings(arc, vecs)
 
     if not bearings:
         print ('Invalid curve definition')
