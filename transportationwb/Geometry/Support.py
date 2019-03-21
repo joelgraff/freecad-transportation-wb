@@ -24,8 +24,11 @@
 '''
 Useful math functions and constants
 '''
+import math
+import FreeCAD as App
 
 from transportationwb.ScriptedObjectSupport import Utils
+from transportationwb.ScriptedObjectSupport.Utils import Constants as C
 
 def safe_sub(lhs, rhs, return_None=False):
     '''
@@ -108,12 +111,12 @@ def get_bearing(vector):
     if not isinstance(vector, App.Vector):
         return None
 
-    rot = get_rotation(Constants.UP, result)
+    rot = get_rotation(C.UP, result)
 
-    angle = rot * Constants.UP.getAngle(result)
+    angle = rot * C.UP.getAngle(result)
 
     if angle < 0.0:
-        angle += Constants.TWO_PI
+        angle += C.TWO_PI
 
     return angle
 
@@ -126,7 +129,8 @@ def within_tolerance(lhs, rhs=None):
     Array comparisons check every value against every other, and error if any checks fail
     '''
 
-    tol_check = True
+    if lhs is None:
+        return False
 
     if isinstance(lhs, list):
 
@@ -136,16 +140,16 @@ def within_tolerance(lhs, rhs=None):
 
             for _val in rhs:
 
-                if not abs(lhs[_i] - _val) < Constants.TOLERANCE:
+                if not abs(lhs[_i] - _val) < C.TOLERANCE:
                     return False
 
     elif rhs is None:
         return False
 
     else:
-        return abs(lhs-rhs) < Constants.TOLERANCE
+        return abs(lhs-rhs) < C.TOLERANCE
 
-    return tol_check
+    return True
 
 def vector_ortho(vector):
     '''
