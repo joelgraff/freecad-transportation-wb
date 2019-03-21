@@ -1,3 +1,6 @@
+import FreeCAD as App
+import math
+
 def discretize_spiral(start_coord, bearing, radius, angle, length, interval, interval_type):
     '''
     Discretizes a spiral curve using the length parameter.  

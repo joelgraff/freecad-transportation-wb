@@ -49,38 +49,9 @@ class Constants(Const):
     TOLERANCE   = 0.0001                    #   tolerance for differences in measurements
     UP          = App.Vector(0.0, 1.0, 0.0) #   Up vector
 
-def safe_sub(lhs, rhs, return_None=False):
-    '''
-    Safely subtract two vectors.
-    Returns an empty vector or None if either vector is None
-    '''
-
-    if not lhs or not rhs:
-
-        if return_None:
-            return None
-
-        return App.Vector()
-
-    return lhs.sub(rhs)
-
-def safe_radians(value):
-    '''
-    Convert a floating point value from degrees to radians,
-    handle None / invalid type conditions
-    '''
-
-    if value is None:
-        return 0.0
-
-    if not isinstance(value, float):
-        return 0.0
-
-    return math.radians(value)
-
 def to_float(value):
     '''
-    Return true if string value is float
+    Return value as a float, if possible
     '''
 
     result = None
@@ -137,124 +108,6 @@ def to_int(value):
         pass
 
     return result
-
-def get_rotation(in_vector, out_vector = None):
-    '''
-    Returns the rotation as a signed integer:
-    1 = cw, -1 = ccw, 0 = fail
-
-    if in_vector is an instance, out_vector is ignored.
-    '''
-    _in = in_vector
-    _out = out_vector
-
-    if isinstance(_in, list):
-        if not all(_in):
-            return 0
-
-        _out = in_vector[1]
-        _in = in_vector[0]
-
-    if not all([_out, _in]):
-        return 0
-
-    return -1 * math.copysign(1, _in.cross(_out).z)
-
-def get_ortho(vector, rot):
-    '''
-    Calculate the normalized orthogonal of the passed vector
-    '''
-
-    result = vector
-
-    if isinstance(vector, list):
-        result = App.Vector(vector)
-
-    if not isinstance(result, App.Vector):
-        return None
-
-    return App.Vector(result.y, -result.x, 0.0).normalize().multiply(rot)
-
-def get_bearing(vector):
-    '''
-    Returns the absolute bearing of the passed vector.
-    Bearing is measured clockwise from +y 'north' (0,1,0)
-    Vector is a list of coordinates or an App.Vector
-    '''
-
-    result = vector
-
-    if isinstance(vector, list):
-        result = App.Vector(vector)
-
-    if not isinstance(vector, App.Vector):
-        return None
-
-    rot = get_rotation(Constants.UP, result)
-
-    angle = rot * Constants.UP.getAngle(result)
-
-    if angle < 0.0:
-        angle += Constants.TWO_PI
-
-    return angle
-
-def within_tolerance(lhs, rhs=None):
-    '''
-    Determine if two values are within a pre-defined tolerance
-
-    lhs / rhs - values to compare.  rhs may be none if lhs is an array
-
-    Array comparisons check every value against every other, and error if any checks fail
-    '''
-
-    tol_check = True
-
-    if isinstance(lhs, list):
-
-        for _i in range(0, len(lhs) - 1):
-
-            rhs = lhs[_i:]
-
-            for _val in rhs:
-
-                if not abs(lhs[_i] - _val) < Constants.TOLERANCE:
-                    return False
-
-    elif rhs is None:
-        return False
-
-    else:
-        return abs(lhs-rhs) < Constants.TOLERANCE
-
-    return tol_check
-
-def vector_ortho(vector):
-    '''
-    Returns the orthogonal of a 2D vector as (-y, x)
-    '''
-    
-    vec_list = vector
-
-    if not isinstance(vector, list):
-        vec_list = [vector]
-
-    result = []
-
-    for vec in vec_list:
-        result.append(App.Vector(-vec.y, vec.x, 0.0))
-
-    if len(result) == 1:
-        return result[0]
-
-    return result
-
-def vector_from_angle(angle):
-    '''
-    Returns a vector form a given angle in radians
-    '''
-
-    return App.Vector(math.sin(angle), math.cos(angle), 0.0)
 
 def distance_bearing_to_coordinates(distance, bearing):
     '''
