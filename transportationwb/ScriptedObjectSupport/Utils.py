@@ -57,11 +57,9 @@ def to_float(value):
     result = None
 
     if isinstance(value, list):
-
         result = []
 
         for _v in value:
-
             _f = to_float(_v)
 
             if _f is None:
@@ -76,6 +74,13 @@ def to_float(value):
 
     except:
         pass
+
+    if result is None:
+        print(value)
+        return None
+
+    if math.isnan(result):
+        return None
 
     return result
 

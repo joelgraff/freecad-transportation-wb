@@ -79,6 +79,9 @@ def get_rotation(in_vector, out_vector = None):
     if not all([_out, _in]):
         return 0
 
+    if not (_in.Length and _out.Length):
+        return 0
+
     return -1 * math.copysign(1, _in.cross(_out).z)
 
 def get_ortho(vector, rot):
@@ -112,7 +115,6 @@ def get_bearing(vector):
         return None
 
     rot = get_rotation(C.UP, result)
-
     angle = rot * C.UP.getAngle(result)
 
     if angle < 0.0:
