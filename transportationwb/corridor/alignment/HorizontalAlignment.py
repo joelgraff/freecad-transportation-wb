@@ -38,7 +38,6 @@ from xml.etree import ElementTree as etree
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties, Singleton
 from transportationwb.Geometry import Arc
 from transportationwb.XML import XmlFpo
-from transportationwb.corridor.alignment import HA_Validate
 
 _CLASS_NAME = 'HorizontalAlignment'
 _TYPE = 'Part::Part2DObjectPython'
@@ -79,6 +78,11 @@ def create(geometry, object_name='', units='English', parent=None):
     App.ActiveDocument.recompute()
     return result
 
+#Construction order:
+#Calc arc parameters
+#Sort arcs
+#calculate arc start coordinates by internal position and apply to arcs
+
 class _HorizontalAlignment(Draft._Wire):
 
     def __init__(self, obj, label=''):
@@ -95,7 +99,7 @@ class _HorizontalAlignment(Draft._Wire):
         self.Object = obj
         self.errors = []
         self.xml_fpo = None
-        self.geometry = None
+        self.geometry = []
 
         obj.Label = label
         obj.Closed = False
@@ -146,7 +150,11 @@ class _HorizontalAlignment(Draft._Wire):
         Assign geometry to the alignment object
         '''
 
-        self.geometry = self.sort_geometry(geometry)
+        for arc in geometry['geometry']:
+            print(arc)
+            self.geometry.append(Arc.get_arc_parameters(arc))
+
+        self.geometry = self.sort_geometry(self.geometry)
 
     @staticmethod
     def _find_adjacent(index, data):
@@ -154,7 +162,6 @@ class _HorizontalAlignment(Draft._Wire):
         Return the first match of adjacent curves
         '''
 
-        print(data)
         curve = data[index]
         end_point = curve['End']
 
@@ -238,18 +245,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         return nearest_pi
 
-    def validate_geometry(self, data):
-        '''
-        Iterate the passed geometry, adding missing data
-        and ensuring the geometry is valid
-        '''
-
-        result = []
-
-        for curve in data:
-
-            if curve['Type'] == 'arc':
-                result = arc.validate(curve)
     def sort_geometry(self, data):
         '''
         Validate the coordinate geometry data by ensuring
@@ -335,26 +330,24 @@ class _HorizontalAlignment(Draft._Wire):
 
         return tuple_pairs
 
-    def _get_station_position(self, station):
+    def _get_internal_station(self, station):
         '''
-        Using the station equations, determine the position along the alingment
+        Using the station equations, determine the internal station
+        (position) along the alingment
         '''
 
         start_sta = self.Object.Station_Equations[0].y
-
         eqs = self.Object.Station_Equations
 
-        #shortcut if only the starting station is specified
-        if len(eqs) == 1:
-            return station - start_sta
-
+        #default to distance from starting station
         position = 0.0
 
         for _eq in eqs[1:]:
 
-            #return the internal position if the station falls within the equation
+            #add the deistance and quit if the station falls within the equation
             if start_sta < station < _eq.x:
-                return position + station - start_sta
+                position += station - start_sta
+                break
 
             #increment the position by the equaion length and
             #set the starting station to the next equation
@@ -362,12 +355,26 @@ class _HorizontalAlignment(Draft._Wire):
             start_sta = _eq.y
 
         #no more equations - station falls outside of last equation
-        return position + station - start_sta
+        return position
 
     def _get_coordinate_at_station(self, station, parent):
         '''
-        Return the distance along an alignment from the passed station as a float
+        Return the coordinate position of a station along the alignment
         '''
+
+        ###Need to:
+        # 1.  Determine the internal station
+        # 2.  Get the geometry starting at the nearest internal station
+        #   a.  Option #1
+        #       i. Iterate geometry, accumulating lengths
+        #       ii. Stop when accumulation > internal station
+        #   b.  Option #2
+        #       i. Pre-calculate internal station with start of geometry
+        #       ii. Iterate geometry, looking for nearest lesser internal station
+        # 3.  Calculate the coordinate along the geometry for the remainder of the distance
+
+        #Option #2 above requires:
+        #   Known datum passed with geometry
 
         equations = parent.Alignment_Equations
 
