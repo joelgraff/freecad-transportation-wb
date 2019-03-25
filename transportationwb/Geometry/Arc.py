@@ -107,9 +107,13 @@ def get_scalar_matrix(vecs):
         _d1 = result.A[_i][_i]
 
         for _j in range(0, _i):
-            _d2 = result.A[_j][_j]
+            _denom = _d1 * result.A[_j][_j]
             _n = result.A[_i][_j]
-            _angle = math.acos(_n / (_d1 * _d2))
+
+            if any([math.isnan(_v) for _v in [_denom, _n]]) or _denom == 0.0:
+                _angle = 0.0
+            else:
+                _angle = math.acos(_n / _denom)
 
             #compute the arc central angle for all but the last row
             if _i < 6:
@@ -136,6 +140,7 @@ def get_bearings(arc, mat, delta, rot):
     bearings = []
 
     for _i in range(0, 6):
+        print(rot, mat.A[6][_i])
         bearings.append(_GEO.FUNC[6][_i](mat.A[6][_i], delta, rot))
 
     _b = [_v for _v in bearings[0:6] if Utils.to_float(_v)]
@@ -232,7 +237,12 @@ def get_delta(arc, mat):
     Default to the user-provided parameter if no calculated
     or values within tolerance
     '''
+    #get the delta from the arc data as a default
     delta = arc.get('Delta')
+
+    if not delta:
+        if arc.get('BearingIn') and arc.get('BearingOut'):
+            delta = abs(arc['BearingOut'] - arc['BearingIn'])
 
     #find the first occurence of the delta value
     for _i in range(1, 6):

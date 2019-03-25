@@ -151,10 +151,15 @@ class _HorizontalAlignment(Draft._Wire):
         '''
 
         for arc in geometry['geometry']:
-            print(arc)
-            self.geometry.append(Arc.get_arc_parameters(arc))
+            print('-----------\n',arc)
 
-        self.geometry = self.sort_geometry(self.geometry)
+            if arc['Type'] == 'arc':
+                result = Arc.get_arc_parameters(arc)
+
+                if arc:
+                    self.geometry.append(result)
+
+                self.geometry = self.sort_geometry(self.geometry)
 
     @staticmethod
     def _find_adjacent(index, data):

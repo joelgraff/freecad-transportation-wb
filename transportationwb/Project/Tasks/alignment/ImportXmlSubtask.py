@@ -31,7 +31,8 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from transportationwb.XML.AlignmentImporter import AlignmentImporter
-from transportationwb.ScriptedObjectSupport import WidgetModel, Units
+from transportationwb.ScriptedObjectSupport import WidgetModel, Units, Utils
+import math
 
 def create(panel, filepath):
 
@@ -91,9 +92,27 @@ class ImportXmlSubtask:
 
         for curve in subset['geometry']:
 
+            #convert curve angles to radians and curve direction to -1 = ccw, +1 = cw
+
+            if curve['Direction'] == 'cw':
+                curve['Direction'] = 1.0
+
+            elif curve['Direction'] == 'ccw':
+                curve['Direction'] = -1.0
+
+            for _k in ['Delta', 'BearingIn', 'BearingOut']:
+
+                _v = Utils.to_float(curve[_k])
+
+                if not _v:
+                    print ('Curve %s value: %s not a float' % (_k, _v))
+                    return None
+                
+                curve[_k] = math.radians(_v)
+
             row = '{0:s}, {1:s}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
                 curve['Type'], curve['Direction'], curve['StartStation'],
-                curve['InBearing'], curve['OutBearing'], curve['Radius']
+                curve['BearingIn'], curve['BearingOut'], curve['Radius']
             )
             curve_model.append(row.split(','))
 

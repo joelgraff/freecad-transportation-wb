@@ -70,8 +70,8 @@ class AlignmentImporter(object):
         },
         'opt': {
             'chord': ('Chord', 'float'), 'constant': ('Constant', 'float'),
-            'desc': ('Description', ''), 'dirEnd': ('OutBearing', 'float'),
-            'dirStart': ('InBearing', 'float'), 'external': ('External', 'float'),
+            'desc': ('Description', ''), 'dirEnd': ('BearingOut', 'float'),
+            'dirStart': ('BearingIn', 'float'), 'external': ('External', 'float'),
             'length': ('length', 'float'), 'midOrd': ('MiddleOrdinate', 'float'),
             'name': ('Name', ''), 'radius': ('Radius', 'float'),
             'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
@@ -84,8 +84,8 @@ class AlignmentImporter(object):
         'req': {'rot': ('Direction', '')},
         'opt': {
             'chord': ('Chord', 'float'), 'crvType': ('CurveType', ''), 'delta': ('Delta', 'float'),
-            'desc': ('Description', ''), 'dirEnd': ('OutBearing', 'float'),
-            'dirStart': ('InBearing', 'float'), 'external': ('External', 'float'),
+            'desc': ('Description', ''), 'dirEnd': ('BearingOut', 'float'),
+            'dirStart': ('BearingIn', 'float'), 'external': ('External', 'float'),
             'length': ('length', 'float'), 'midOrd': ('MiddleOrdinate', 'float'),
             'name': ('Name', ''), 'radius': ('Radius', 'float'),
             'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
