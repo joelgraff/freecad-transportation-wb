@@ -110,21 +110,22 @@ def get_scalar_matrix(vecs):
             _denom = _d1 * result.A[_j][_j]
             _n = result.A[_i][_j]
 
-            if any([math.isnan(_v) for _v in [_denom, _n]]) or _denom == 0.0:
-                _angle = 0.0
-            else:
+            _angle = None
+
+            if not (any([math.isnan(_v) for _v in [_denom, _n]]) or _denom == 0.0):
                 _angle = math.acos(_n / _denom)
 
             #compute the arc central angle for all but the last row
-            if _i < 6:
-                result.A[_i][_j] = _GEO.FUNC[_i][_j](_angle)
-            else:
-                _angle *= rot_list[_j]
+            if _angle:
+                if _i < 6:
+                    _angle = _GEO.FUNC[_i][_j](_angle)
+                else:
+                    _angle *= rot_list[_j]
 
-                if _angle < 0.0:
-                    _angle += C.TWO_PI
+                    if _angle < 0.0:
+                        _angle += C.TWO_PI
 
-                result.A[_i][_j] = _angle
+            result.A[_i][_j] = _angle
 
     #lower left half contains angles, diagonal contains scalars
     return result
@@ -336,6 +337,7 @@ def get_coordinates(arc, points):
     _center = points[2]
     _pi = points[3]
 
+    print(vectors)
     _vr = vectors['Radius'][0].multiply(arc['Radius'])
     _vt = vectors['Tangent'][0].multiply(arc['Tangent'])
     _vc = vectors['Internal'][1].multiply(arc['Chord'])
@@ -436,6 +438,7 @@ def get_arc_parameters(arc):
     #get rid of the Bearings dict since we're done using it
     result.pop('Bearings')
 
+    print(result)
     return result
 
     #scale_factor = 1.0 / Units.scale_factor()
