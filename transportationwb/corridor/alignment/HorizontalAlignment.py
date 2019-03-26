@@ -444,15 +444,6 @@ class _HorizontalAlignment(Draft._Wire):
 
             if curve['Type'] == 'arc':
 
-                curve_points = [curve[_key] for _key in ['Start', 'End', 'Center']]
-
-                if all(curve_points):
-
-                    curve_params = Arc.calc_arc_parameters(curve_points)
-
-                    for key, value in curve_params.items():
-                        curve[key] = value
-
                 points.append(Arc.get_points(curve, interval, interval_type))
 
             if curve['Type'] == 'line':
