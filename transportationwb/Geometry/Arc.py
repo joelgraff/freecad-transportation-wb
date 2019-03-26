@@ -606,25 +606,12 @@ def get_points(arc_dict, interval, interval_type='Segment', start_coord = App.Ve
 
     angle = arc_dict['Delta']
     direction = arc_dict['Direction']
-    bearing_in = arc_dict['InBearing']
+    bearing_in = arc_dict['BearingIn']
     radius = arc_dict['Radius']
-
-    #validate paramters
-    if not direction or not angle:
-        direction, angle = calc_arc_delta(bearing_in, arc_dict['OutBearing'])
-
-    if any([_x <= 0 for _x in [radius, angle, interval]]):
-        return None
-
-    if not 0.0 < bearing_in < (math.pi * 2.0):
-        return None
-
-    scale_factor = Units.scale_factor()
 
     _forward = App.Vector(math.sin(bearing_in), math.cos(bearing_in), 0.0)
     _right = App.Vector(_forward.y, -_forward.x, 0.0)
 
-    radius_mm = radius * scale_factor
     result = [App.Vector()]
 
     #define the incremental angle for segment calculations, defaulting to 'Segment'
@@ -645,6 +632,6 @@ def get_points(arc_dict, interval, interval_type='Segment', start_coord = App.Ve
         _dfw = App.Vector(_forward).multiply(math.sin(delta))
         _drt = App.Vector(_right).multiply(direction * (1 - math.cos(delta)))
 
-        result.append(start_coord.add(_dfw.add(_drt).multiply(radius_mm)))
+        result.append(start_coord.add(_dfw.add(_drt).multiply(radius)))
 
     return result
