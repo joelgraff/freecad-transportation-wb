@@ -104,13 +104,8 @@ class ImportXmlSubtask:
 
                 _v = Utils.to_float(curve[_k])
 
-                if not _v:
-                    print ('Curve %s value: %s not a float' % (_k, _v))
-                    return None
-                
-                curve[_k] = math.radians(_v)
-
-            row = '{0:s}, {1:s}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
+                curve[_k] = None
+            row = '{0:s}, {1:f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
                 curve['Type'], curve['Direction'], curve['StartStation'],
                 curve['BearingIn'], curve['BearingOut'], curve['Radius']
             )
