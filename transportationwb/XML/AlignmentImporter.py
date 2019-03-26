@@ -222,6 +222,16 @@ class AlignmentImporter(object):
                 if attr_val:
                     attr_val = attr_val * Units.scale_factor()
 
+            elif key == 'rot':
+
+                attr_val = 0
+
+                if attrib.get(key) == 'cw':
+                    attr_val = 1.0
+
+                elif attrib.get(key) == 'ccw':
+                    attr_val = -1.0
+
             result[_tuple[0]] = attr_val
 
         return result
@@ -268,7 +278,9 @@ class AlignmentImporter(object):
                 value = None
 
                 if _pt is not None:
-                    value = self._convert_token(_pt.text.strip(), 'vector')
+                    value = self._convert_token(
+                        _pt.text.strip(), 'vector').multiply(Units.scale_factor()
+                    )
 
                 _points.append(value)
 
