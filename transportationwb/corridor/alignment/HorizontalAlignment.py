@@ -151,7 +151,6 @@ class _HorizontalAlignment(Draft._Wire):
         '''
 
         for arc in geometry['geometry']:
-            print('-----------\n', arc)
 
             if arc['Type'] == 'arc':
                 result = Arc.get_arc_parameters(arc)
@@ -166,8 +165,6 @@ class _HorizontalAlignment(Draft._Wire):
         '''
         Return the first match of adjacent curves
         '''
-
-        print('---adjacent---', data)
 
         curve = data[index]
         end_point = curve['End']
@@ -262,7 +259,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         matches = []
 
-        print(data)
         data_len = len(data)
 
         for _i in range(0, data_len):
