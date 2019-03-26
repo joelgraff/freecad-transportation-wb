@@ -25,6 +25,8 @@
 Importer for Alignments in LandXML files
 '''
 
+import math
+
 from xml.etree import ElementTree as etree
 
 import FreeCAD as App
@@ -79,6 +81,10 @@ class AlignmentImporter(object):
         }
     }
 
+    LENGTH_TAGS = ['radius', 'radiusStart', 'radiusEnd',
+                   'chord', 'external', 'midOrd', 'tangent', 'length']
+
+    ANGLE_TAGS = ['delta', 'dir', 'dirStart', 'dirEnd']
 
     GEOM_TAGS['arc'] = {
         'req': {'rot': ('Direction', '')},
@@ -86,7 +92,7 @@ class AlignmentImporter(object):
             'chord': ('Chord', 'float'), 'crvType': ('CurveType', ''), 'delta': ('Delta', 'float'),
             'desc': ('Description', ''), 'dirEnd': ('BearingOut', 'float'),
             'dirStart': ('BearingIn', 'float'), 'external': ('External', 'float'),
-            'length': ('length', 'float'), 'midOrd': ('MiddleOrdinate', 'float'),
+            'length': ('Length', 'float'), 'midOrd': ('MiddleOrdinate', 'float'),
             'name': ('Name', ''), 'radius': ('Radius', 'float'),
             'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
             'tangent': ('Tangent', 'float'), 'oID': ('ObjectID', ''), 'note': ('Note', '')
@@ -142,7 +148,7 @@ class AlignmentImporter(object):
             coords = Utils.to_float(value.split(' '))
 
             if coords:
-                return App.vector(coords)
+                return App.Vector(coords)
 
         return None
 
@@ -202,6 +208,20 @@ class AlignmentImporter(object):
                         % (_tuple[0], align_name)
                     )
 
+            #test for angles and convert to radians
+            elif key in self.ANGLE_TAGS:
+                attr_val = Utils.to_float(attrib.get(key))
+
+                if attr_val:
+                    attr_val = math.radians(attr_val)
+
+            #test for lengths to convert to mm
+            elif key in self.LENGTH_TAGS:
+                attr_val = Utils.to_float(attrib.get(key))
+
+                if attr_val:
+                    attr_val = attr_val * Units.scale_factor()
+
             result[_tuple[0]] = attr_val
 
         return result
@@ -248,7 +268,7 @@ class AlignmentImporter(object):
                 value = None
 
                 if _pt is not None:
-                    value = Utils.to_float(_pt.text.strip().split(' '))
+                    value = self._convert_token(_pt.text.strip(), 'vector')
 
                 _points.append(value)
 
