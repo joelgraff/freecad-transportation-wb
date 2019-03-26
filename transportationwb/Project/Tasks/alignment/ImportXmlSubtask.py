@@ -92,34 +92,25 @@ class ImportXmlSubtask:
 
         for curve in subset['geometry']:
 
-            #convert curve angles to radians and curve direction to -1 = ccw, +1 = cw
-
-            if curve['Direction'] == 'cw':
-                curve['Direction'] = 1.0
-
-            elif curve['Direction'] == 'ccw':
-                curve['Direction'] = -1.0
-
-            for _k in ['Delta', 'BearingIn', 'BearingOut']:
-
-                _v = Utils.to_float(curve[_k])
-
-                curve[_k] = None
             row = '{0:s}, {1:f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
                 curve['Type'], curve['Direction'], curve['StartStation'],
                 curve['BearingIn'], curve['BearingOut'], curve['Radius']
             )
             curve_model.append(row.split(','))
 
-        widget_model_2 = WidgetModel.create(curve_model, ['Type', 'Dir', 'Start', 'In', 'Out', 'Radius'])
+        widget_model_2 = WidgetModel.create(curve_model, ['Type', 'Dir', 'Start',
+                                                          'In', 'Out', 'Radius'])
 
         self.panel.curveTableView.setModel(widget_model_2)
         self.panel.curveTableView.resizeColumnsToContents()
 
-    def _update_curve_list(self, value):
+    @staticmethod
+    def _update_curve_list(value):
 
         print('update curve list with: ', value)
 
     def import_model(self):
-
+        '''
+        Return the model data
+        '''
         return self.data
