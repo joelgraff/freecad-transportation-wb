@@ -150,15 +150,18 @@ class _HorizontalAlignment(Draft._Wire):
         Assign geometry to the alignment object
         '''
 
+        geometry = []
+
         for arc in geometry['geometry']:
 
             if arc['Type'] == 'arc':
                 result = Arc.get_arc_parameters(arc)
 
                 if arc:
-                    self.geometry.append(result)
+                    geometry.append(result)
 
-        self.geometry = self.sort_geometry(self.geometry)
+        geometry = self.validate_stationing(geometry)
+        self.geometry = self.validate_coordinates(geometry)
 
     @staticmethod
     def _find_adjacent(index, data):
@@ -337,6 +340,43 @@ class _HorizontalAlignment(Draft._Wire):
 
         return tuple_pairs
 
+    def validate_stationing(self, geometry):
+        '''
+        Iterate the geometry, calculating the internal start station based on the actual station
+        and storing it in an 'InternalStation' parameter
+        '''
+
+        distance = 0.0
+        start_station = 
+        for _geo in Geometry:
+
+            if _geo.get('StartStation'):
+
+                _geo['InternalStation'] = 
+    def validate_coordinates(self, geometry):
+        '''
+        Iterate the geometry, ensuring the start coordinates match the start station,
+        If not, adujst every coordinate by the error
+        '''
+
+        for arc in geometry:
+
+            #supply mising starting station if possible
+            if not arc['StartStation']:
+
+                if arc['Start']:
+                    arc['StartStation'] = _get_coordinate_station(arc['Start'], geometry)
+
+                continue
+
+            #supply missing start coordinate if possible
+            if not arc['Start']:
+
+                if arc['StartStation']:
+                    arc['Start'] = _get_station_coordinate(arc['StartStation'], geometry)
+
+        return geometry
+
     def _get_internal_station(self, station):
         '''
         Using the station equations, determine the internal station
@@ -364,67 +404,34 @@ class _HorizontalAlignment(Draft._Wire):
         #no more equations - station falls outside of last equation
         return position
 
-    def _get_coordinate_at_station(self, station, parent):
+    def _get_station_coordinate(self, geometry, station):
         '''
         Return the coordinate position of a station along the alignment
         '''
 
-        ###Need to:
-        # 1.  Determine the internal station
-        # 2.  Get the geometry starting at the nearest internal station
-        #   a.  Option #1
-        #       i. Iterate geometry, accumulating lengths
-        #       ii. Stop when accumulation > internal station
-        #   b.  Option #2
-        #       i. Pre-calculate internal station with start of geometry
-        #       ii. Iterate geometry, looking for nearest lesser internal station
-        # 3.  Calculate the coordinate along the geometry for the remainder of the distance
+        target_sta = self._get_internal_station(station)
 
-        #Option #2 above requires:
-        #   Known datum passed with geometry
-
-        equations = parent.Alignment_Equations
-
-        #default starting station unles otherwise specified
-        start_sta = 0.0
-        start_index = 0
-
-        #if the first equation's back value is zero, it's forward value is the starting station
-        if equations:
-            if equations[0][0] == 0.0:
-                start_sta = equations[0][1]
-                start_index = 1
-
-        distance = 0
-
-        if len(equations) > 1:
-
-            #iterate the equation list, locating the passed station
-            for _eqn in equations[start_index:]:
-
-                #does station fall between previous forward and current back?
-                if start_sta <= station <= _eqn[0]:
-                    break
-
-                #otherwise, accumulate the total distance between the previous forward and current back
-                distance += _eqn[0] - start_sta
-
-                #set the starting station to the current forward
-                start_sta = _eqn[1]
-
-        distance += station - start_sta
-
-        #station bound checks
-        if distance > parent.Shape.Length or distance < 0.0:
-            print('Station distance exceeds parent limits (%f not in [%f, %f]' % (station, start_sta, start_sta + parent.Shape.Length))
+        if target_sta < 0.0:
+            print('Invalid station distance ', target_sta)
             return None
 
-        #discretize valid distance
-        result = parent.Shape.discretize(Distance=distance * 304.80)[1]
+        cur_sta = 0.0
+        result = App.Vector()
 
-        if len(result) < 2:
-            print('failed to discretize')
-            return None
+        #find the coordinates
+        for _geo in  geometry:
+
+            if cur_sta + _geo.Length > target_sta:
+
+                if _geo['Type'] == 'arc':
+                    result = Arc.get_coordinate(_geo, target_sta - cur_sta)
+
+                elif _geo['Type'] == 'line':
+                    result = Line.get_coordiante(_geo, target_sta - cur_sta)
+
+                break
+
+            cur_sta += _geo.Length
 
         return result
 
