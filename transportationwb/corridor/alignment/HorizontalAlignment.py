@@ -193,7 +193,7 @@ class _HorizontalAlignment(Draft._Wire):
         Return the nearest geometry with the same bearing
         '''
         curve = data[index]
-        out_bearing = curve.get('OutBearing')
+        out_bearing = curve.get('BearingOut')
 
         if not out_bearing:
             return None
@@ -203,7 +203,10 @@ class _HorizontalAlignment(Draft._Wire):
         #matching bearings may be adjacent curves
         for _i, _v in enumerate(data):
 
-            if out_bearing == _v.get('InBearing'):
+            if _i == index:
+                continue
+
+            if out_bearing == _v.get('BearingIn'):
                 lst.append(_i)
 
         #no matches found
@@ -225,9 +228,6 @@ class _HorizontalAlignment(Draft._Wire):
             return None
 
         for _i in lst:
-
-            if _i == index:
-                continue
 
             pi_2 = data[_i].get('PI')
 
@@ -260,6 +260,10 @@ class _HorizontalAlignment(Draft._Wire):
         matches = []
 
         data_len = len(data)
+
+        #no sorting required when only one geometry
+        if data_len == 1:
+            return data
 
         for _i in range(0, data_len):
             
