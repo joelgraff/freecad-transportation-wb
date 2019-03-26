@@ -151,7 +151,7 @@ class _HorizontalAlignment(Draft._Wire):
         '''
 
         for arc in geometry['geometry']:
-            print('-----------\n',arc)
+            print('-----------\n', arc)
 
             if arc['Type'] == 'arc':
                 result = Arc.get_arc_parameters(arc)
@@ -159,13 +159,15 @@ class _HorizontalAlignment(Draft._Wire):
                 if arc:
                     self.geometry.append(result)
 
-                self.geometry = self.sort_geometry(self.geometry)
+        self.geometry = self.sort_geometry(self.geometry)
 
     @staticmethod
     def _find_adjacent(index, data):
         '''
         Return the first match of adjacent curves
         '''
+
+        print('---adjacent---', data)
 
         curve = data[index]
         end_point = curve['End']
@@ -178,7 +180,7 @@ class _HorizontalAlignment(Draft._Wire):
             if _i == index:
                 continue
 
-            start_point = data[_i].get['Start']
+            start_point = data[_i].get('Start')
 
             if not start_point:
                 continue
@@ -260,19 +262,19 @@ class _HorizontalAlignment(Draft._Wire):
 
         matches = []
 
-        curve_data = data['geometry']
-        data_len = len(curve_data)
+        print(data)
+        data_len = len(data)
 
         for _i in range(0, data_len):
             
             ################# Test for coincident endpoints
-            _j = self._find_adjacent(_i, curve_data)
+            _j = self._find_adjacent(_i, data)
 
             if not _j is None:
                 matches.append([_i, _j])
 
             ############## Test for identical bearings
-            _j = self._find_nearest(_i, curve_data)
+            _j = self._find_nearest(_i, data)
 
             if not _j is None:
                 matches.append([_i, _j])
@@ -280,9 +282,9 @@ class _HorizontalAlignment(Draft._Wire):
         #the number of matches (pairs) should be
         #one less than the number of curves
         if len(matches) != data_len - 1:
-            self.errors.append('%d curves found, %d unmatched' 
+            self.errors.append('%d curves found, %d unmatched'
                                % (data_len, data_len - len(matches) - 1))
-            self.errors.append('Alignment ', self.Object.ID, ' is discontinuous.')
+            self.errors.append('Alignment ' + self.Object.ID + ' is discontinuous.')
             return None
 
         ############## Order the list of matches
@@ -293,11 +295,11 @@ class _HorizontalAlignment(Draft._Wire):
             old_len = len(ordered_list)
             ordered_list = self._order_list(ordered_list)
 
-        geo = curve_data
+        geo = data
 
         ############### Rebuild the data set in the correct order
         if ordered_list[0] != list(range(0, data_len)):
-            geo = [curve_data[_i] for _i in ordered_list[0]]
+            geo = [data[_i] for _i in ordered_list[0]]
 
         return geo
 
