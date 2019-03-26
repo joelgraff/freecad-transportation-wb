@@ -387,7 +387,7 @@ def get_arc_parameters(arc):
             Support.safe_sub(arc.get('End'), arc.get('Start'), True)
            ]
 
-    result = {}
+    result = {'Type': 'arc'}
 
     mat = get_scalar_matrix(vecs)
     _p = get_lengths(arc, mat)
@@ -486,6 +486,7 @@ def parameter_test(excludes=None):
     half_delta = math.radians(delta) / 2.0
 
     arc = {
+        'Type': 'arc',
         'Direction': -1,
         'Delta': delta,
         'Radius': radius,
@@ -504,7 +505,8 @@ def parameter_test(excludes=None):
 
     #convert the arc to system units before processing, and back to document units on return
 
-    comp = {'Radius': 670.0, 
+    comp = {'Type': 'arc',
+            'Radius': 670.0, 
             'Tangent': 314.67910063712156,
             'Chord': 569.6563702820052,
             'Delta': 50.31609999999997,
