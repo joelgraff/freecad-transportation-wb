@@ -337,7 +337,6 @@ def get_coordinates(arc, points):
     _center = points[2]
     _pi = points[3]
 
-    print(vectors)
     _vr = vectors['Radius'][0].multiply(arc['Radius'])
     _vt = vectors['Tangent'][0].multiply(arc['Tangent'])
     _vc = vectors['Internal'][1].multiply(arc['Chord'])
@@ -438,7 +437,6 @@ def get_arc_parameters(arc):
     #get rid of the Bearings dict since we're done using it
     result.pop('Bearings')
 
-    print(result)
     return result
 
     #scale_factor = 1.0 / Units.scale_factor()
