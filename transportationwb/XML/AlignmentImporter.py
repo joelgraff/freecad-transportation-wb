@@ -177,6 +177,7 @@ class AlignmentImporter(object):
 
     def _parse_data(self, align_name, tags, attrib):
         '''
+        Build a dictionary keyed to the internal attribute names from the XML
         '''
         result = {}
 
@@ -234,6 +235,10 @@ class AlignmentImporter(object):
 
             result[_tuple[0]] = attr_val
 
+        #add a fake bearing in to reduce need for type-checking later on
+        if tags == self.GEOM_TAGS['line']:
+            result['BearingIn'] = result['BearingOut']
+
         return result
 
     def _parse_meta_data(self, align_name, alignment):
@@ -242,16 +247,25 @@ class AlignmentImporter(object):
         returning it as a dictionary keyed to the alignment name
         '''
 
-        return self._parse_data(align_name, self.META_TAGS, alignment.attrib)
+        result = self._parse_data(align_name, self.META_TAGS, alignment.attrib)
+
+        _start = LandXml.get_child_as_vector(alignment, 'Start')
+
+        if _start:
+            _start.multiply()
+
+        result['Start'] = _start
+
+        return result
 
     def _parse_station_data(self, align_name, alignment):
         '''
         Parse the alignment data to get station equations and return a list of equation dictionaries
         '''
 
-        result = []
-
         equations = LandXml.get_children(alignment, 'StaEquation')
+
+        result = []
 
         for equation in equations:
             result.append(self._parse_data(align_name, self.STATION_TAGS, equation.attrib))
@@ -273,16 +287,12 @@ class AlignmentImporter(object):
 
             for _tag in ['Start', 'Center', 'End', 'PI']:
 
-                _pt = LandXml.get_child(curve, _tag)
+                _pt = LandXml.get_child_as_vector(curve, _tag)
 
-                value = None
+                if _pt:
+                    _pt.multiply(Units.scale_factor())
 
-                if _pt is not None:
-                    value = self._convert_token(
-                        _pt.text.strip(), 'vector').multiply(Units.scale_factor()
-                    )
-
-                _points.append(value)
+                _points.append(_pt)
 
             if curve_type == 'line' and not (_points[0] and _points[2]):
                 self.errors.append(
