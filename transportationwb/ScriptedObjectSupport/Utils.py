@@ -76,7 +76,6 @@ def to_float(value):
         pass
 
     if result is None:
-        print(value)
         return None
 
     if math.isnan(result):
