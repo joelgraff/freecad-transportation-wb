@@ -41,6 +41,32 @@ def get_child(node, node_name):
     '''
     return node.find(XML_VERSION + ":" + node_name, XML_NAMESPACE)
 
+def get_child_as_vector(node, node_name, delimiter=' '):
+    '''
+    Return the first child matching node_name in node as App.Vector
+    '''
+
+    result = get_child(node, node_name)
+
+    if result is None:
+        return None
+
+    vec_list = result.text.strip().split(delimiter)
+
+    #validate values as floating point
+    try:
+        vec_list = [float(_v) for _v in vec_list]
+    except:
+        return None
+
+    _len = len(vec_list)
+
+    #pad the vector if it's too short
+    if _len < 3:
+        vec_list = vec_list + [0.0]*(3-_len)
+
+    return App.Vector(vec_list)
+
 def get_children(node, node_name):
     '''
     Return all children mathcing node_name in node
