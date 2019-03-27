@@ -126,7 +126,8 @@ def within_tolerance(lhs, rhs=None):
     '''
     Determine if two values are within a pre-defined tolerance
 
-    lhs / rhs - values to compare.  rhs may be none if lhs is an array
+    lhs / rhs - values to compare.  
+    If rhs is none, lhs mat be an array, or a single value to compare directly with tolerance
 
     Array comparisons check every value against every other, and error if any checks fail
     '''
@@ -146,7 +147,7 @@ def within_tolerance(lhs, rhs=None):
                     return False
 
     elif rhs is None:
-        return False
+        return abs(lhs) < C.TOLERANCE
 
     else:
         return abs(lhs-rhs) < C.TOLERANCE
