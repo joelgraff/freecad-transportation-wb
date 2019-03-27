@@ -38,7 +38,7 @@
         <Alignment name='Penrose Road East' length='734.1455' staStart = '2000.00' desc='Alignment for Penrose Road West' state='existing'>
             <StaEquation staAhead='2734.1455' staBack='50909.00' staInternal='734.1455' desc='Sugar Grove Road'/>
             <CoordGeom name='Penrose Road West' desc='Alignment for Penrose Road West' state='existing'>
-                <Curve rot='cw' length='137.5287' dirStart='244.6403' dirEnd='270.00' staStart='1114.7237' radius='175'>
+                <Curve rot='ccw' length='137.5287' dirStart='270.00' dirEnd='224.6725' staStart='2357.121' radius='175'>
                     <PI>
                         2470.7258 -662.4901 0.0
                     </PI>
