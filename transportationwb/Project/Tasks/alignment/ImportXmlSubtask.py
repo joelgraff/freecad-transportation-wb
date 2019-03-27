@@ -71,7 +71,7 @@ class ImportXmlSubtask:
 
         subset = self.data['Alignments'][value]
 
-        if subset['meta'].get('StartStation'):
+        if not subset['meta'].get('StartStation'):
             self.panel.startStationValueLabel.setText('{0:.2f}'.format(subset['meta']['StartStation']))
 
         if subset['meta'].get('Length'):
@@ -92,10 +92,16 @@ class ImportXmlSubtask:
 
         for curve in subset['geometry']:
 
+            _vals = [curve[_k] if curve.get(_k) else 0.0 for _k in [
+                        'Direction', 'StartStation', 'BearingIn', 'BearingOut', 'Radius']
+                     ]
+            
             row = '{0:s}, {1:f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
-                curve['Type'], curve['Direction'], curve['StartStation'],
-                curve['BearingIn'], curve['BearingOut'], curve['Radius']
-            )
+                curve['Type'], _vals[0], _vals[1], _vals[2], _vals[3], _vals[4]
+                )
+                #curve['Type'], curve['Direction'], curve['StartStation'],
+                #curve['BearingIn'], curve['BearingOut'], curve['Radius']
+            #)
             curve_model.append(row.split(','))
 
         widget_model_2 = WidgetModel.create(curve_model, ['Type', 'Dir', 'Start',
