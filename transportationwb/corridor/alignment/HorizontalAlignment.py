@@ -36,7 +36,7 @@ import numpy
 from xml.etree import ElementTree as etree
 
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties, Singleton
-from transportationwb.Geometry import Arc
+from transportationwb.Geometry import Arc, Support
 from transportationwb.XML import XmlFpo
 
 _CLASS_NAME = 'HorizontalAlignment'
@@ -100,6 +100,7 @@ class _HorizontalAlignment(Draft._Wire):
         self.errors = []
         self.xml_fpo = None
         self.geometry = []
+        self.meta = {}
 
         obj.Label = label
         obj.Closed = False
@@ -108,15 +109,28 @@ class _HorizontalAlignment(Draft._Wire):
             obj.Label = obj.Name
 
         #add class properties
+
+        #metadata
         Properties.add(obj, 'String', 'ID', 'ID of alignment', '')
-        Properties.add(obj, 'Vector', 'Intersection Equation', 
-                      'Equation for intersection with parent alignment', App.Vector(0.0, 0.0, 0.0))
-        Properties.add(obj, 'VectorList', 'Station Equations', 
-                      'Station equation along the alignment', [])
+        Properties.add(obj, 'String', 'oID', 'Object ID', '')
+        Properties.add(obj, 'Length', 'Length', 'Alignment length', 0.0, is_read_only = True)
+        Properties.add(obj, 'String', 'Description', 'Alignment description', '')
+
+        obj.addProperty(
+            'App::PropertyEnumeration', 'Status', 'Base', 'Alignment status'
+            ).Status = ['existing', 'proposed', 'abandoned', 'destroyed']
+
+        #Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
+
+        #station
+        #Properties.add(obj, 'Vector', 'Intersection Equation', 
+        #              'Equation for intersection with parent alignment', App.Vector(0.0, 0.0, 0.0))
+        Properties.add(obj, 'VectorList', 'Station Equations',
+                       'Station equation along the alignment', [])
         Properties.add(obj, 'Vector', 'Datum', 'Datum value as Northing / Easting',
                        App.Vector(0.0, 0.0, 0.0))
 
-        Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
+        #geometry
         Properties.add(obj, 'VectorList', 'PIs',
                        'Discretization of Points of Intersection (PIs) as a list of vectors', [])
         Properties.add(obj, 'Link', 'Parent Alignment', 'Links to parent alignment object', None)
@@ -127,7 +141,7 @@ class _HorizontalAlignment(Draft._Wire):
                        ).Method = ['Tolerance', 'Interval','Segment']
 
         Properties.add(obj, 'Float', 'Segment.Seg_Value',
-                      'Set the curve segments to control accuracy', 1.0)
+                       'Set the curve segments to control accuracy', 1.0)
 
         delattr(self, 'no_execute')
 
@@ -150,239 +164,147 @@ class _HorizontalAlignment(Draft._Wire):
         Assign geometry to the alignment object
         '''
 
-        geometry = []
+        self.assign_meta_data(geometry)
+        self.assign_station_data(geometry)
 
-        for arc in geometry['geometry']:
+        _geo_list = geometry['geometry']
 
-            if arc['Type'] == 'arc':
+        for _i in range(0, len(_geo_list)):
+
+            _geo = _geo_list[_i]
+
+            if _geo['Type'] == 'arc':
+
                 result = Arc.get_arc_parameters(arc)
 
-                if arc:
-                    geometry.append(result)
+                if result:
+                    _geo_list[_i] = result
+                else:
+                    self.errors.append('Undefined arc')
+                    continue
+
+            elif _geo['Type'] == 'line':
+
+                continue
 
         geometry = self.validate_stationing(geometry)
-        self.geometry = self.validate_coordinates(geometry)
 
-    @staticmethod
-    def _find_adjacent(index, data):
-        '''
-        Return the first match of adjacent curves
-        '''
-
-        curve = data[index]
-        end_point = curve['End']
-
-        if not end_point:
+        if not geometry:
             return None
 
-        for _i in range(0, len(data)):
+        geometry = self.validate_bearings(geometry)
 
-            if _i == index:
-                continue
+        if not geometry:
+            return None
 
-            start_point = data[_i].get('Start')
+        geometry = self.validate_coordinates(geometry)
 
-            if not start_point:
-                continue
+        if not geometry:
+            return None
 
-            #Points must be within a millimeter to be coincident
-            if end_point.distanceToPoint(start_point) < 1.0:
-                return _i
+        self.geometry = geometry
 
-        return None
-
-    def _find_nearest(self, index, data):
+    def validate_coordinates(self, geometry):
         '''
-        Return the nearest geometry with the same bearing
+        Iterate the geometry, testing for incomplete / incorrect station / coordinate values
+        Fix them where possible, error if values cannot be resolved
         '''
-        curve = data[index]
-        out_bearing = curve.get('BearingOut')
 
-        if not out_bearing:
-            return None
+        #calculate distance bewteen curve start and end using
+        #internal station and coordinate vectors
 
-        lst = []
+        _truth = []
+        _prev_geo = geometry[0]
 
-        #matching bearings may be adjacent curves
-        for _i, _v in enumerate(data):
 
-            if _i == index:
-                continue
 
-            if out_bearing == _v.get('BearingIn'):
-                lst.append(_i)
+        for _geo in geometry[1:]:
+            print('\n\n--- Previous Geo ---', _prev_geo)
+            print('\n--- geo ----', _geo)
+            _vector = _geo['End'].sub(_prev_geo['Start'])
+            _sta_len = abs(_geo['InternalStation'][0] - _prev_geo['InternalStation'][1])
 
-        #no matches found
-        if not lst:
-            return None
+            _delta = (_vector.Length - _sta_len) / Units.scale_factor()
+            print('\n--- delta: ---', delta)
 
-        #one match found 
-        if len(lst) == 1:
-            return lst[0]
+            if not Support.within_tolerance(delta):
+                bearing_angle = Support.get_bearing(_vector)
 
-        #Multiple matches found.
-        #Pick the nearest adjacent curve
-        max_dist = None
-        nearest_pi = None
-        pi_1 = curve.get('PI')
+                if Support.within_tolerance(bearing_angle, _geo['BearingIn']):
+                    _geo['StartStation'] = 
+            _truth.append(Support.within_tolerance((_vector_len - _sta_len) / Units.scale_factor()))
 
-        if not pi_1:
-            self.errors.append('Missing PI in ' + self.Object.ID)
-            return None
+            _prev_geo = _geo
 
-        for _i in lst:
+        if all(_truth):
+            return geometry
 
-            pi_2 = data[_i].get('PI')
 
-            if not pi_2:
-                self.errors.append('Missing PI in ' + self.Object.ID)
+        _truth_shift = [False] + _truth[:len(_truth)]
+
+        print('--- truth ---', _truth)
+        print('--- truth-shift ---', _truth_shift)
+        #xor of lists tells us which curves are now correctible
+        result = [_x ^ _y for _x, _y in zip(_truth, _truth_shift)]
+
+        print('--- truth XOR: ---', result)
+        return geometry
+
+    def validate_bearings(self, geometry):
+        '''
+        Validate the bearings between geometry, ensuring they are equal
+        '''
+
+        if len(geometry) < 2:
+            return geometry
+
+        prev_bearing = geometry[0]['BearingOut']
+
+        for _geo in geometry[1:]:
+
+            _b = _geo.get('BearingIn')
+
+            if _b is None:
+                self.errors.append('Invalid bearings ({0:.4f}, {1:.4f}) at curve {2}'
+                                   .format(prev_bearing, _b, _geo)
+                                  )
                 return None
 
-            dist = pi_1.distanceToPoint(pi_2)
+            if not Support.within_tolerance(_b, prev_bearing):
+                self.errors.append('Bearing mismatch ({0:.4f}, {1:.4f}) at curve {2}'
+                                   .format(prev_bearing, _b, _geo)
+                                  )
 
-            if not dist:
-                continue
+                return None
 
-            if max_dist is None:
-                max_dist = dist
+            prev_bearing = _geo.get('BearingOut')
 
-            elif dist < max_dist:
-                max_dist = dist
-                nearest_pi = _i
-
-        return nearest_pi
-
-    def sort_geometry(self, data):
-        '''
-        Validate the coordinate geometry data by ensuring
-        PI data is continuous within the alignment and ordering the
-        internal data set accordingly.
-        data - a list of curve dictionaries
-        '''
-
-        matches = []
-
-        data_len = len(data)
-
-        #no sorting required when only one geometry
-        if data_len == 1:
-            return data
-
-        for _i in range(0, data_len):
-            
-            ################# Test for coincident endpoints
-            _j = self._find_adjacent(_i, data)
-
-            if not _j is None:
-                matches.append([_i, _j])
-
-            ############## Test for identical bearings
-            _j = self._find_nearest(_i, data)
-
-            if not _j is None:
-                matches.append([_i, _j])
-
-        #the number of matches (pairs) should be
-        #one less than the number of curves
-        if len(matches) != data_len - 1:
-            self.errors.append('%d curves found, %d unmatched'
-                               % (data_len, data_len - len(matches) - 1))
-            self.errors.append('Alignment ' + self.Object.ID + ' is discontinuous.')
-            return None
-
-        ############## Order the list of matches
-        ordered_list = matches
-        old_len = len(ordered_list) + 1
-
-        while len(ordered_list) < old_len:
-            old_len = len(ordered_list)
-            ordered_list = self._order_list(ordered_list)
-
-        geo = data
-
-        ############### Rebuild the data set in the correct order
-        if ordered_list[0] != list(range(0, data_len)):
-            geo = [data[_i] for _i in ordered_list[0]]
-
-        return geo
-
-    @staticmethod
-    def _order_list(tuples):
-        '''
-        Combine a list of tuples where endpoints of two tuples match
-        '''
-
-        if len(tuples) == 1:
-            return tuples
-
-        tuple_end = len(tuples[0]) - 1
-        tuple_count = len(tuples)
-        tuple_pairs = []
-
-        for _i in range(0, tuple_count):
-
-            _tpl1 = tuples[_i]
-
-            for _tpl2 in tuples[(_i + 1):]:
-
-                ordered_tuple = None
-
-                if _tpl1[0] == _tpl2[tuple_end]:
-                    ordered_tuple = _tpl2
-                    ordered_tuple.extend(_tpl1[1:])
-
-                elif _tpl1[tuple_end] == _tpl2[0]:
-                    ordered_tuple = _tpl1
-                    ordered_tuple.extend(_tpl2[1:])
-
-                if ordered_tuple:
-                    tuple_pairs.append(ordered_tuple)
-
-        return tuple_pairs
+        return geometry
 
     def validate_stationing(self, geometry):
         '''
         Iterate the geometry, calculating the internal start station based on the actual station
-        and storing it in an 'InternalStation' parameter
+        and storing it in an 'InternalStation' parameter tuple for the start and end of the curve
         '''
 
-        distance = 0.0
-        start_station = 
-        for _geo in Geometry:
+        for _geo in geometry:
 
-            if _geo.get('StartStation'):
+            _geo['InternalStation'] = None
+            start_station = _geo.get('StartStation')
 
-                _geo['InternalStation'] = 
-    def validate_coordinates(self, geometry):
-        '''
-        Iterate the geometry, ensuring the start coordinates match the start station,
-        If not, adujst every coordinate by the error
-        '''
-
-        for arc in geometry:
-
-            #supply mising starting station if possible
-            if not arc['StartStation']:
-
-                if arc['Start']:
-                    arc['StartStation'] = _get_coordinate_station(arc['Start'], geometry)
-
+            if start_station is None:
                 continue
 
-            #supply missing start coordinate if possible
-            if not arc['Start']:
-
-                if arc['StartStation']:
-                    arc['Start'] = _get_station_coordinate(arc['StartStation'], geometry)
+            int_sta = self._get_internal_station(start_station)
+            _geo['InternalStation'] = (int_sta, int_sta + _geo['Length'])
 
         return geometry
 
     def _get_internal_station(self, station):
         '''
         Using the station equations, determine the internal station
-        (position) along the alingment
+        (position) along the alingment, scaled to the document units
         '''
-
         start_sta = self.Object.Station_Equations[0].y
         eqs = self.Object.Station_Equations
 
@@ -391,9 +313,8 @@ class _HorizontalAlignment(Draft._Wire):
 
         for _eq in eqs[1:]:
 
-            #add the deistance and quit if the station falls within the equation
+            #if station falls within equation, quit
             if start_sta < station < _eq.x:
-                position += station - start_sta
                 break
 
             #increment the position by the equaion length and
@@ -401,8 +322,10 @@ class _HorizontalAlignment(Draft._Wire):
             position += _eq.x - start_sta
             start_sta = _eq.y
 
-        #no more equations - station falls outside of last equation
-        return position
+        #add final distance to position
+        position += station - start_sta
+
+        return position * Units.scale_factor()
 
     def _get_station_coordinate(self, geometry, station):
         '''
@@ -412,7 +335,6 @@ class _HorizontalAlignment(Draft._Wire):
         target_sta = self._get_internal_station(station)
 
         if target_sta < 0.0:
-            print('Invalid station distance ', target_sta)
             return None
 
         cur_sta = 0.0
@@ -434,6 +356,74 @@ class _HorizontalAlignment(Draft._Wire):
             cur_sta += _geo.Length
 
         return result
+
+    def assign_meta_data(self, geometry):
+        '''
+        Extract the meta data for the alignment from the data set
+        Check it for errors
+        Assign properties
+        '''
+
+        obj = self.Object
+
+        meta = geometry['meta']
+
+        if meta.get('ID'):
+            obj.ID = meta['ID']
+
+        if meta.get('Description'):
+            obj.Description = meta['Description']
+
+        if meta.get('ObjectID'):
+            obj.ObjectID = meta['ObjectID']
+
+        if meta.get('Length'):
+            obj.Length = meta['Length']
+
+        if meta.get('Status'):
+            obj.Status = meta['Status']
+
+    def assign_station_data(self, geometry):
+        '''
+        Assign the station and intersection equation data
+        '''
+
+        obj = self.Object
+
+        _eqs = geometry['station']
+
+        _eqn_list = []
+        _start_sta = Utils.to_float(geometry['meta'].get('StartStation'))
+
+        if _start_sta:
+            _eqn_list.append(App.Vector(0.0, _start_sta, 0.0))
+        else:
+            self.errors.append('Unable to convert starting station %s'
+                               % geometry['meta'].get('StartStation')
+                              )
+
+        for _eqn in _eqs:
+
+            eq_vec = None
+
+            #default to increasing station if unspecified
+            if not _eqn['Direction']:
+                _eqn['Direction'] = 1.0
+
+            try:
+                eq_vec = App.Vector(
+                    float(_eqn['Back']), float(_eqn['Ahead']), float(_eqn['Direction'])
+                    )
+
+            except:
+                self.errors.append('Unable to convert station equation (%s)'
+                                   % (_eqn)
+                                  )
+                continue
+
+            _eqn_list.append(eq_vec)
+
+        obj.Station_Equations = _eqn_list
 
     def discretize_geometry(self):
         '''

@@ -141,7 +141,6 @@ def get_bearings(arc, mat, delta, rot):
     bearings = []
 
     for _i in range(0, 6):
-        print(rot, mat.A[6][_i])
         bearings.append(_GEO.FUNC[6][_i](mat.A[6][_i], delta, rot))
 
     _b = [_v for _v in bearings[0:6] if Utils.to_float(_v)]
@@ -392,7 +391,6 @@ def get_arc_parameters(arc):
     mat = get_scalar_matrix(vecs)
     _p = get_lengths(arc, mat)
 
-    print(mat)
     if not _p:
         print('Invalid curve definition: cannot determine radius / tangent lengths')
         return None
@@ -437,7 +435,8 @@ def get_arc_parameters(arc):
     #get rid of the Bearings dict since we're done using it
     result.pop('Bearings')
 
-    return result
+    #merge the result with the original dict to preserve other values
+    return {**arc, **result}
 
     #scale_factor = 1.0 / Units.scale_factor()
 

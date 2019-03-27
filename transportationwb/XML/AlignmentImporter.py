@@ -42,42 +42,43 @@ class AlignmentImporter(object):
     #LandXML attribute tags and corresponding data types - empty type defaults to 'string'
     #'name' is required, but is tested for explictly, so it is considered optional here
     META_TAGS = {
-        'req': {'length': ('Length', 'float'), 'staStart': ('StartStation', 'float')},
-        'opt': {'name': ('ID', ''), 'desc': ('Description', ''), 'oID': ('ObjectID', ''),
-                'state': ('Status', '')}
+        'req': {'length': ('Length', 'float', 0.0), 'staStart': ('StartStation', 'float', 0.0)},
+        'opt': {'name': ('ID', '', 'Alignment'), 'desc': ('Description', '', ''),
+        'oID': ('ObjectID', '', ''), 'state': ('Status', '', 'proposed')}
     }
 
     STATION_TAGS = {
-        'req': {'staAhead': ('Ahead', 'float'), 'staInternal': ('Position', 'float')},
-        'opt': {    'staBack': ('Back', 'float'), 'staIncrement': ('Direction', ''),
-                    'desc': ('Description', '')}
+        'req': {'staAhead': ('Ahead', 'float', 0.0), 'staInternal': ('Position', 'float', 0.0)},
+        'opt': {'staBack': ('Back', 'float', 0.0), 'staIncrement': ('Direction', '', 0.0),
+                'desc': ('Description', '', '')}
     }
 
     GEOM_TAGS = {}
     GEOM_TAGS['line'] = {
         'req': {},
         'opt': {
-            'desc': ('Description', ''), 'dir': ('BearingOut', 'float'),
-            'length': ('Length', 'float'), 'name': ('Name', ''),
-            'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
-            'oID': ('ObjectID', ''), 'note': ('Note', '')
+            'desc': ('Description', '', ''), 'dir': ('BearingOut', 'float', 'nan'),
+            'length': ('Length', 'float', 0.0), 'name': ('Name', '', ''),
+            'staStart': ('StartStation', 'float', 0.0), 'state': ('Status', '', ''),
+            'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
         }
     }
 
     GEOM_TAGS['spiral'] = {
         'req': {
-            'length': ('Length', 'float'), 'radiusEnd': ('RadiusEnd',  'float'),
-            'radiusStart': ('RadiusStart', 'float'), 'rot': ('Direction', ''),
-            'spiType': ('SpiralType', '')
+            'length': ('Length', 'float', 0.0), 'radiusEnd': ('RadiusEnd', 'float', 0.0),
+            'radiusStart': ('RadiusStart', 'float', 0.0), 'rot': ('Direction', '', 0.0),
+            'spiType': ('SpiralType', '', 'clothoid')
         },
         'opt': {
-            'chord': ('Chord', 'float'), 'constant': ('Constant', 'float'),
-            'desc': ('Description', ''), 'dirEnd': ('BearingOut', 'float'),
-            'dirStart': ('BearingIn', 'float'), 'external': ('External', 'float'),
-            'length': ('length', 'float'), 'midOrd': ('MiddleOrdinate', 'float'),
-            'name': ('Name', ''), 'radius': ('Radius', 'float'),
-            'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
-            'tangent': ('Tangent', 'float'), 'oID': ('ObjectID', ''), 'note': ('Note', '')
+            'chord': ('Chord', 'float', 0.0), 'constant': ('Constant', 'float', 0.0),
+            'desc': ('Description', '', ''), 'dirEnd': ('BearingOut', 'float', ''),
+            'dirStart': ('BearingIn', 'float', 'nan'), 'external': ('External', 'float', 0.0),
+            'length': ('length', 'float', 0.0), 'midOrd': ('MiddleOrdinate', 'float', 0.0),
+            'name': ('Name', '', ''), 'radius': ('Radius', 'float', 0.0),
+            'staStart': ('StartStation', 'float', 0.0), 'state': ('Status', '', 'proposed'),
+            'tangent': ('Tangent', 'float', 0.0), 'oID': ('ObjectID', '', ''), 
+            'note': ('Note', '', '')
         }
     }
 
@@ -87,18 +88,17 @@ class AlignmentImporter(object):
     ANGLE_TAGS = ['delta', 'dir', 'dirStart', 'dirEnd']
 
     GEOM_TAGS['arc'] = {
-        'req': {'rot': ('Direction', '')},
+        'req': {'rot': ('Direction', '', 0.0)},
         'opt': {
-            'chord': ('Chord', 'float'), 'crvType': ('CurveType', ''), 'delta': ('Delta', 'float'),
-            'desc': ('Description', ''), 'dirEnd': ('BearingOut', 'float'),
-            'dirStart': ('BearingIn', 'float'), 'external': ('External', 'float'),
-            'length': ('Length', 'float'), 'midOrd': ('MiddleOrdinate', 'float'),
-            'name': ('Name', ''), 'radius': ('Radius', 'float'),
-            'staStart': ('StartStation', 'float'), 'state': ('Status', ''),
-            'tangent': ('Tangent', 'float'), 'oID': ('ObjectID', ''), 'note': ('Note', '')
+            'chord': ('Chord', 'float', 0.0), 'crvType': ('CurveType', '', 'arc'),
+            'delta': ('Delta', 'float', 0.0), 'desc': ('Description', '', ''),
+            'dirEnd': ('BearingOut', 'float', 'nan'), 'dirStart': ('BearingIn', 'float', 'nan'), 'external': ('External', 'float', 0.0), 'length': ('Length', 'float', 0.0),
+            'midOrd': ('MiddleOrdinate', 'float', 0.0), 'name': ('Name', '', ''),
+            'radius': ('Radius', 'float', 0.0), 'staStart': ('StartStation', 'float', 0.0),
+            'state': ('Status', '', 'proposed'), 'tangent': ('Tangent', 'float', 0.0),
+            'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
         }
     }
-
 
     def __init__(self):
 
@@ -225,13 +225,16 @@ class AlignmentImporter(object):
 
             elif key == 'rot':
 
-                attr_val = 0
+                attr_val = 0.0
 
                 if attrib.get(key) == 'cw':
                     attr_val = 1.0
 
                 elif attrib.get(key) == 'ccw':
                     attr_val = -1.0
+
+            if not attr_val:
+                attr_val = _tuple[2]
 
             result[_tuple[0]] = attr_val
 
