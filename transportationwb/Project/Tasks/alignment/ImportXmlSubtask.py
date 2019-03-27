@@ -71,7 +71,7 @@ class ImportXmlSubtask:
 
         subset = self.data['Alignments'][value]
 
-        if not subset['meta'].get('StartStation'):
+        if subset['meta'].get('StartStation'):
             self.panel.startStationValueLabel.setText('{0:.2f}'.format(subset['meta']['StartStation']))
 
         if subset['meta'].get('Length'):
