@@ -580,7 +580,7 @@ def run_test(arc, comp, excludes):
 
 #{'Direction': -1.0, 'Delta': 50.3161, 'Radius': 670.0, 'Length': 588.3816798810216, 'Tangent': 314.67910063712156, 'Chord': 569.6563702820052, 'External': 70.21816809491217, 'MiddleOrd': 63.55717091445238, 'BearingIn': 139.3986, 'BearingOut': 89.0825, 'Start': Vector (400.44639227036157, -467.1857190779628, 0.0), 'Center': Vector (909.1475140855633, -31.154563466399697, 0.0), 'End': Vector (919.8760307993049, -701.0686616380407, 0.0), 'PI': Vector (605.2372756996326, -706.1075272957279, 0.0)}
 
-def get_points(arc_dict, interval, interval_type='Segment', start_coord = App.Vector()):
+def get_points(arc_dict, interval, interval_type='Segment'):
     '''
     Discretize an arc into the specified segments.
     Resulting list of coordinates omits provided starting point and
@@ -603,16 +603,19 @@ def get_points(arc_dict, interval, interval_type='Segment', start_coord = App.Ve
     Points are returned references to start_coord
     '''
 
+    interval = 10
+    interval_type = 'Segment'
     angle = arc_dict['Delta']
     direction = arc_dict['Direction']
     bearing_in = arc_dict['BearingIn']
     radius = arc_dict['Radius']
+    start_coord = arc_dict['Start']
 
     _forward = App.Vector(math.sin(bearing_in), math.cos(bearing_in), 0.0)
     _right = App.Vector(_forward.y, -_forward.x, 0.0)
 
-    result = [App.Vector()]
-
+    result = [start_coord]
+    print(interval_type)
     #define the incremental angle for segment calculations, defaulting to 'Segment'
     _delta = angle / interval
 
