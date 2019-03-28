@@ -8,7 +8,7 @@
     <Alignments>
         <Alignment name='Sugar Grove Road' length='4731.987549' staStart = '50000.00' desc='Alignment for Sugar Grove Road' state='existing'>
             <CoordGeom name='Sugar Grove Road' desc='Alignment for Sugar Grove Road' state='existing'>
-                <Curve rot='ccw' length='588.3817' dirStart='139.3986' dirEnd='89.0825' stStart='50615.3209' radius='670.0000'>
+                <Curve rot='ccw' length='588.3817' dirStart='139.3986' dirEnd='89.0825' staStart='50615.3209' radius='670.0000'>
                     <PI>
                         605.2372 -706.1075 0.0
                     </PI>
