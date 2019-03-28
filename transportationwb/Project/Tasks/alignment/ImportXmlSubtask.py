@@ -63,7 +63,7 @@ class ImportXmlSubtask:
 
         self.panel.alignmentsComboBox.currentTextChanged.connect(self._update_alignment)
 
-        self.panel.staEqTableView.clicked.connect(self._update_curve_list)
+        #self.panel.staEqTableView.clicked.connect(self._update_curve_list)
 
         self._update_alignment(self.panel.alignmentsComboBox.currentText())
 
@@ -94,8 +94,8 @@ class ImportXmlSubtask:
 
             _vals = [curve[_k] if curve.get(_k) else 0.0 for _k in [
                         'Direction', 'StartStation', 'BearingIn', 'BearingOut', 'Radius']
-                     ]
-            
+                    ]
+
             row = '{0:s}, {1:f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.2f}'.format(
                 curve['Type'], _vals[0], _vals[1], _vals[2], _vals[3], _vals[4]
                 )
@@ -109,11 +109,6 @@ class ImportXmlSubtask:
 
         self.panel.curveTableView.setModel(widget_model_2)
         self.panel.curveTableView.resizeColumnsToContents()
-
-    @staticmethod
-    def _update_curve_list(value):
-
-        print('update curve list with: ', value)
 
     def import_model(self):
         '''
