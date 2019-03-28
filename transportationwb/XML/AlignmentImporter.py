@@ -59,7 +59,7 @@ class AlignmentImporter(object):
         'opt': {
             'desc': ('Description', '', ''), 'dir': ('BearingOut', 'float', 'nan'),
             'length': ('Length', 'float', 0.0), 'name': ('Name', '', ''),
-            'staStart': ('StartStation', 'float', 0.0), 'state': ('Status', '', ''),
+            'staStart': ('StartStation', 'float', None), 'state': ('Status', '', ''),
             'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
         }
     }
@@ -76,7 +76,7 @@ class AlignmentImporter(object):
             'dirStart': ('BearingIn', 'float', 'nan'), 'external': ('External', 'float', 0.0),
             'length': ('length', 'float', 0.0), 'midOrd': ('MiddleOrdinate', 'float', 0.0),
             'name': ('Name', '', ''), 'radius': ('Radius', 'float', 0.0),
-            'staStart': ('StartStation', 'float', 0.0), 'state': ('Status', '', 'proposed'),
+            'staStart': ('StartStation', 'float', None), 'state': ('Status', '', 'proposed'),
             'tangent': ('Tangent', 'float', 0.0), 'oID': ('ObjectID', '', ''), 
             'note': ('Note', '', '')
         }
@@ -94,7 +94,7 @@ class AlignmentImporter(object):
             'delta': ('Delta', 'float', 0.0), 'desc': ('Description', '', ''),
             'dirEnd': ('BearingOut', 'float', 'nan'), 'dirStart': ('BearingIn', 'float', 'nan'), 'external': ('External', 'float', 0.0), 'length': ('Length', 'float', 0.0),
             'midOrd': ('MiddleOrdinate', 'float', 0.0), 'name': ('Name', '', ''),
-            'radius': ('Radius', 'float', 0.0), 'staStart': ('StartStation', 'float', 0.0),
+            'radius': ('Radius', 'float', 0.0), 'staStart': ('StartStation', 'float', None),
             'state': ('Status', '', 'proposed'), 'tangent': ('Tangent', 'float', 0.0),
             'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
         }
