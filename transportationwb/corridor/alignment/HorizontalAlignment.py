@@ -164,8 +164,10 @@ class _HorizontalAlignment(Draft._Wire):
         Assign geometry to the alignment object
         '''
 
-        self.assign_meta_data(geometry)
-        self.assign_station_data(geometry)
+        self.geometry = geometry
+
+        self.assign_meta_data()
+        self.assign_station_data()
 
         _geo_list = geometry['geometry']
 
@@ -187,32 +189,22 @@ class _HorizontalAlignment(Draft._Wire):
 
                 continue
 
-        geometry = self.validate_datum(geometry)
+        self.validate_datum()
 
-        geometry = self.validate_stationing(geometry)
+        self.validate_stationing()
 
-        if not geometry:
+        if not self.validate_bearings():
             return None
 
-        geometry = self.validate_bearings(geometry)
+        self.validate_coordinates()
 
-        if not geometry:
-            return None
-
-        geometry = self.validate_coordinates(geometry)
-
-        if not geometry:
-            return None
-
-        self.geometry = geometry
-
-    def validate_datum(self, geometry):
+    def validate_datum(self):
         '''
         Ensure the datum is valid, assuming 0+00 / (0,0,0) for station and coordinate
         where none is suplpied and it cannot be inferred fromt the starting geometry
         '''
-        _datum = geometry['meta']
-        _geo = geometry['geometry'][0]
+        _datum = self.geometry['meta']
+        _geo = self.geometry['geometry'][0]
 
         _datum_truth = [not _datum['StartStation'] is None,
                         not _datum['Start'] is None]
@@ -225,7 +217,7 @@ class _HorizontalAlignment(Draft._Wire):
         #----------------------------
         #both defined?  nothing to do
         if all(_datum_truth):
-            return geometry
+            return
 
         _geo_station = 0
         _geo_start = App.Vector()
@@ -244,7 +236,7 @@ class _HorizontalAlignment(Draft._Wire):
 
             _datum['StartStation'] = _geo_station
             _datum['Start'] = _geo_start
-            return geometry
+            return
 
         #--------------------
         #CASE 2
@@ -257,7 +249,7 @@ class _HorizontalAlignment(Draft._Wire):
 
             #assume geometry start if no geometry station
             if not _geo_truth[0]:
-                return geometry
+                return
 
             #scale the distance to the system units
             delta = _geo_station - _datum['StartStation']
@@ -270,14 +262,14 @@ class _HorizontalAlignment(Draft._Wire):
 
             #assume geometry start if station delta is zero
             if not delta:
-                return geometry
+                return
 
             #calcualte the start based on station delta
             _datum['Start'] = _datum['Start'].sub(
                 Support.vector_from_angle(_geo['BearingIn']).multiply(delta)
             )
 
-            return geometry
+            return
 
         #---------------------
         #CASE 3
@@ -288,16 +280,16 @@ class _HorizontalAlignment(Draft._Wire):
 
         #assume geometry station if no geometry start
         if not _geo_truth[1]:
-            return geometry
+            return
 
         #scale the length to the document units
         delta = _geo_start.sub(_datum['Start']).Length / Units.scale_factor()
 
         _datum['StartStation'] -= delta
 
-        return geometry
+        return
 
-    def validate_coordinates(self, geometry):
+    def validate_coordinates(self):
         '''
         Iterate the geometry, testing for incomplete / incorrect station / coordinate values
         Fix them where possible, error if values cannot be resolved
@@ -306,9 +298,9 @@ class _HorizontalAlignment(Draft._Wire):
         #calculate distance bewteen curve start and end using
         #internal station and coordinate vectors
 
-        _datum = geometry['meta']
+        _datum = self.geometry['meta']
+        _geo_data = self.geometry['geometry']
 
-        _geo_data = geometry['geometry']
         _prev_geo = {'End': _datum['Start'], 'InternalStation': (0.0, 0.0),
                      'StartStation': _datum['StartStation'], 'Length': 0.0
                     }
@@ -347,17 +339,17 @@ class _HorizontalAlignment(Draft._Wire):
 
             _prev_geo = _geo
 
-        return geometry
+        return
 
-    def validate_bearings(self, geometry):
+    def validate_bearings(self):
         '''
         Validate the bearings between geometry, ensuring they are equal
         '''
 
-        if len(geometry) < 2:
-            return geometry
+        geo_data = self.geometry['geometry']
 
-        geo_data = geometry['geometry']
+        if len(geo_data) < 2:
+            return True
 
         prev_bearing = geo_data[0]['BearingOut']
 
@@ -369,28 +361,28 @@ class _HorizontalAlignment(Draft._Wire):
                 self.errors.append('Invalid bearings ({0:.4f}, {1:.4f}) at curve {2}'
                                    .format(prev_bearing, _b, _geo)
                                   )
-                return None
+                return False
 
             if not Support.within_tolerance(_b, prev_bearing):
                 self.errors.append('Bearing mismatch ({0:.4f}, {1:.4f}) at curve {2}'
                                    .format(prev_bearing, _b, _geo)
                                   )
-                return None
+                return False
 
             prev_bearing = _geo.get('BearingOut')
 
-        return geometry
+        return True
 
-    def validate_stationing(self, geometry):
+    def validate_stationing(self):
         '''
         Iterate the geometry, calculating the internal start station based on the actual station
         and storing it in an 'InternalStation' parameter tuple for the start and end of the curve
         '''
 
-        prev_station = geometry['meta']['StartStation']
-        prev_coord = geometry['meta']['Start']
+        prev_station = self.geometry['meta']['StartStation']
+        prev_coord = self.geometry['meta']['Start']
 
-        for _geo in geometry['geometry']:
+        for _geo in self.geometry['geometry']:
 
             _geo['InternalStation'] = None
             geo_station = _geo.get('StartStation')
@@ -418,7 +410,7 @@ class _HorizontalAlignment(Draft._Wire):
 
             _geo['InternalStation'] = (int_sta, int_sta + _geo['Length'])
 
-        return geometry
+        return
 
     def _get_internal_station(self, station):
         '''
@@ -447,7 +439,7 @@ class _HorizontalAlignment(Draft._Wire):
 
         return position * Units.scale_factor()
 
-    def assign_meta_data(self, geometry):
+    def assign_meta_data(self):
         '''
         Extract the meta data for the alignment from the data set
         Check it for errors
@@ -456,7 +448,7 @@ class _HorizontalAlignment(Draft._Wire):
 
         obj = self.Object
 
-        meta = geometry['meta']
+        meta = self.geometry['meta']
 
         if meta.get('ID'):
             obj.ID = meta['ID']
@@ -473,23 +465,24 @@ class _HorizontalAlignment(Draft._Wire):
         if meta.get('Status'):
             obj.Status = meta['Status']
 
-    def assign_station_data(self, geometry):
+    def assign_station_data(self):
         '''
         Assign the station and intersection equation data
         '''
 
         obj = self.Object
 
-        _eqs = geometry['station']
+        _eqs = self.geometry['station']
+        _meta = self.geometry['meta']
 
         _eqn_list = []
-        _start_sta = Utils.to_float(geometry['meta'].get('StartStation'))
+        _start_sta = Utils.to_float(_meta.get('StartStation'))
 
         if _start_sta:
             _eqn_list.append(App.Vector(0.0, _start_sta, 0.0))
         else:
             self.errors.append('Unable to convert starting station %s'
-                               % geometry['meta'].get('StartStation')
+                               % _meta.get('StartStation')
                               )
 
         for _eqn in _eqs:
