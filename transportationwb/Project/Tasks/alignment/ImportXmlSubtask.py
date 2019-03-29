@@ -54,16 +54,10 @@ class ImportXmlSubtask:
     def _setup_panel(self):
 
         self.panel.projectName.setText(self.data['Project']['ID'])
-
         alignment_model = list(self.data['Alignments'].keys())
-
         widget_model = WidgetModel.create(alignment_model)
-
         self.panel.alignmentsComboBox.setModel(widget_model)
-
         self.panel.alignmentsComboBox.currentTextChanged.connect(self._update_alignment)
-
-        #self.panel.staEqTableView.clicked.connect(self._update_curve_list)
 
         self._update_alignment(self.panel.alignmentsComboBox.currentText())
 
