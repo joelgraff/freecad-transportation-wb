@@ -47,21 +47,19 @@ def create(parent=None):
     _obj = None
     _name = 'Document_Data'
 
-    result = App.ActiveDocument.get(_name)
+    _obj = App.ActiveDocument.getObject(_name)
 
-    if (result):
-        return result
+    if _obj:
+        return _obj.Proxy
 
     if parent:
         _obj = parent.newObject(_TYPE, _name)
     else:
         _obj = App.ActiveDocument.addObject(_TYPE, _name)
 
-    result = _XmlFpo(_obj)
-
     _obj.ViewObject.Proxy = 0
 
-    return result
+    return _XmlFpo(_obj)
 
 class _XmlFpo():
     '''
@@ -102,7 +100,7 @@ class _XmlFpo():
 
         #add class properties
         for _id in self.XML_ID:
-            Properties.add(obj, 'FileIncluded', _id, 'Internal XML for ' + _id, None, is_hidden=True)
+            Properties.add(obj, 'FileIncluded', _id, 'Internal XML for ' + _id, '', is_hidden=True)
 
         self.Enabled = True
 
