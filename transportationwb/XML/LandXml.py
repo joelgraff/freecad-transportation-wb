@@ -35,6 +35,13 @@ from transportationwb.ScriptedObjectSupport import Units
 XML_VERSION = 'v1.2'
 XML_NAMESPACE = {XML_VERSION: 'http://www.landxml.org/schema/LandXML-1.2'}
 
+def add_child(node, node_name):
+    '''
+    Add a new child to the passed node, returning a reference to it
+    '''
+
+    return etree.SubElement(node, node_name)
+
 def get_child(node, node_name):
     '''
     Return the first child matching node_name in node
