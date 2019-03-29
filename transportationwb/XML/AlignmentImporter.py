@@ -41,6 +41,7 @@ class AlignmentImporter(object):
 
     #LandXML attribute tags and corresponding data types - empty type defaults to 'string'
     #'name' is required, but is tested for explictly, so it is considered optional here
+    #duplicate keys are used to assign the same XML attribute to different Alignment attributes
     META_TAGS = {
         'req': {'length': ('Length', 'float', 0.0), 'staStart': ('StartStation', 'float', 0.0)},
         'opt': {'name': ('ID', '', 'Alignment'), 'desc': ('Description', '', ''),
@@ -58,9 +59,9 @@ class AlignmentImporter(object):
         'req': {},
         'opt': {
             'desc': ('Description', '', ''), 'dir': ('BearingOut', 'float', 'nan'),
-            'length': ('Length', 'float', 0.0), 'name': ('Name', '', ''),
-            'staStart': ('StartStation', 'float', None), 'state': ('Status', '', ''),
-            'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
+            'dir': ('BearingIn', 'float', 'nan'), 'length': ('Length', 'float', 0.0),
+            'name': ('Name', '', ''), 'staStart': ('StartStation', 'float', None),
+            'state': ('Status', '', ''), 'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
         }
     }
 
@@ -237,10 +238,6 @@ class AlignmentImporter(object):
                 attr_val = _tuple[2]
 
             result[_tuple[0]] = attr_val
-
-        #add a fake bearing in to reduce need for type-checking later on
-        if tags == self.GEOM_TAGS['line']:
-            result['BearingIn'] = result['BearingOut']
 
         return result
 
