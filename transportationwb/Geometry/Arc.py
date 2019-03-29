@@ -365,7 +365,7 @@ def get_coordinates(arc, points):
 
     return {'Start': _start, 'Center': _center, 'End': _end, 'PI': _pi}
 
-def get_arc_parameters(arc):
+def get_parameters(arc):
 
     #Vector order:
     #Radius in / out, Tangent in / out, Middle, and Chord
@@ -549,7 +549,7 @@ def run_test(arc, comp, excludes):
         for _exclude in excludes:
             dct[_exclude] = None
 
-    result = convert_units(get_arc_parameters(convert_units(dct)), True)
+    result = convert_units(get_parameters(convert_units(dct)), True)
 
     print('----------- Comparison errors: ------------- \n')
     print('Exclusions: ', excludes)
@@ -603,8 +603,6 @@ def get_points(arc_dict, interval, interval_type='Segment'):
     Points are returned references to start_coord
     '''
 
-    interval = 10
-    interval_type = 'Segment'
     angle = arc_dict['Delta']
     direction = arc_dict['Direction']
     bearing_in = arc_dict['BearingIn']
@@ -615,15 +613,17 @@ def get_points(arc_dict, interval, interval_type='Segment'):
     _right = App.Vector(_forward.y, -_forward.x, 0.0)
 
     result = [start_coord]
-    print(interval_type)
+
     #define the incremental angle for segment calculations, defaulting to 'Segment'
     _delta = angle / interval
 
+    _ratio = (interval * Units.scale_factor()) / radius
+
     if interval_type == 'Interval':
-        _delta = interval / radius
+        _delta = _ratio
 
     elif interval_type == 'Tolerance':
-        _delta = 2.0 * math.acos(1 - (interval / radius))
+        _delta = 2.0 * math.acos(1 - _ratio)
 
     #pre-calculate the segment deltas, increasing from zero to the central angle
     segment_deltas = [float(_i + 1) * _delta for _i in range(0, int(angle / _delta) + 1)]

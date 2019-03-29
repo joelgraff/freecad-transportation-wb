@@ -36,7 +36,7 @@ import numpy
 from xml.etree import ElementTree as etree
 
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties, Singleton
-from transportationwb.Geometry import Arc, Support
+from transportationwb.Geometry import Arc, Line, Support
 from transportationwb.XML import XmlFpo
 
 _CLASS_NAME = 'HorizontalAlignment'
@@ -98,7 +98,10 @@ class _HorizontalAlignment(Draft._Wire):
         self.Type = _CLASS_NAME
         self.Object = obj
         self.errors = []
-        self.xml_fpo = None
+
+        #create a new Xml object or return the existing one
+        self.xml_fpo = XmlFpo.create()
+
         self.geometry = []
         self.meta = {}
 
@@ -169,23 +172,19 @@ class _HorizontalAlignment(Draft._Wire):
         self.assign_meta_data()
         self.assign_station_data()
 
-        _geo_list = geometry['geometry']
-
-        for _i, _geo in enumerate(_geo_list):
+        for _i, _geo in enumerate(self.geometry['geometry']):
 
             if _geo['Type'] == 'arc':
-
-                result = Arc.get_arc_parameters(_geo)
-
-                if result:
-                    _geo_list[_i] = result
-
-                else:
-                    self.errors.append('Undefined arc')
-                    continue
+                _geo = Arc.get_parameters(_geo)
 
             elif _geo['Type'] == 'line':
+                _geo = Line.get_parameters(_geo)
+
+            else:
+                self.errors.append('Undefined geometry: ', _geo)
                 continue
+
+            self.geometry['geometry'][_i] = _geo
 
         self.validate_datum()
 
@@ -196,7 +195,38 @@ class _HorizontalAlignment(Draft._Wire):
 
         self.validate_coordinates()
 
+        self.validate_alignment()
+
         return True
+
+    def validate_alignment(self):
+        '''
+        Ensure the alignment geometry is continuous.
+        Any discontinuities (gaps between end / start coordinates)
+        must be filled by a completely defined line
+        '''
+
+        _prev_coord = self.geometry['meta']['Start']
+        _geo_list = []
+
+        for _geo in self.geometry['geometry']:
+
+            _coord = _geo['Start']
+
+            if not Support.within_tolerance(_coord.Length, _prev_coord.Length):
+
+                #build the line using the provided parameters and add it
+                _geo_list.append(
+                    Line.get_parameters({'Start': _prev_coord, 'End': _coord,
+                                         'BearingIn': _geo['BearingIn'],
+                                         'BearingOut': _geo['BearingOut'],
+                                         })
+                )
+
+            _geo_list.append(_geo)
+            _prev_coord = _geo['End']
+
+        self.geometry['geometry'] = _geo_list
 
     def validate_datum(self):
         '''
@@ -516,11 +546,9 @@ class _HorizontalAlignment(Draft._Wire):
         for curve in geometry:
 
             if curve['Type'] == 'arc':
-
                 points.append(Arc.get_points(curve, interval, interval_type))
 
             if curve['Type'] == 'line':
-
                 points.append([curve['Start'], curve['End']])
 
             last_curve = curve
