@@ -4,5 +4,5 @@
     <Units>
         <Imperial areaUnit='squareFoot' linearUnit='foot' volumeUnit='cubicFeet' temperatureUnit='fahrenheit' pressureUnit='inHG' diameterUnit='foot' widthUnit='foot' heightUnit='foot' velocityUnit='milesPerHour' flowUnit='cubicFeetSecond' angularUnit='decimal degrees' directionUnit='decimal degrees' latLongAngularUnit='decimal degrees' elevationUnit='feet'/>
     </Units>
-    <Application name='FreeCAD' manufacturer='The FreeCAD Project' version='' manufacturerURL='www.freecadweb.org'/>
+    <Application name='FreeCAD' manufacturer='The FreeCAD Project' version='' desc='Open Source 3D Parametric Modeller' manufacturerURL='www.freecadweb.org'/>
 </LandXML>
