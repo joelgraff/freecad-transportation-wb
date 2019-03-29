@@ -61,8 +61,6 @@ class ImportAlignmentTask:
 
         errors = []
 
-        print(data)
-
         for key, value in data['Alignments'].items():
 
             result = HorizontalAlignment.create(value, value['meta']['ID'] + ' Horiz')
@@ -78,10 +76,6 @@ class ImportAlignmentTask:
 
             for _e in errors:
                 print(_e)
-
-        #get all alignment objects and export them to the transient XML file
-
-        App.ActiveDocument.getObject('Document_Data').write('alignment')
 
         return True
 
