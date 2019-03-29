@@ -123,7 +123,7 @@ class _HorizontalAlignment(Draft._Wire):
         #Properties.add(obj, 'String', 'Units', 'Alignment units', 'English', is_read_only=True)
 
         #station
-        #Properties.add(obj, 'Vector', 'Intersection Equation', 
+        #Properties.add(obj, 'Vector', 'Intersection Equation',
         #              'Equation for intersection with parent alignment', App.Vector(0.0, 0.0, 0.0))
         Properties.add(obj, 'VectorList', 'Station Equations',
                        'Station equation along the alignment', [])
@@ -171,9 +171,7 @@ class _HorizontalAlignment(Draft._Wire):
 
         _geo_list = geometry['geometry']
 
-        for _i in range(0, len(_geo_list)):
-
-            _geo = _geo_list[_i]
+        for _i, _geo in enumerate(_geo_list):
 
             if _geo['Type'] == 'arc':
 
@@ -181,12 +179,12 @@ class _HorizontalAlignment(Draft._Wire):
 
                 if result:
                     _geo_list[_i] = result
+
                 else:
                     self.errors.append('Undefined arc')
                     continue
 
             elif _geo['Type'] == 'line':
-
                 continue
 
         self.validate_datum()
@@ -194,9 +192,11 @@ class _HorizontalAlignment(Draft._Wire):
         self.validate_stationing()
 
         if not self.validate_bearings():
-            return None
+            return False
 
         self.validate_coordinates()
+
+        return True
 
     def validate_datum(self):
         '''
@@ -261,13 +261,12 @@ class _HorizontalAlignment(Draft._Wire):
                 delta = 0.0
 
             #assume geometry start if station delta is zero
-            if not delta:
-                return
+            if delta:
 
-            #calcualte the start based on station delta
-            _datum['Start'] = _datum['Start'].sub(
-                Support.vector_from_angle(_geo['BearingIn']).multiply(delta)
-            )
+                #calcualte the start based on station delta
+                _datum['Start'] = _datum['Start'].sub(
+                    Support.vector_from_angle(_geo['BearingIn']).multiply(delta)
+                )
 
             return
 
@@ -279,15 +278,12 @@ class _HorizontalAlignment(Draft._Wire):
         _datum['StartStation'] = _geo_station
 
         #assume geometry station if no geometry start
-        if not _geo_truth[1]:
-            return
+        if _geo_truth[1]:
 
-        #scale the length to the document units
-        delta = _geo_start.sub(_datum['Start']).Length / Units.scale_factor()
+            #scale the length to the document units
+            delta = _geo_start.sub(_datum['Start']).Length / Units.scale_factor()
 
-        _datum['StartStation'] -= delta
-
-        return
+            _datum['StartStation'] -= delta
 
     def validate_coordinates(self):
         '''
@@ -338,8 +334,6 @@ class _HorizontalAlignment(Draft._Wire):
                     _geo['Start'] = _prev_geo['End'].add(_bearing_vector)
 
             _prev_geo = _geo
-
-        return
 
     def validate_bearings(self):
         '''
@@ -409,8 +403,6 @@ class _HorizontalAlignment(Draft._Wire):
             int_sta = self._get_internal_station(geo_station)
 
             _geo['InternalStation'] = (int_sta, int_sta + _geo['Length'])
-
-        return
 
     def _get_internal_station(self, station):
         '''
@@ -598,7 +590,7 @@ class _ViewProviderHorizontalAlignment:
 
     def __getstate__(self):
         return None
-    
+
     def __setstate__(self, state):
         return None
 
@@ -613,7 +605,7 @@ class _ViewProviderHorizontalAlignment:
         Property update handler
         """
         pass
-    
+
     def getDisplayMode(self, obj):
         """
         Valid display modes
