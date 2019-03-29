@@ -25,6 +25,8 @@
 Exporter for Alignments in LandXML files
 '''
 
+import datetime
+
 from shutil import copyfile
 from xml.etree import ElementTree as etree
 
@@ -38,21 +40,60 @@ class AlignmentExporter(object):
     LandXML exporting class for alignments
     '''
 
+    XML_META = {'name': ('ID', ''), 'desc': ('Description', '')}
+    XML_APPLICATION = {'version': ()}
     #XML_STATION_KEYS = {'staAhead': 'Ahead', 'staBack': 'Back', 'staInternal': 'Position', 'staIncrement': 'Direction', 'desc': 'Description'}
- 
 
     def __init__(self):
 
         self.errors = []
         self.maps = None
 
-    def _write_meta_data(self, data, root):
+    def _write_tree_data(self, data, node, key_dict):
+        '''
+        Write data to the tree using the passed parameters
+        '''
+
+        for _k, _v in key_dict.items():
+
+            value = data.get(_v[0])
+
+            if value is None:
+                value = _v[1]
+
+            node.set(_k, value)
+
+    def _write_project_data(self, data, root):
         '''
         Write out the meta data into the internal XML file
         '''
-        pass
-        #LandXml.get_child(root, 'Project').set('name', data['meta'][self.maps['name']])
-        #LandXml.get_child(root, 'Application').set('version', '.'.join(App.version()[:3]))
+
+        self._write_tree_data(data['meta'], LandXml.get_child(root, 'Project'), self.XML_META)
+
+    @staticmethod
+    def _write_application_data(root):
+
+        node = LandXml.get_child(root, 'Application')
+
+        node.set('version', ''.join(App.Version()[0:3]))
+        node.set('timeStamp', datetime.datetime.utcnow().isoformat())
+
+    def _write_alignment_data(self, data, parent):
+        '''
+        Write individual alignment to XML
+        '''
+
+        _node = LandXml.add_child(parent, 'Alignment')
+
+    def _write_alignments_data(self, data, node):
+        '''
+        Write all alignments to XML
+        '''
+
+        _parent = LandXml.add_child(node, 'Alignments')
+
+        for _align in data['geometry']:
+            self._write_alignment_data(_align, _parent)
 
     def _write_curve_data(self, data, root):
         '''
@@ -122,16 +163,19 @@ class AlignmentExporter(object):
 
                     if not curve[vec]:
                         continue
-                    
+
                     str_vec = ' '.join(str(curve[vec]))
                     etree.SubElement(curve_node, vec).text = str_vec
 
-    def write(self, tree, data, target):
+    def write(self, data, target):
         '''
-        Write the alignemnt data to a land xml file in the target location
+        Write the alignment data to a land xml file in the target location
         '''
 
-        root = tree.getroot()
+        filename = 'landXML-' + Units.get_doc_units()[1] + '.xml'
+
+        doc = etree.parse(App.getUserAppDataDir + '/freecad-transportation-wb/data/' + filename)
+        root = doc.getroot()
 
         for alignment in data:
             self._write_meta_data(alignment, root)
