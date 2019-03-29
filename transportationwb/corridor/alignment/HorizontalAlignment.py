@@ -220,7 +220,6 @@ class _HorizontalAlignment(Draft._Wire):
         _geo_truth = [not _geo['StartStation'] is None,
                       not _geo['Start'] is None]
 
-        print ('\n---- datum ---\n', _datum, _geo)
         #----------------------------
         #CASE 0
         #----------------------------
@@ -256,7 +255,6 @@ class _HorizontalAlignment(Draft._Wire):
 
             _datum['Start'] = _geo_start
 
-            print(_geo_truth)
             #assume geometry start if no geometry station
             if not _geo_truth[0]:
                 return geometry
@@ -270,8 +268,6 @@ class _HorizontalAlignment(Draft._Wire):
             else:
                 delta = 0.0
 
-            print(delta)
-
             #assume geometry start if station delta is zero
             if not delta:
                 return geometry
@@ -280,7 +276,7 @@ class _HorizontalAlignment(Draft._Wire):
             _datum['Start'] = _datum['Start'].sub(
                 Support.vector_from_angle(_geo['BearingIn']).multiply(delta)
             )
-            print(_datum['Start'])
+
             return geometry
 
         #---------------------
@@ -319,9 +315,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         for _geo in _geo_data:
 
-            print('\nprev geo = ', _prev_geo)
-            print('\n\n_geo = ', _geo)
-
             #get the vector between the two gemetries and the station distance
             _vector = _geo['Start'].sub(_prev_geo['End'])
             _sta_len = abs(_geo['InternalStation'][0] - _prev_geo['InternalStation'][1])
@@ -329,7 +322,6 @@ class _HorizontalAlignment(Draft._Wire):
             #calculate the difference between the vector length and station distance
             #in document units
             _delta = (_vector.Length - _sta_len) / Units.scale_factor()
-            print('\n--- delta: ---', _delta)
 
             #if the stationing / coordinates are out of tolerance,
             #determine if the error is with the coordinate vector or station
@@ -354,7 +346,6 @@ class _HorizontalAlignment(Draft._Wire):
                     _geo['Start'] = _prev_geo['End'].add(_bearing_vector)
 
             _prev_geo = _geo
-            print('\n--- geo ----', _geo)
 
         return geometry
 
@@ -403,7 +394,7 @@ class _HorizontalAlignment(Draft._Wire):
 
             _geo['InternalStation'] = None
             geo_station = _geo.get('StartStation')
-            geo_coord = _geo.get('StartCoord')
+            geo_coord = _geo['Start']
 
             #if no station is provided, try to infer it from the start coordinate
             #and the previous station
@@ -416,10 +407,15 @@ class _HorizontalAlignment(Draft._Wire):
                 delta = geo_coord.sub(prev_coord).Length
 
                 if not Support.within_tolerance(delta):
-                    geo_station += delta
+                    geo_station += delta / Units.scale_factor()
+
+                _geo['StartStation'] = geo_station
+
+            prev_coord = _geo['End']
+            prev_station = _geo['StartStation'] + _geo['Length'] / Units.scale_factor()
 
             int_sta = self._get_internal_station(geo_station)
-            print('internal stations: ', int_sta, int_sta + _geo['Length'])
+
             _geo['InternalStation'] = (int_sta, int_sta + _geo['Length'])
 
         return geometry
@@ -565,10 +561,8 @@ class _HorizontalAlignment(Draft._Wire):
             _vec = Support.vector_from_angle(last_curve['BearingOut']).multiply(last_tangent)
             last_point = result[-1]
 
-            print ('last point: ', last_point, _vec, last_tangent)
             result.append(last_point.add(_vec))
 
-        print('\n---arc points---\n', result)
         return result
 
     def onChanged(self, obj, prop):
@@ -594,8 +588,6 @@ class _HorizontalAlignment(Draft._Wire):
 
         if hasattr(self, 'no_execute'):
             return
-
-        print('executing ', self.Object.Label)
 
         self.Object.Points = self.discretize_geometry()
 
