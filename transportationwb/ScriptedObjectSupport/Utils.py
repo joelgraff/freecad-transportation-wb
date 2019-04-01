@@ -51,7 +51,9 @@ class Constants(Const):
 
 def to_float(value):
     '''
-    Return value as a float, if possible
+    Return value as a float, if possible.
+    If value is a list, non-float values are returned as None
+    Float 'nan' values are converted to None
     '''
 
     result = None
@@ -60,26 +62,18 @@ def to_float(value):
         result = []
 
         for _v in value:
-            _f = to_float(_v)
+            result.append(to_float(_v))
 
-            if _f is None:
-                return None
+    else:
 
-            result.append(_f)
+        try:
+            result = float(value)
 
-        return result
+        except:
+            pass
 
-    try:
-        result = float(value)
-
-    except:
-        pass
-
-    if result is None:
-        return None
-
-    if math.isnan(result):
-        return None
+        if math.isnan(result):
+            result = None
 
     return result
 
