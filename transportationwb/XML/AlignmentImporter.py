@@ -268,7 +268,10 @@ class AlignmentImporter(object):
         result = []
 
         for equation in equations:
-            result.append(self._parse_data(align_name, self.STATION_TAGS, equation.attrib))
+            _dict = self._parse_data(align_name, self.STATION_TAGS, equation.attrib)
+            _dict['Alignment'] = align_name
+
+            result.append(_dict)
 
         return result
 
