@@ -32,19 +32,28 @@ __url__ = "https://www.freecadweb.org"
 import FreeCAD as App
 
 from transportationwb.ScriptedObjectSupport import Properties
+from transportationwb.Project.ProjectObserver import ProjectObserver
+from transportationwb.XML.AlignmentExporter import AlignmentExporter
 
-def create(group_name):
+def get(grp_id=''):
     '''
-    Constructor method for alignment group
+    Find the existing alignments object
+    '''
+
+    return App.ActiveDocument.getObject('Alignments')
+
+def create():
+    '''
+    Factory method for alignment group
     '''
 
     #return an existing instance of the same name, if found
-    obj = App.ActiveDocument.getObject(group_name)
+    obj = App.ActiveDocument.getObject('Alignments')
 
     if obj:
         return obj.Proxy
 
-    obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", group_name)
+    obj = App.ActiveDocument.addObject("App::DocumentObjectGroupPython", 'Alignments')
 
     fpo = _AlignmentGroup(obj)
     _ViewProviderAlignmentGroup(obj.ViewObject)
@@ -56,11 +65,43 @@ class _AlignmentGroup():
     def __init__(self, obj):
 
         obj.Proxy = self
-        self.Type = "_AlignmentGroup"
+        self.Type = "AlignmentGroup"
         self.Object = obj
 
-        Properties.add(obj, 'String', 'ID', 'Alignment group name', '')
-        Properties.add(obj, 'String', 'Description', 'Alignment group description', '')
+        Properties.add(obj, 'String', 'ID', 'Alignment group name', '',
+                       is_read_only=True)
+
+        Properties.add(obj, 'String', 'Description', 'Alignment group description', '',
+                       is_read_only=True)
+
+        Properties.add(obj, 'FileIncluded', 'Filename', '', '', is_hidden=True)
+
+        ProjectObserver.get(App.ActiveDocument).register('StartSaveDocument', self.write_xml)
+
+
+    def onDocumentRestored(self, fp):
+        '''
+        Restore object references on reload
+        '''
+
+        ProjectObserver.get(App.ActiveDocument).register('StartSaveDocument', self.write_xml)
+
+    def write_xml(self):
+        '''
+        Serialize the object data and it's children to xml files
+        '''
+
+        _list = []
+
+        #iterate the list of children, acquiring their data sets
+        #and creating a total data set for alignments.
+        for _obj in self.Object.OutList:
+            _list.append(_obj.Proxy.get_geometry())
+
+        exporter = AlignmentExporter()
+
+        print('writing xml...')
+        exporter.write(_list)
 
     def __getstate__(self):
         return self.Type
