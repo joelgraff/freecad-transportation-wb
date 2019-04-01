@@ -21,12 +21,13 @@
 # *                                                                        *
 # **************************************************************************
 
+import os
+
 import FreeCAD as App
 import FreeCADGui as Gui
-import os
+
 from PySide import QtGui, QtCore
 
-from transportationwb.Project import Observer
 from transportationwb.ScriptedObjectSupport import DocumentProperties
 
 class NewProject():
@@ -103,6 +104,6 @@ class NewProject():
         App.ActiveDocument.addObject('App::DocumentObjectGroup', 'Element Lofts')
 
         #create observers to handle tasks when document-level events occur
-        Observer.create(App.ActiveDocument)
+        #Observer.create(App.ActiveDocument)
 
 Gui.addCommand('NewProject', NewProject())
