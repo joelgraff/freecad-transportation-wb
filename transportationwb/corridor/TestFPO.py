@@ -10,6 +10,22 @@ if App.Gui:
     from DraftTools import translate
     from PySide.QtCore import QT_TRANSLATE_NOOP
 
+import FreeCAD as App
+import Part
+
+def makeSweep(path, sections):
+    '''
+    Create a Part::Sweep object and definte it's parameters
+    sections - a list containing one or more sections to sweep
+    path - the sweep path edge
+    '''
+    sweep = App.ActiveDocument.addObject('Part::Sweep','Sweep')
+    sweep.Sections = sections
+    sweep.Spine = path
+    sweep.Solid=False #True?
+
+    App.ActiveDocument.recompute()
+
 def createTestFpo():
 
     obj_parent = App.ActiveDocument.addObject("Part::Part2DObjectPython", OBJECT_TYPE)
