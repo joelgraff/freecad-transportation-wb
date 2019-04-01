@@ -35,6 +35,18 @@ from transportationwb.ScriptedObjectSupport import Units, Utils
 XML_VERSION = 'v1.2'
 XML_NAMESPACE = {XML_VERSION: 'http://www.landxml.org/schema/LandXML-1.2'}
 
+def set_text(node, text):
+    '''
+    Sets the text of the node.  If a list, converts to a space-delimited string
+    '''
+
+    result = text
+
+    if isinstance(text, list):
+        result = ''.join(text)
+
+    node.text = result
+
 def add_child(node, node_name):
     '''
     Add a new child to the passed node, returning a reference to it
