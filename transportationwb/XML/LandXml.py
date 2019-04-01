@@ -116,27 +116,6 @@ def build_vector(coords):
 
     return App.Vector(float_coords)
 
-def write_meta_data(data, tree):
-    '''
-    Write out the meta data into the internal XML file
-    '''
-
-    pass
-
-def _write_station_data(data, tree):
-    '''
-    Write out the station data into the internal XML file
-    '''
-
-    pass
-
-def _write_curve_data(data, tree):
-    '''
-    Write out the alignment / curve data into the internal XML file
-    '''
-
-    pass
-
 def write_file(data, tree, target):
     '''
     Write the data to a land xml file in the target location
