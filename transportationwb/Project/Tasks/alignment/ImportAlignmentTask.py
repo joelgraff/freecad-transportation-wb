@@ -32,6 +32,7 @@ from PySide import QtGui, QtCore
 import FreeCAD as App
 import FreeCADGui as Gui
 
+from transportationwb.corridor.alignment import AlignmentGroup
 from transportationwb.corridor.alignment import HorizontalAlignment
 
 from transportationwb.Project.Tasks.alignment import ImportXmlSubtask
@@ -60,6 +61,8 @@ class ImportAlignmentTask:
             return None
 
         errors = []
+
+        AlignmentGroup.create()
 
         for key, value in data['Alignments'].items():
 
