@@ -59,9 +59,9 @@ def create(geometry, object_name='', units='English'):
     if object_name:
         _name = object_name
 
-    parent = AlignmentGroup.create('Alignments')
+    parent = AlignmentGroup.create()
 
-    _obj = parent.newObject(_TYPE, _name)
+    _obj = parent.Object.newObject(_TYPE, _name)
 
     result = _HorizontalAlignment(_obj, _name)
     result.set_geometry(geometry)
@@ -154,6 +154,14 @@ class _HorizontalAlignment(Draft._Wire):
         '''
 
         self.Object = fp
+
+    def get_geometry(self):
+        '''
+        Return the geometry dictionary of the alignment,
+        reflecting any changes to the data
+        '''
+
+        return self.geometry
 
     def set_geometry(self, geometry):
         '''

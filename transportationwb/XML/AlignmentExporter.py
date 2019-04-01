@@ -41,13 +41,61 @@ class AlignmentExporter(object):
     '''
 
     XML_META = {'name': ('ID', ''), 'desc': ('Description', '')}
+
     XML_APPLICATION = {'version': ()}
-    #XML_STATION_KEYS = {'staAhead': 'Ahead', 'staBack': 'Back', 'staInternal': 'Position', 'staIncrement': 'Direction', 'desc': 'Description'}
+
+    XML_COORD_GEO = {**XML_META, 
+                     **{'oID': ('ObjectID', ''), 'state': ('Status', '')}
+                    }
+
+    XML_ALIGNMENT = {**XML_COORD_GEO,
+                     **{'length': ('Length', 0.0), 'staStart': ('StartStation', 0.0)}
+    }
+
+    XML_GEO_META = {**XML_ALIGNMENT, 
+                    **{'note': ('Note', '')}
+                   }
+
+    XML_LINE = {**XML_GEO_META, 
+                **{'dir': ('BearingIn', 0.0)}
+               }
+
+    XML_ARC = {**XML_GEO_META, 
+               **{'rot': ('Direction', 0.0), 'chord': ('Chrod', 0.0), 
+               'crvType': ('CurveType', 'arc'), 'delta': ('Delta', 0.0),
+               'dirEnd': ('BearingOut', 0.0), 'dirStart': ('BearingIn', 0.0),
+               'external': ('External', 0.0), 'midOrd': ('MiddleOrdinate', 0.0),
+               'radius': ('Radius', 0.0), 'staStart': ('StartStation', 0.0),
+               'tangent': ('Tangent', 0.0)}
+              }
+
+    XML_SPIRAL = {**XML_ARC,
+                  **{'radiusStart': ('StartRadius', 0.0), 'radiusEnd': ('EndRadius', 0.0),
+                  'spiType': ('SpiralType', 'clothoid'), 'constant': ('Constant', 0.0),
+                  'theta': ('Theta', 0.0), 'totalX': ('TotalX', 0.0), 'totalY': ('TotalY', 0.0),
+                  'tanLong': ('LongTangent', 0.0), 'tanShort': ('ShortTangent', 0.0)}
+                 }
+
+    XML_STATION = {'staAhead': ('Ahead', 0.0), 'staBack': ('Back', 0.0),
+                   'staInternal': ('InternalStation', 0.0), 'staIncrement': ('Direction', 0),
+                   'desc': ('Description', '')
+                  }
 
     def __init__(self):
 
         self.errors = []
-        self.maps = None
+
+    def write_meta_data(self, data, node):
+        '''
+        Write the project and application data to the file
+        '''
+
+        self._write_tree_data(data, LandXml.get_child(node, 'Project'), self.XML_META)
+
+        node = LandXml.get_child(node, 'Application')
+
+        node.set('version', ''.join(App.Version()[0:3]))
+        node.set('timeStamp', datetime.datetime.utcnow().isoformat())
 
     def _write_tree_data(self, data, node, key_dict):
         '''
@@ -63,132 +111,92 @@ class AlignmentExporter(object):
 
             node.set(_k, value)
 
-    def _write_project_data(self, data, root):
+    def write_station_data(self, data, parent):
         '''
-        Write out the meta data into the internal XML file
+        Write station equation information for alignment
         '''
 
-        self._write_tree_data(data['meta'], LandXml.get_child(root, 'Project'), self.XML_META)
+        for sta_eq in data:
+            self._write_tree_data(sta_eq, parent, self.XML_STATION)
 
-    @staticmethod
-    def _write_application_data(root):
+    def _write_coordinates(self, data, parent):
+        '''
+        Write coordinate children to parent geometry
+        '''
 
-        node = LandXml.get_child(root, 'Application')
+        for _key in ['Start', 'End', 'Center', 'PI']:
 
-        node.set('version', ''.join(App.Version()[0:3]))
-        node.set('timeStamp', datetime.datetime.utcnow().isoformat())
+            if not _key in data:
+                continue
+
+            _child = LandXml.add_child(parent, _key)
+
+            LandXml.set_text(_child, data[_key])
 
     def _write_alignment_data(self, data, parent):
         '''
         Write individual alignment to XML
         '''
 
-        _node = LandXml.add_child(parent, 'Alignment')
+        _align_node = LandXml.add_child(parent, 'Alignment')
 
-    def _write_alignments_data(self, data, node):
+        #write the alignment attributes
+        self._write_tree_data(data['meta'], _align_node, self.XML_ALIGNMENT)
+
+        _coord_geo_node = LandXml.add_child(_align_node, 'CoordGeom')
+
+        #write the geo coordinate attributes
+        self._write_tree_data(data['meta'], _coord_geo_node, self.XML_COORD_GEO)
+
+        #write the station equation data
+        self.write_station_data(data['station'], _align_node)
+        
+        #write teh alignment geometry data
+        for _geo in data['geometry']:
+
+            _node = None
+
+            if _geo['Type'] == 'line':
+
+                _node = LandXml.add_child(_coord_geo_node, 'Curve')
+                self._write_tree_data(_geo, _node, self.XML_LINE)
+
+            elif _geo['Type'] == 'arc':
+
+                _node = LandXml.add_child(_coord_geo_node, 'Line')
+                self._write_tree_data(_geo, _node, self.XML_ARC)
+
+            if _node:
+                self._write_coordinates(_geo, _node)
+
+    def write_alignments_data(self, data, node):
         '''
         Write all alignments to XML
         '''
 
         _parent = LandXml.add_child(node, 'Alignments')
 
-        for _align in data['geometry']:
+        for _align in data:
+
+            #self._write_tree_data(_align['meta'], _parent, self.XML_META)
             self._write_alignment_data(_align, _parent)
 
-    def _write_curve_data(self, data, root):
-        '''
-        Write out the alignment / curve data into the internal XML file
-        '''
-
-        alignments = LandXml.get_child(root, 'Alignments')
-
-        #build the alignment tag with it's attributes
-        _attr = {}
-
-        for key, value in self.maps.XML_META_KEYS:
-
-            if key == 'Units':
-                continue
-
-            _attr[key] = data['meta'][value]
-
-        alignment = etree.SubElement(alignments, 'Alignment', _attr)
-
-        _attr = {}
-
-        for key, value in self.maps.XML_STATION_KEYS:
-
-            _attr[key] = data['station'][value]
-
-        etree.SubElement(alignment, 'StaEquation', _attr)
-
-        coord_geo = etree.SubElement(alignment, 'CoordGeom', name=_attr['name'])
-
-        #add curves and lines
-        for curve in data['curve']:
-
-            _attr = {'crvType': 'arc'}
-
-            if curve['type'] == 'arc':
-
-                #assign required attributes
-                for key, value in self.maps.XML_CURVE_KEYS:
-                    _attr[key] = curve[value]
-
-                #assign optional attributes
-                for key, value in self.maps.XML_CURVE_KEYS_OPT:
-                    _attr[key] = curve[value]
-
-                curve_node = etree.SubElement(coord_geo, 'Curve', _attr)
-
-                #iterate the subelements and add them, if they exist
-                for vec in ['PI', 'Start', 'Center', 'End']:
-
-                    if not curve[vec]:
-                        continue
-
-                    str_vec = ' '.join(str(curve[vec]))
-                    etree.SubElement(curve_node, vec).text = str_vec
-
-            if curve['type'] == 'line':
-
-                #assign required attributes
-                for key, value in self.maps.XML_LINE_KEYS:
-                    _attr[key] = curve[value]
-
-                curve_node = etree.SubElement(coord_geo, 'Line', _attr)
-
-                #iterate the subelements and add them, if they exist
-                for vec in ['Start', 'End']:
-
-                    if not curve[vec]:
-                        continue
-
-                    str_vec = ' '.join(str(curve[vec]))
-                    etree.SubElement(curve_node, vec).text = str_vec
-
-    def write(self, data, target):
+    def write(self, data):
         '''
         Write the alignment data to a land xml file in the target location
         '''
 
         filename = 'landXML-' + Units.get_doc_units()[1] + '.xml'
 
-        doc = etree.parse(App.getUserAppDataDir + '/freecad-transportation-wb/data/' + filename)
+        doc = etree.parse(App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/' + filename)
         root = doc.getroot()
 
-        for alignment in data:
-            self._write_meta_data(alignment, root)
-            self._write_curve_data(alignment, root)
+        self.write_alignments_data(data, root)
+    
+        #self.write_meta_data(data['meta'], root)
+        for _align in data:
 
-        tree.write(open(target, 'w'), encoding='UTF-8')
+            self.write_station_data(_align['station'], LandXml.get_child(root, 'Alignments'))
 
-    @staticmethod
-    def export_file(source, target):
-        '''
-        Export a LandXML file
-        source - The source filepath (the transient LandXML file)
-        target - The target datapath external to the FCStd
-        '''
-
-        copyfile(source, target)
+        doc.write(open(
+            App.getUserAppDataDir() + 'Modfreecad-transportation-wb/data/alignments.xml', 'w'), encoding='UTF-8')
