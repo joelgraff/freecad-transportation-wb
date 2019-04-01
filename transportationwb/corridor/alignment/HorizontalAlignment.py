@@ -24,20 +24,14 @@
 '''
 Class for managing 2D Horizontal Alignments
 '''
-import math
-import os
-from shutil import copyfile
-
 import FreeCAD as App
 import FreeCADGui as Gui
 import Draft
-import numpy
 
-from xml.etree import ElementTree as etree
-
-from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties, Singleton
+from transportationwb.ScriptedObjectSupport import Properties, Units, Utils
 from transportationwb.Geometry import Arc, Line, Support
 from transportationwb.XML import XmlFpo
+from transportationwb.corridor.alignment import AlignmentGroup
 
 _CLASS_NAME = 'HorizontalAlignment'
 _TYPE = 'Part::Part2DObjectPython'
@@ -47,7 +41,7 @@ __author__ = 'Joel Graff'
 __url__ = "https://www.freecadweb.org"
 
 
-def create(geometry, object_name='', units='English', parent=None):
+def create(geometry, object_name='', units='English'):
     '''
     Class construction method
     object_name - Optional. Name of new object.  Defaults to class name.
@@ -65,10 +59,9 @@ def create(geometry, object_name='', units='English', parent=None):
     if object_name:
         _name = object_name
 
-    if parent:
-        _obj = parent.newObject(_TYPE, _name)
-    else:
-        _obj = App.ActiveDocument.addObject(_TYPE, _name)
+    parent = AlignmentGroup.create('Alignments')
+
+    _obj = parent.newObject(_TYPE, _name)
 
     result = _HorizontalAlignment(_obj, _name)
     result.set_geometry(geometry)
