@@ -30,7 +30,7 @@ from xml.etree import ElementTree as etree
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Units
+from transportationwb.ScriptedObjectSupport import Units, Utils
 
 XML_VERSION = 'v1.2'
 XML_NAMESPACE = {XML_VERSION: 'http://www.landxml.org/schema/LandXML-1.2'}
@@ -88,28 +88,6 @@ def get_float_list(text, delimiter=' '):
     values = text.replace('\n', '')
     return list(filter(None, values.split(delimiter)))
 
-def is_float(num):
-    '''
-    Returns true if value is a float
-    '''
-
-    if not num:
-        return None
-
-    num_list = num
-
-    if not type(num) is list:
-        num_list = [num]
-
-    for _x in num_list:
-
-        try:
-            float(_x)
-        except:
-            return False
-
-    return True
-
 def build_vector(coords):
     '''
     Returns an App.Vector of the passed coordinates,
@@ -119,13 +97,12 @@ def build_vector(coords):
     if not coords:
         return None
 
-    try:
-        for _c in coords:
-            float(_c)
-    except:
+    float_coords = Utils.to_float(coords)
+
+    if not all(float_coords):
         return None
 
-    return App.Vector(float(coords[0]), float(coords[1]), float(coords[2]))
+    return App.Vector(float_coords)
 
 def write_meta_data(data, tree):
     '''
