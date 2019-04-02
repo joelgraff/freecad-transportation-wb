@@ -26,9 +26,13 @@ Exporter for Alignments in LandXML files
 '''
 
 import datetime
+import re
+import math
 
 from shutil import copyfile
+
 from xml.etree import ElementTree as etree
+from xml.dom import minidom
 
 import FreeCAD as App
 
@@ -81,6 +85,13 @@ class AlignmentExporter(object):
                    'desc': ('Description', '')
                   }
 
+    XML_LENGTH_TAGS = ['radius', 'radiusStart', 'radiusEnd',
+                   'chord', 'external', 'midOrd', 'tangent', 'length']
+
+    XML_ANGLE_TAGS = ['delta', 'dir', 'dirStart', 'dirEnd']
+
+    XML_COORDINATE_TAGS = ['Start', 'End', 'Center', 'PI']
+
     def __init__(self):
 
         self.errors = []
@@ -109,7 +120,24 @@ class AlignmentExporter(object):
             if value is None:
                 value = _v[1]
 
-            node.set(_k, value)
+            if _k in AlignmentExporter.XML_ANGLE_TAGS:
+                value = math.degrees(value)
+
+            elif _k in AlignmentExporter.XML_LENGTH_TAGS:
+                value /= Units.scale_factor()
+
+            elif _k == 'rot':
+
+                if value < 0.0:
+                    value = 'ccw'
+
+                elif value > 0.0:
+                    value = 'cw'
+
+                else:
+                    value = ''
+
+            node.set(_k, str(value))
 
     def write_station_data(self, data, parent):
         '''
@@ -124,14 +152,21 @@ class AlignmentExporter(object):
         Write coordinate children to parent geometry
         '''
 
-        for _key in ['Start', 'End', 'Center', 'PI']:
+        _sf = 1.0 / Units.scale_factor()
+
+        for _key in self.XML_COORDINATE_TAGS:
 
             if not _key in data:
                 continue
 
+            print ('writing coordinate ', _key, ':', data[_key])
+            #scale the coordinates to the document units
+            _vec = data[_key]
+            _vec.multiply(_sf)
+
             _child = LandXml.add_child(parent, _key)
 
-            LandXml.set_text(_child, data[_key])
+            LandXml.set_text(_child, LandXml.get_vector_string(_vec))
 
     def _write_alignment_data(self, data, parent):
         '''
@@ -158,15 +193,15 @@ class AlignmentExporter(object):
 
             if _geo['Type'] == 'line':
 
-                _node = LandXml.add_child(_coord_geo_node, 'Curve')
+                _node = LandXml.add_child(_coord_geo_node, 'Line')
                 self._write_tree_data(_geo, _node, self.XML_LINE)
 
             elif _geo['Type'] == 'arc':
 
-                _node = LandXml.add_child(_coord_geo_node, 'Line')
+                _node = LandXml.add_child(_coord_geo_node, 'Curve')
                 self._write_tree_data(_geo, _node, self.XML_ARC)
 
-            if _node:
+            if _node is not None:
                 self._write_coordinates(_geo, _node)
 
     def write_alignments_data(self, data, node):
@@ -188,15 +223,20 @@ class AlignmentExporter(object):
 
         filename = 'landXML-' + Units.get_doc_units()[1] + '.xml'
 
-        doc = etree.parse(App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/' + filename)
+        filepath = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/'
+        doc = etree.parse(filepath + filename)
+
         root = doc.getroot()
-
         self.write_alignments_data(data, root)
-    
-        #self.write_meta_data(data['meta'], root)
-        for _align in data:
 
-            self.write_station_data(_align['station'], LandXml.get_child(root, 'Alignments'))
+        tree = etree.ElementTree(root)
 
-        doc.write(open(
-            App.getUserAppDataDir() + 'Modfreecad-transportation-wb/data/alignments.xml', 'w'), encoding='UTF-8')
+        etree.register_namespace('v1.2', 'http://www.landxml.org/schema/LandXML-1.2')
+
+        _xml = minidom.parseString(etree.tostring(root, encoding='utf-8').decode('utf-8'))
+        _xml = _xml.toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
+        _xml = re.sub('v1.2:', '', _xml)
+        _xml = re.sub('xmlns:v1.2', 'xmlns', _xml)
+
+        with open('C:/Users/GRAFFJC/Desktop/test.xml', 'w', encoding='UTF-8') as _file:
+            _file.write(_xml)
