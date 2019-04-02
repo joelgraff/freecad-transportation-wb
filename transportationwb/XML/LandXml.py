@@ -27,6 +27,7 @@ Importer for LandXML files
 
 from shutil import copyfile
 from xml.etree import ElementTree as etree
+from xml.dom import minidom
 
 import FreeCAD as App
 
@@ -35,15 +36,25 @@ from transportationwb.ScriptedObjectSupport import Units, Utils
 XML_VERSION = 'v1.2'
 XML_NAMESPACE = {XML_VERSION: 'http://www.landxml.org/schema/LandXML-1.2'}
 
+def dump_node(node):
+    '''
+    Dump the tree to a prettified string
+    '''
+
+    tree_string = etree.tostring(node, 'utf-8')
+    dom_string = minidom.parseString(tree_string)
+
+    return dom_string.toprettyxml(indent="\t")
+
 def set_text(node, text):
     '''
     Sets the text of the node.  If a list, converts to a space-delimited string
     '''
 
-    result = text
+    result = str(text)
 
     if isinstance(text, list):
-        result = ''.join(text)
+        result = ' '.join(str(_v) for _v in text)
 
     node.text = result
 
@@ -58,7 +69,9 @@ def get_child(node, node_name):
     '''
     Return the first child matching node_name in node
     '''
-    return node.find(XML_VERSION + ":" + node_name, XML_NAMESPACE)
+    child = node.find(XML_VERSION + ":" + node_name, XML_NAMESPACE)
+
+    return child
 
 def get_child_as_vector(node, node_name, delimiter=' '):
     '''
@@ -99,6 +112,13 @@ def get_float_list(text, delimiter=' '):
 
     values = text.replace('\n', '')
     return list(filter(None, values.split(delimiter)))
+
+def get_vector_string(vector, delimiter=' '):
+    '''
+    Return a string of vector or list elements
+    '''
+
+    return delimiter.join([str(_v) for _v in vector])
 
 def build_vector(coords):
     '''
