@@ -221,6 +221,7 @@ class AlignmentExporter(object):
         Write the alignment data to a land xml file in the target location
         '''
 
+        print(data)
         filename = 'landXML-' + Units.get_doc_units()[1] + '.xml'
 
         filepath = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/'
