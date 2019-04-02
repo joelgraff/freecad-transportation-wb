@@ -13,6 +13,23 @@ if App.Gui:
 import FreeCAD as App
 import Part
 
+def test_arc():
+
+    # Vectors 
+    v0 = App.Vector(0.0, 0.0, 0.0)
+    v1 = App.Vector(10.0, 0.0, 0.0)
+    v2 = App.Vector(10.0, 10.0, 0.0)
+
+    # Wire
+    Draft.makeWire([v0, v1, v2])
+
+    # Arc
+    arc = Part.ArcOfCircle(v0, v1, v2)
+    Part.show(arc.toShape())
+    c = Draft.makeCircle(arc.toShape())
+
+    Draft.autogroup(c)
+
 def makeSweep(path, sections):
     '''
     Create a Part::Sweep object and definte it's parameters
