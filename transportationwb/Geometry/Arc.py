@@ -292,7 +292,7 @@ def get_missing_parameters(arc, new_arc):
 
     new_arc['Length'] = radius * delta
     new_arc['External'] = radius * ((1.0 / math.cos(half_delta)) - 1.0)
-    new_arc['Middle'] = radius * (1.0 - math.cos(half_delta))
+    new_arc['MiddleOrdinate'] = radius * (1.0 - math.cos(half_delta))
 
     if not new_arc.get('Tangent'):
         new_arc['Tangent'] = radius * math.tan(half_delta)
@@ -301,7 +301,7 @@ def get_missing_parameters(arc, new_arc):
         new_arc['Chord'] = 2.0 * radius * math.sin(half_delta)
 
     #quality-check - ensure everything is defined and default to existing where within tolerance
-    _keys = ['Chord', 'Middle', 'Tangent', 'Length', 'External']
+    _keys = ['Chord', 'MiddleOrdinate', 'Tangent', 'Length', 'External']
 
     existing_vals = [arc.get(_k) for _k in _keys]
     new_vals = [new_arc.get(_k) for _k in _keys]
