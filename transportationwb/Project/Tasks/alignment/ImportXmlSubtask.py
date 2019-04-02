@@ -47,6 +47,10 @@ class ImportXmlSubtask:
         self.parser = AlignmentImporter()
         self.data = self.parser.import_file(filepath)
 
+        if self.parser.errors:
+            for _err in self.parser.errors:
+                print(_err)
+
         self._setup_panel()
 
         self.errors = []
