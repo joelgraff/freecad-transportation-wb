@@ -48,7 +48,7 @@ class AlignmentExporter(object):
 
     XML_APPLICATION = {'version': ()}
 
-    XML_COORD_GEO = {**XML_META, 
+    XML_COORD_GEO = {**XML_META,
                      **{'oID': ('ObjectID', ''), 'state': ('Status', '')}
                     }
 
@@ -56,15 +56,15 @@ class AlignmentExporter(object):
                      **{'length': ('Length', 0.0), 'staStart': ('StartStation', 0.0)}
     }
 
-    XML_GEO_META = {**XML_ALIGNMENT, 
+    XML_GEO_META = {**XML_ALIGNMENT,
                     **{'note': ('Note', '')}
                    }
 
-    XML_LINE = {**XML_GEO_META, 
+    XML_LINE = {**XML_GEO_META,
                 **{'dir': ('BearingIn', 0.0)}
                }
 
-    XML_ARC = {**XML_GEO_META, 
+    XML_ARC = {**XML_GEO_META,
                **{'rot': ('Direction', 0.0), 'chord': ('Chrod', 0.0), 
                'crvType': ('CurveType', 'arc'), 'delta': ('Delta', 0.0),
                'dirEnd': ('BearingOut', 0.0), 'dirStart': ('BearingIn', 0.0),
@@ -117,6 +117,7 @@ class AlignmentExporter(object):
 
             value = data.get(_v[0])
 
+            #assign default if no value in the dictionary
             if value is None:
                 value = _v[1]
 
@@ -159,20 +160,20 @@ class AlignmentExporter(object):
             if not _key in data:
                 continue
 
-            print ('writing coordinate ', _key, ':', data[_key])
             #scale the coordinates to the document units
-            _vec = data[_key]
+            _vec = App.Vector(data[_key])
             _vec.multiply(_sf)
 
             _child = LandXml.add_child(parent, _key)
 
-            LandXml.set_text(_child, LandXml.get_vector_string(_vec))
+            _vec_string = LandXml.get_vector_string(_vec)
+
+            LandXml.set_text(_child, _vec_string)
 
     def _write_alignment_data(self, data, parent):
         '''
         Write individual alignment to XML
         '''
-
         _align_node = LandXml.add_child(parent, 'Alignment')
 
         #write the alignment attributes
@@ -185,8 +186,8 @@ class AlignmentExporter(object):
 
         #write the station equation data
         self.write_station_data(data['station'], _align_node)
-        
-        #write teh alignment geometry data
+
+        #write the alignment geometry data
         for _geo in data['geometry']:
 
             _node = None

@@ -55,7 +55,7 @@ class AlignmentImporter(object):
     }
 
     GEOM_TAGS = {}
-    GEOM_TAGS['line'] = {
+    GEOM_TAGS['Line'] = {
         'req': {},
         'opt': {
             'desc': ('Description', '', ''), 'dir': ('BearingOut', 'float', 'nan'),
@@ -65,7 +65,7 @@ class AlignmentImporter(object):
         }
     }
 
-    GEOM_TAGS['spiral'] = {
+    GEOM_TAGS['Spiral'] = {
         'req': {
             'length': ('Length', 'float', 0.0), 'radiusEnd': ('RadiusEnd', 'float', 0.0),
             'radiusStart': ('RadiusStart', 'float', 0.0), 'rot': ('Direction', '', 0.0),
@@ -88,7 +88,7 @@ class AlignmentImporter(object):
 
     ANGLE_TAGS = ['delta', 'dir', 'dirStart', 'dirEnd']
 
-    GEOM_TAGS['arc'] = {
+    GEOM_TAGS['Curve'] = {
         'req': {'rot': ('Direction', '', 0.0)},
         'opt': {
             'chord': ('Chord', 'float', 0.0), 'crvType': ('CurveType', '', 'arc'),
@@ -288,29 +288,25 @@ class AlignmentImporter(object):
             #add the curve / line start / center / end coordinates, skipping if any are missing
             _points = []
 
-            for _tag in ['Start', 'Center', 'End', 'PI']:
+            for _tag in ['Start', 'End', 'Center', 'PI']:
 
                 _pt = LandXml.get_child_as_vector(curve, _tag)
 
                 if _pt:
                     _pt.multiply(Units.scale_factor())
+                else:
+
+                    #report missing coordinates
+                    if not (curve_type == 'line' and _tag in ['Center', 'PI']):
+                        self.errors.append(
+                            'Missing %s %s coordinate in alignment %s'
+                            % (curve_type, _tag, align_name)
+                        )
 
                 _points.append(_pt)
 
-            if curve_type == 'line' and not (_points[0] and _points[2]):
-                self.errors.append(
-                    'Missing %s points in alignment %s'
-                    % (curve_type, align_name)
-                )
-
-            elif not all(_points[0:3]):
-                self.errors.append(
-                    'Missing %s points in alignment %s'
-                    % (curve_type, align_name)
-                )
-
-            coords = {'Type': curve_type, 'Start': _points[0], 'Center': _points[1],
-                      'End': _points[2], 'PI': _points[3]}
+            coords = {'Type': curve_type, 'Start': _points[0], 'End': _points[1],
+                      'Center': _points[2], 'PI': _points[3]}
 
             result.append({
                 **coords,
@@ -331,17 +327,42 @@ class AlignmentImporter(object):
             print('Missing coordinate geometry for ', align_name)
             return None
 
-        curves = LandXml.get_children(coord_geo, 'Curve')
-        spirals = LandXml.get_children(coord_geo, 'Spiral')
-        lines = LandXml.get_children(coord_geo, 'Line')
+        result = []
 
-        #concatenate all types into a single list of dictionaries
-        result = (self._parse_geo_data(align_name, curves, 'arc'))
-        result.extend(self._parse_geo_data(align_name, spirals, 'spiral'))
-        result.extend(self._parse_geo_data(align_name, lines, 'line'))
+        for geo_node in coord_geo:
 
-        #spirals, 2-center, 3-center, superelevation...
+            node_tag = geo_node.tag.split('}')[1]
 
+            print(node_tag)
+            if not node_tag in ['Curve', 'Spiral', 'Line']:
+                continue
+
+            points = []
+
+            for _tag in ['Start', 'End', 'Center', 'PI']:
+
+                _pt = LandXml.get_child_as_vector(geo_node, _tag)
+
+                points.append(None)
+
+                if _pt:
+                    points[-1] = (_pt.multiply(Units.scale_factor()))
+                    continue
+
+                if not (node_tag == 'Line' and _tag in ['Center', 'PI']):
+                    self.errors.append(
+                        'Missing %s %s coordinate in alignment %s'
+                        % (node_tag, _tag, align_name)
+                    )
+
+            coords = {'Type': node_tag, 'Start': points[0], 'End': points[1],
+                      'Center': points[2], 'PI': points[3]}
+
+            result.append({**coords,
+                **self._parse_data(align_name, self.GEOM_TAGS[node_tag], geo_node.attrib)
+               })
+
+        print ('\n<---- Import result ---->\n', result)
         return result
 
     def import_file(self, filepath):

@@ -175,14 +175,14 @@ class _HorizontalAlignment(Draft._Wire):
 
         for _i, _geo in enumerate(self.geometry['geometry']):
 
-            if _geo['Type'] == 'arc':
+            if _geo['Type'] == 'Curve':
                 _geo = Arc.get_parameters(_geo)
 
-            elif _geo['Type'] == 'line':
+            elif _geo['Type'] == 'Line':
                 _geo = Line.get_parameters(_geo)
 
             else:
-                self.errors.append('Undefined geometry: ', _geo)
+                self.errors.append('Undefined geometry: ' + _geo)
                 continue
 
             self.geometry['geometry'][_i] = _geo
@@ -212,13 +212,17 @@ class _HorizontalAlignment(Draft._Wire):
 
         for _geo in self.geometry['geometry']:
 
+            if not _geo:
+                continue
+
             _coord = _geo['Start']
 
             if not Support.within_tolerance(_coord.Length, _prev_coord.Length):
 
                 #build the line using the provided parameters and add it
                 _geo_list.append(
-                    Line.get_parameters({'Start': _prev_coord, 'End': _coord,
+                    Line.get_parameters({'Start': App.Vector(_prev_coord),
+                                         'End': App.Vector(_coord),
                                          'BearingIn': _geo['BearingIn'],
                                          'BearingOut': _geo['BearingOut'],
                                          })
@@ -237,11 +241,15 @@ class _HorizontalAlignment(Draft._Wire):
         _datum = self.geometry['meta']
         _geo = self.geometry['geometry'][0]
 
-        _datum_truth = [not _datum['StartStation'] is None,
-                        not _datum['Start'] is None]
+        if not _geo or not _datum:
+            print('Unable to validate alignment datum')
+            return
 
-        _geo_truth = [not _geo['StartStation'] is None,
-                      not _geo['Start'] is None]
+        _datum_truth = [not _datum.get('StartStation') is None,
+                        not _datum.get('Start') is None]
+
+        _geo_truth = [not _geo.get('StartStation') is None,
+                      not _geo.get('Start') is None]
 
         #----------------------------
         #CASE 0
@@ -334,6 +342,8 @@ class _HorizontalAlignment(Draft._Wire):
 
         for _geo in _geo_data:
 
+            if not _geo:
+                continue
             #get the vector between the two gemetries and the station distance
             _vector = _geo['Start'].sub(_prev_geo['End'])
             _sta_len = abs(_geo['InternalStation'][0] - _prev_geo['InternalStation'][1])
@@ -376,9 +386,15 @@ class _HorizontalAlignment(Draft._Wire):
         if len(geo_data) < 2:
             return True
 
+        if geo_data[0] is None:
+            return False
+
         prev_bearing = geo_data[0]['BearingOut']
 
         for _geo in geo_data[1:]:
+
+            if not _geo:
+                continue
 
             _b = _geo.get('BearingIn')
 
@@ -404,10 +420,17 @@ class _HorizontalAlignment(Draft._Wire):
         and storing it in an 'InternalStation' parameter tuple for the start and end of the curve
         '''
 
-        prev_station = self.geometry['meta']['StartStation']
-        prev_coord = self.geometry['meta']['Start']
+        prev_station = self.geometry['meta'].get('StartStation')
+        prev_coord = self.geometry['meta'].get('Start')
+
+        if not prev_coord or not prev_station:
+            print('Unable to validate alignment stationing')
+            return
 
         for _geo in self.geometry['geometry']:
+
+            if not _geo:
+                continue
 
             _geo['InternalStation'] = None
             geo_station = _geo.get('StartStation')
@@ -546,17 +569,23 @@ class _HorizontalAlignment(Draft._Wire):
         #store each point set as a sublist in the main points list
         for curve in geometry:
 
+            if not curve:
+                continue
+
             if curve['Type'] == 'arc':
                 points.append(Arc.get_points(curve, interval, interval_type))
 
-            if curve['Type'] == 'line':
-                points.append([curve['Start'], curve['End']])
+            #if curve['Type'] == 'line':
+            #    points.append([curve['Start'], curve['End']])
 
             last_curve = curve
 
         #store the last point of the first geometry for the next iteration
         _prev = points[0][-1]
         result = points[0]
+
+        if not (_prev and result):
+            return None
 
         #iterate the point sets, adding them to the result set
         #and eliminating any duplicate points
@@ -577,6 +606,7 @@ class _HorizontalAlignment(Draft._Wire):
 
             result.append(last_point.add(_vec))
 
+        #print('\n<><><><><>\n', result)
         return result
 
     def onChanged(self, obj, prop):
@@ -601,6 +631,11 @@ class _HorizontalAlignment(Draft._Wire):
     def execute(self, obj):
 
         if hasattr(self, 'no_execute'):
+            return
+
+        points = self.discretize_geometry()
+
+        if not points:
             return
 
         self.Object.Points = self.discretize_geometry()
