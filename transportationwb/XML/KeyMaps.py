@@ -26,7 +26,90 @@ Key maps for LandXML elements and the internal dictionary keys
 '''
 from transportationwb.ScriptedObjectSupport.Const import Const
 
-class HorizontalKeyMaps(Const):
+class KeyMaps(Const):
+
+    _XML_META = {'name': ('ID', '', '', True), 'desc': ('Description', '', '', True),
+                 'oID': ('ObjectID', '', '', False), 'state': ('Status', '', '', False)
+                }
+
+    _XML_GEO_META = {**_XML_META,
+                     **{'length': ('Length', 'float', 0.0, True),
+                        'staStart': ('StartStation', 'float', 0.0, True),
+                        'note': ('Note', '', '', False)
+                       }
+                    }
+
+    ALIGNMENT = {
+        'Project': {},
+        'Application': {'version': ('Version', '', '', False)},
+        'CoordGeom' : _XML_META,
+        'Alignment': {**_XML_META,
+                      **{'length': ('Length', 'float', 0.0, True), 
+                         'staStart': ('StartStation', 'float', 0.0, True),
+                         'note': ('Note', '', '', False)
+                        }
+                     }
+    }
+
+    META_TAGS = {
+        'req': {'length': ('Length', 'float', 0.0), 'staStart': ('StartStation', 'float', 0.0)},
+        'opt': {'name': ('ID', '', 'Alignment'), 'desc': ('Description', '', ''),
+        'oID': ('ObjectID', '', ''), 'state': ('Status', '', 'proposed')}
+    }
+
+    STATION_TAGS = {
+        'req': {'staAhead': ('Ahead', 'float', 0.0), 'staInternal': ('Position', 'float', 0.0)},
+        'opt': {'staBack': ('Back', 'float', 0.0), 'staIncrement': ('Direction', '', 0.0),
+                'desc': ('Description', '', '')}
+    }
+
+    GEOM_TAGS = {}
+    GEOM_TAGS['Line'] = {
+        'req': {},
+        'opt': {
+            'desc': ('Description', '', ''), 'dir': ('BearingOut', 'float', 'nan'),
+            'dir': ('BearingIn', 'float', 'nan'), 'length': ('Length', 'float', 0.0),
+            'name': ('Name', '', ''), 'staStart': ('StartStation', 'float', None),
+            'state': ('Status', '', ''), 'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
+        }
+    }
+
+    GEOM_TAGS['Spiral'] = {
+        'req': {
+            'length': ('Length', 'float', 0.0), 'radiusEnd': ('RadiusEnd', 'float', 0.0),
+            'radiusStart': ('RadiusStart', 'float', 0.0), 'rot': ('Direction', '', 0.0),
+            'spiType': ('SpiralType', '', 'clothoid')
+        },
+        'opt': {
+            'chord': ('Chord', 'float', 0.0), 'constant': ('Constant', 'float', 0.0),
+            'desc': ('Description', '', ''), 'dirEnd': ('BearingOut', 'float', ''),
+            'dirStart': ('BearingIn', 'float', 'nan'), 'external': ('External', 'float', 0.0),
+            'length': ('length', 'float', 0.0), 'midOrd': ('MiddleOrdinate', 'float', 0.0),
+            'name': ('Name', '', ''), 'radius': ('Radius', 'float', 0.0),
+            'staStart': ('StartStation', 'float', None), 'state': ('Status', '', 'proposed'),
+            'tangent': ('Tangent', 'float', 0.0), 'oID': ('ObjectID', '', ''), 
+            'note': ('Note', '', '')
+        }
+    }
+
+    LENGTH_TAGS = ['radius', 'radiusStart', 'radiusEnd',
+                   'chord', 'external', 'midOrd', 'tangent', 'length']
+
+    ANGLE_TAGS = ['delta', 'dir', 'dirStart', 'dirEnd']
+
+    GEOM_TAGS['Curve'] = {
+        'req': {'rot': ('Direction', '', 0.0)},
+        'opt': {
+            'chord': ('Chord', 'float', 0.0), 'crvType': ('CurveType', '', 'arc'),
+            'delta': ('Delta', 'float', 0.0), 'desc': ('Description', '', ''),
+            'dirEnd': ('BearingOut', 'float', 'nan'), 'dirStart': ('BearingIn', 'float', 'nan'), 'external': ('External', 'float', 0.0), 'length': ('Length', 'float', 0.0),
+            'midOrd': ('MiddleOrdinate', 'float', 0.0), 'name': ('Name', '', ''),
+            'radius': ('Radius', 'float', 0.0), 'staStart': ('StartStation', 'float', None),
+            'state': ('Status', '', 'proposed'), 'tangent': ('Tangent', 'float', 0.0),
+            'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
+        }
+    }
+
 
     XML_META_KEYS = {'name': 'ID', 'staStart': 'StartStation', 'desc': 'Description', 'state': 'Status', 'length': 'Length', 'units': 'Units'}
     XML_META_TYPES = {'name': 'string', 'staStart': 'float', 'desc': 'string', 'state': 'string', 'length': 'float', 'units': 'string'}
