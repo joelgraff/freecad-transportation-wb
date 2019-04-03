@@ -143,7 +143,7 @@ def get_bearings(arc, mat, delta, rot):
     for _i in range(0, 6):
         bearings.append(_GEO.FUNC[6][_i](mat.A[6][_i], delta, rot))
 
-    _b = [_v for _v in bearings[0:6] if Utils.to_float(_v)]
+    _b = [_v % C.TWO_PI for _v in bearings[0:6] if Utils.to_float(_v)]
 
     if _b:
 
@@ -266,7 +266,7 @@ def get_rotation(arc, vecs):
     if not (v1 and v2):
         return {'Direction': arc.get('Direction')}
 
-    return {'Direction': Support.get_rotation(v1[0], v2[0])}
+    return {'Direction': Support.get_rotation(v1[0], v2[1])}
 
 def get_missing_parameters(arc, new_arc):
     '''
