@@ -205,40 +205,14 @@ class AlignmentExporter(object):
             if _node is not None:
                 self._write_coordinates(_geo, _node)
 
-    def write_alignments_data(self, data, node):
-        '''
-        Write all alignments to XML
-        '''
-
-        _parent = LandXml.add_child(node, 'Alignments')
-
-        for _align in data:
-
-            #self._write_tree_data(_align['meta'], _parent, self.XML_META)
-            self._write_alignment_data(_align, _parent)
-
-    def write(self, data):
+    def write(self, data, source_path, target_path):
         '''
         Write the alignment data to a land xml file in the target location
         '''
 
-        print(data)
-        filename = 'landXML-' + Units.get_doc_units()[1] + '.xml'
+        root = etree.parse(source_path).getroot()
 
-        filepath = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/'
-        doc = etree.parse(filepath + filename)
+        for _align in data:
+            self._write_alignment_data(_align, LandXml.add_child(root, 'Alignments'))
 
-        root = doc.getroot()
-        self.write_alignments_data(data, root)
-
-        tree = etree.ElementTree(root)
-
-        etree.register_namespace('v1.2', 'http://www.landxml.org/schema/LandXML-1.2')
-
-        _xml = minidom.parseString(etree.tostring(root, encoding='utf-8').decode('utf-8'))
-        _xml = _xml.toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
-        _xml = re.sub('v1.2:', '', _xml)
-        _xml = re.sub('xmlns:v1.2', 'xmlns', _xml)
-
-        with open('C:/Users/GRAFFJC/Desktop/test.xml', 'w', encoding='UTF-8') as _file:
-            _file.write(_xml)
+        LandXml.write_to_file(root, target_path)

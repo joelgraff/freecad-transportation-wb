@@ -129,6 +129,7 @@ class _HorizontalAlignment(Draft._Wire):
         #geometry
         Properties.add(obj, 'VectorList', 'PIs',
                        'Discretization of Points of Intersection (PIs) as a list of vectors', [])
+
         Properties.add(obj, 'Link', 'Parent Alignment', 'Links to parent alignment object', None)
 
         subdivision_desc = 'Method of Curve Subdivision\n\nTolerance - ensure error between segments and curve is approximately (n)\nInterval - Subdivide curve into segments of a fixed length (n)\nSegment - Subdivide curve into (n) equal-length segments'

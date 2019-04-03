@@ -31,7 +31,7 @@ __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Properties
+from transportationwb.ScriptedObjectSupport import Properties, Units
 from transportationwb.Project.ProjectObserver import ProjectObserver
 from transportationwb.XML.AlignmentExporter import AlignmentExporter
 
@@ -74,7 +74,7 @@ class _AlignmentGroup():
         Properties.add(obj, 'String', 'Description', 'Alignment group description', '',
                        is_read_only=True)
 
-        Properties.add(obj, 'FileIncluded', 'Filename', '', '', is_hidden=True)
+        Properties.add(obj, 'FileIncluded', 'Xml_Path', '', '', is_hidden=True)
 
         ProjectObserver.get(App.ActiveDocument).register('StartSaveDocument', self.write_xml)
 
@@ -100,8 +100,15 @@ class _AlignmentGroup():
 
         exporter = AlignmentExporter()
 
+        template_path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/'
+        template_file = 'landXML-' + Units.get_doc_units()[1] + '.xml'
+
+        xml_path = App.ActiveDocument.TransientDir + '/alignment.xml'
+
         print('writing xml...')
-        exporter.write(_list)
+        exporter.write(_list, template_path + template_file, xml_path)
+
+        self.Object.Xml_Path = xml_path
 
     def __getstate__(self):
         return self.Type
