@@ -25,6 +25,8 @@
 Importer for LandXML files
 '''
 
+import re
+
 from shutil import copyfile
 from xml.etree import ElementTree as etree
 from xml.dom import minidom
@@ -35,6 +37,23 @@ from transportationwb.ScriptedObjectSupport import Units, Utils
 
 XML_VERSION = 'v1.2'
 XML_NAMESPACE = {XML_VERSION: 'http://www.landxml.org/schema/LandXML-1.2'}
+
+def write_to_file(node, target, pretty_print=True):
+    '''
+    Write the node to the target file, prettyprinting if desrired
+    '''
+
+    etree.register_namespace(XML_VERSION, XML_NAMESPACE[XML_VERSION])
+
+    _xml = minidom.parseString(etree.tostring(node, encoding='utf-8').decode('utf-8'))
+
+    if pretty_print:
+        _xml = _xml.toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
+        _xml = re.sub(XML_VERSION + ':', '', _xml)
+        _xml = re.sub('xmlns:' + XML_VERSION, 'xmlns', _xml)
+
+    with open(target, 'w', encoding='UTF-8') as _file:
+        _file.write(_xml)
 
 def dump_node(node):
     '''
@@ -135,17 +154,6 @@ def build_vector(coords):
         return None
 
     return App.Vector(float_coords)
-
-def write_file(data, tree, target):
-    '''
-    Write the data to a land xml file in the target location
-    '''
-
-    #_write_meta_data(data['meta'], )
-    #_write_station_data(data['station'])
-    #_write_curve_data(data['curve'])
-
-    pass
 
 def export_file(source, target):
     '''
