@@ -20,42 +20,32 @@
 # *                                                                        *
 # **************************************************************************
 
-import FreeCAD
+import FreeCAD as App
 import FreeCADGui as Gui
 from importlib import reload
-#import sys
-#import TransportationToolbar
+
+from UiCommand import UiCommand as UiCmd
 
 import transportationwb
-import os, re
+import os
+
+import transportationwb.Project.NewProject
+import transportationwb.Project.Commands.ImportAlignmentCmd
+import transportationwb.corridor.alignment.GenerateVerticalAlignment
+import transportationwb.corridor.alignment.Generate3dAlignment
+import transportationwb.corridor.loft.GenerateElementLoft
+import transportationwb.corridor.template.ViewTemplateLibrary
+import transportationwb.corridor.loft.EditIntervals
+import transportationwb.TestCommand
 
 global __dir__
 __dir__ = os.path.dirname(transportationwb.__file__)
-
 
 __vers__ = '0.1'
 
 #---------------------
 
-
-#---------------------------------------------------------------------------
-# define the Commands of the Test Application module
-#---------------------------------------------------------------------------
-class MyTestCmd3:
-
-    def Activated(self):
-        import transportationwb.startTests
-        reload(transportationwb.startTests)
-        transportationwb.startTests.startTests()
-
-    def GetResources(self):
-        return {
-            'MenuText': 'Unit Tests',
-            'ToolTip': 'Runs the self-test for the workbench'
-        }
-
-Gui.addCommand('My_Transprtation_Tests', MyTestCmd3())
-
+#import DevCommands
 
 class DokuTW:
 
@@ -69,325 +59,139 @@ class DokuTW:
 
 Gui.addCommand('Doku', DokuTW())
 
-
-#------------------------------------------
-# fast command adder template
-
-global _Command
-
-
-class _Command():
-
-    def __init__(self, lib=None, name=None, icon=None, command=None, modul='transportationwb'):
-
-        if lib == None:
-            lmod = modul
-        else:
-            lmod = modul + '.' + lib
-        if command == None:
-            command = lmod + ".run()"
-        else:
-            command = lmod + "." + command
-
-        self.lmod = lmod
-        self.command = command
-        self.modul = modul
-        if icon != None:
-            self.icon = __dir__ + icon
-        else:
-            self.icon = None
-
-        if name == None:
-            name = command
-        self.name = name
-
-    def GetResources(self):
-        if self.icon != None:
-            return {'Pixmap': self.icon,
-                    'MenuText': self.name,
-                    'ToolTip': self.name,
-                    'CmdType': "ForEdit"  # bleibt aktiv, wenn sketch editor oder andere tasktab an ist
-                    }
-        else:
-            return {
-                #'Pixmap' : self.icon,
-                'MenuText': self.name,
-                'ToolTip': self.name,
-                'CmdType': "ForEdit"  # bleibt aktiv, wenn sketch editor oder andere tasktab an ist
-            }
-
-    def IsActive(self):
-        if Gui.ActiveDocument:
-            return True
-        else:
-            return False
-
-    def Activated(self):
-
-        import re
-
-        # FreeCAD.ActiveDocument.openTransaction("create " + self.name)
-        if self.command != '':
-            if self.modul != '':
-                modul = self.modul
-            else:
-                modul = self.name
-            Gui.doCommand("import " + modul)
-            Gui.doCommand("import " + self.lmod)
-            Gui.doCommand("import importlib")
-            Gui.doCommand("importlib.reload(" + self.lmod + ")")
-            docstring = "print " + re.sub(r'\(.*\)', '.__doc__', self.command)
-
-           # Gui.doCommand(docstring)
-            Gui.doCommand(self.command)
-        # FreeCAD.ActiveDocument.commitTransaction()
-        if FreeCAD.ActiveDocument != None:
-            FreeCAD.ActiveDocument.recompute()
-
-
-class _alwaysActive(_Command):
-
-    def IsActive(self):
-        return True
-
-# conditions when a command should be active ..
-
-
-def always():
-    ''' always'''
-    return True
-
-
-def ondocument():
-    '''if a document is active'''
-    return Gui.ActiveDocument != None
-
-
-def onselection():
-    '''if at least one object is selected'''
-    return len(Gui.Selection.getSelection()) > 0
-
-
-def onselection1():
-    '''if exactly one object is selected'''
-    return len(Gui.Selection.getSelection()) == 1
-
-
-def onselection2():
-    '''if exactly two objects are selected'''
-    return len(Gui.Selection.getSelection()) == 2
-
-
-def onselection3():
-    '''if exactly three objects are selected'''
-    return len(Gui.Selection.getSelection()) == 3
-
-
-def onselex():
-    '''if at least one subobject is selected'''
-    return len(Gui.Selection.getSelectionEx()) != 0
-
-
-def onselex1():
-    '''if exactly one subobject is selected'''
-    return len(Gui.Selection.getSelectionEx()) == 1
-
-
-# the menu entry list
-FreeCAD.tcmdsTransportation = []
-# create menu entries
-
-
-def c3b(menu, isactive, name, text, icon=None, cmd=None, *info):
-
+def make_cmd(menu_text, is_active, lib_name='', icon='', cmd='', is_gui = False):
+    '''
+    Create a command object and add it to the menu, returning the menu name
+    '''
     import re
-    global _Command
-    if cmd == None:
-        cmd = re.sub(r' ', '', text) + '()'
-    if name == 0:
-        name = re.sub(r' ', '', text)
-    t = _Command(name, text, icon, cmd, *info)
-    # if title ==0:
-    title = re.sub(r' ', '', text)
-    name1 = "Transportation_" + title
-    t.IsActive = isactive
-    Gui.addCommand(name1, t)
-    FreeCAD.tcmdsTransportation.append([menu, name1])
-    return name1
+    from UiCommand import UiCommand as UiCmd
 
+    trimmed_text = re.sub(r' ', '', menu_text)
 
-def c3bG(menu, isactive, name, text, icon=None, cmd=None, *info):
+    #default command and name is the menu text
+    if not cmd:
 
-    import re
-    global _Command
-    if cmd == None:
-        cmd = re.sub(r' ', '', text + 'GUI') + '()'
-    if name == 0:
-        name = re.sub(r' ', '', text + 'GUI')
+        signature = '()'
 
-    t = _Command(name, text, icon, cmd, *info)
-    # if title ==0:
-    title = re.sub(r' ', '', text)
-    name1 = "Transportation_" + title
-    t.IsActive = isactive
-    Gui.addCommand(name1, t)
-    FreeCAD.tcmdsTransportation.append([menu, name1])
-    return name1
+        if is_gui:
+            signature = 'GUI()'
 
+        cmd = trimmed_text + signature
 
-def c2b(menu, isactive, title, name, text, icon, cmd=None, *info):
+    #default library name is the text description
+    if not lib_name:
+        lib_name = trimmed_text
 
-    import re
-    global _Command
-    if cmd == None:
-        cmd = re.sub(r' ', '', text) + '()'
-    if name == 0:
-        name = re.sub(r' ', '', text)
-    t = _Command(name, text, icon, cmd, *info)
-    if title == 0:
-        title = re.sub(r' ', '', text)
-    name1 = "Transportation_" + title
-    t.IsActive = isactive
-    Gui.addCommand(name1, t)
-    FreeCAD.tcmds5.append([menu, name1])
+    #create the command tool
+    tool = UiCmd(lib_name, menu_text, icon, cmd, 'transportationwb')
 
+    #build the menu name
+    menu_name = 'Transportation_' + trimmed_text
 
-if FreeCAD.GuiUp:
+    #set the active condition
+    tool.IsActive = is_active
 
-    toolbar = []
-    toolbar += [c3b(["Simulation"], always, 'vehicle', 'create Vehicle')]
-    toolbar += [c3b(["Simulation"], always, 'vehicle', 'create Tailer')]
-
-    toolbar += [c3b(["Simulation", "Submenu"], onselection1,
-                    'traffic', 'create swept path', '/../icons/geodesiccircle.svg')]
-    toolbar += [c3b(["Simulation", "Submenu"], onselection1,
-                    'traffic', 'swept area analysis', '/../icons/draw.svg')]
-
-    terrain = [
-        c3b(["Terrain"], onselection1, 'geodesic_lines', 'create Context', '/../icons/draw.svg')]
-    terrain += [
-        c3b(["Terrain"], onselection1, 'geodesic_lines', 'create something', '/../icons/draw.svg')]
-
-    #drainage = [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_1_cell_box')]
-    #drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'draft_ends')]
-    #drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_headwall')]
-    #drainage += [c3b(["Drainage"], always, 'drainage.box_culvert_tools', 'add_toewall')]
-    #drainage += [c3b(["Drainage"], always, "drainage.Parameters", "add parameter")]
-
-    #corridor = [c3b(["Corridor"], always, 'corridor.Alignment', 'create_alignment')]
-    #corridor += [c3b(["Corridor"], always, 'corridor.Cell', 'createCell')]
-
-
-    toolbars = [['Simulation', toolbar], 
-               ['Terrain', terrain],
-               #['Drainage Structure', drainage],
-               #['Corridor', corridor],
-               ['Tests', ['My_Transprtation_Tests', 'Doku']]]
-
-    c3b(["Demos"], always, 'miki_g', 'test Dialog MainWindow')
-    c3b(["Demos"], always, 'miki_g', 'test Dialog Tab')
-    c3b(["Demos"], always, 'miki_g', 'test Dialog DockWidget')
-    c3b(["Demos"], always, 'miki_g', 'test Dialog')
-    c3b(["Demos"], ondocument, 'clipplane', 'demo Clip Plane Animation')
-
-    c3b(["Demos"], always, 'createTestdata', 'create Eichleite')
-    c3b(["Demos"], always, 'createTestdata', 'create Woosung')
-    c3b(["Demos"], always, 'createTestdata', 'create Japanese Knot')
-
-
-    c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
-    c3b(["Curves"], ondocument, 'beziersketch', 'create Bezier Sketch')
-    c3b(["Curves"], ondocument, 'beziersketch', 'create Simple Bezier Sketch')
-# not needed and buggy
-#    c3b(["Curves"], ondocument, 'beziersketch', 'create Arc Spline')
-    c3b(["Curves"], onselection1, 'geodesic_lines', 'create Marker')
-    c3b(["Curves"], onselection2, 'stationing', 'combine Curves')
-
-    c3bG(["Labels"], ondocument, 'labeltools', 'create Geo Location')
-    c3bG(["Labels"], onselection1, 'labeltools', 'create Stationing')
-    c3bG(["Labels"], ondocument, 'labeltools', 'create Graphic Label')
-    c3bG(["Labels"], onselection1, 'labeltools', 'create All Labels')
-
-
+    #add the menu item and command tool to the GUI
+    Gui.addCommand(menu_name, tool)
+    
+    return menu_name
 
 #----------------------
 
 class TransportationWorkbench (Workbench):
 
     MenuText = "Transportation Workbench"
-    ToolTip = "A description of my workbench"
+    ToolTip = "Design tools for transportation engineering"
 
-    def __init__(self, toolbars, version):
+    def __init__(self, version):
 
-        self.policies_ist = ["Edit..."]
-        self.general_fn_list = ["TestCommand", "NewProject"]
-        self.alignment_fn_list = ['ImportAlignmentCmd',
-            "GenerateVerticalAlignment", "Generate3dAlignment"]
-        self.template_fn_list = ['GenerateElementLoft', 'ViewTemplateLibrary']
-        self.loft_fn_list = ['EditIntervals']
+        self.menu = 1
+        self.toolbar = 2
+        self.context = 4
 
-        self.toolbars = toolbars
+        self.command_ui = {
+            'Transportation': {
+                'gui': self.menu + self.toolbar,
+                'cmd': ['NewProject']
+            },
+
+            'Alignment': {
+                'gui': self.menu + self.toolbar + self.context,
+                'cmd': ['ImportAlignmentCmd',
+                        'GenerateVerticalAlignment',
+                        'Generate3dAlignment'
+                       ]
+            },
+
+            'Element Template': {
+                'gui': self.menu + self.toolbar + self.context,
+                'cmd': ['GenerateElementLoft', 'ViewTemplateLibrary']
+            },
+
+            'Element Loft': {
+                'gui': self.menu + self.toolbar + self.context,
+                'cmd': ['EditIntervals']
+            },
+
+            #Microelly's commands
+            'My Helpers': {
+                'gui': self.toolbar,
+                'cmd': ['Part_Cone', 'Part_Cylinder', 'Draft_Move',
+                        'Draft_Rotate', 'Draft_Point', 'Draft_ToggleGrid',
+                        'Nurbs_LightOn', 'Nurbs_LightOff']
+            }
+
+        }
+
+#        self.toolbars = toolbars
         self.version = version
 
     def Initialize(self):
 
-        import transportationwb.Project.NewProject
-        import transportationwb.Project.Commands.ImportAlignmentCmd
-        import transportationwb.corridor.alignment.GenerateVerticalAlignment
-        import transportationwb.corridor.alignment.Generate3dAlignment
-        import transportationwb.corridor.loft.GenerateElementLoft
-        import transportationwb.corridor.template.ViewTemplateLibrary
-        import transportationwb.corridor.loft.EditIntervals
-        import transportationwb.TestCommand
+        #Gui.activateWorkbench("DraftWorkbench")
+        #Gui.activateWorkbench("SketcherWorkbench")
 
-        Gui.activateWorkbench("DraftWorkbench")
-        Gui.activateWorkbench("SketcherWorkbench")
+        for _k, _v in self.command_ui.items():
 
-        self.appendToolbar("Transportation", self.general_fn_list)
-        self.appendToolbar("Alignment", self.alignment_fn_list)
-        self.appendToolbar('Element Template', self.template_fn_list)
-        self.appendToolbar('Element Loft', self.loft_fn_list)
+            if _v['gui'] & self.toolbar:
+                self.appendToolbar(_k, _v['cmd'])
+            
+            if _v['gui'] & self.menu:
+                self.appendMenu(_k, _v['cmd'])
 
-        self.appendMenu("Transportation", self.general_fn_list)
-        self.appendMenu('Alignment', self.alignment_fn_list)
-        self.appendMenu('Template', self.template_fn_list)
-        self.appendMenu('Loft', self.loft_fn_list)
+        self.init_dev_commands()
 
-#-------------------
+    def init_dev_commands(self):
 
         # create toolbars
-        for t in self.toolbars:
-            self.appendToolbar(t[0], t[1])
+        if hasattr(FreeCAD, 'transportation_toolbars'):
+            for t in FreeCAD.transportation_toolbars:
+                self.appendToolbar(t[0], t[1])
 
         # create menus
         menus = {}
         ml = []
 
-        for _t in FreeCAD.tcmdsTransportation:
-            c = _t[0]
-            a = _t[1]
-            try:
-                menus[tuple(c)].append(a)
+        if hasattr(FreeCAD, 'tcmdsTransportation'):
+            for _t in FreeCAD.tcmdsTransportation:
+                c = _t[0]
+                a = _t[1]
+                try:
+                    menus[tuple(c)].append(a)
 
-            except:
-                menus[tuple(c)] = [a]
-                ml.append(tuple(c))
+                except:
+                    menus[tuple(c)] = [a]
+                    ml.append(tuple(c))
 
-        for m in ml:
-            self.appendMenu(list(m), menus[m])
+            for m in ml:
+                self.appendMenu(list(m), menus[m])
 
-        cmds = ['Part_Cone', 'Part_Cylinder', 'Draft_Move', 'Draft_Rotate', 'Draft_Point', 'Draft_ToggleGrid']
-        cmds += ['Nurbs_LightOn', 'Nurbs_LightOff']
-        self.appendToolbar("My Helpers", cmds)
+            cmds = ['Part_Cone', 'Part_Cylinder', 'Draft_Move', 'Draft_Rotate', 'Draft_Point', 'Draft_ToggleGrid']
+            cmds += ['Nurbs_LightOn', 'Nurbs_LightOff']
+            self.appendToolbar("My Helpers", cmds)
 
-        #create context menus for alignments
-        self.general_menu = ['TestCommand']
-        self.alignment_menu = ['ImportAlignment',
-            'GenerateVerticalAlignment', 'Generate3dAlignment']
+#-------------------
 
-        self.template_menu = ['GenerateElementLoft', 'ViewTemplateLibrary']
-        self.loft_menu = ['EditIntervals']
-        
     def Activated(self):
         Msg("Transportation Workbench version {} activated\n".format(self.version))
 
@@ -397,9 +201,10 @@ class TransportationWorkbench (Workbench):
 #-------------------
     def ContextMenu(self, recipient):
         # "recipient" will be either "view" or "tree"
-        self.appendContextMenu('', self.general_menu)
-        self.appendContextMenu('', self.alignment_menu)
-        self.appendContextMenu('', self.template_menu)
+
+        for _k, _v in self.fn.items():
+            if _v['gui'] & self.context:
+                self.appendContextMenu(_k, _v['cmds'])
 
     def GetClassName(self):
         # this function is mandatory if this is a full python workbench
@@ -1095,4 +900,4 @@ static char * workbench_xpm[] = {
 """
 
 
-Gui.addWorkbench(TransportationWorkbench(toolbars, __vers__))
+Gui.addWorkbench(TransportationWorkbench(__vers__))

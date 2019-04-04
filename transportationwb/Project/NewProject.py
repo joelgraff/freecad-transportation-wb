@@ -32,17 +32,18 @@ from transportationwb.ScriptedObjectSupport import DocumentProperties
 
 class NewProject():
 
+    icon_path = os.path.dirname(os.path.abspath(__file__))
+
+    resources = {
+        'Pixmap'  : icon_path + '/icons/workbench.svg',
+        'Accel'   : "Shift+N",
+        'MenuText': "New Project",
+        'ToolTip' : "Create a new project document and make it active",
+        'CmdType' : "ForEdit"
+    }
+
     def GetResources(self):
-
-        icon_path = os.path.dirname(os.path.abspath(__file__))
-
-        icon_path += "/icons/workbench.svg"
-
-        return {'Pixmap'  : icon_path,
-                'Accel'   : "Shift+N",
-                'MenuText': "New Project",
-                'ToolTip' : "Create a new project document and make it active",
-                'CmdType' : "ForEdit"}
+        return self.resources
 
     def Activated(self):
 
