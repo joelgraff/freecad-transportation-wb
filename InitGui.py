@@ -24,8 +24,6 @@ import FreeCAD as App
 import FreeCADGui as Gui
 from importlib import reload
 
-from UiCommand import UiCommand as UiCmd
-
 import transportationwb
 import os
 
