@@ -30,7 +30,6 @@ import Draft
 
 from transportationwb.ScriptedObjectSupport import Properties, Units, Utils
 from transportationwb.Geometry import Arc, Line, Support
-from transportationwb.XML import XmlFpo
 from transportationwb.corridor.alignment import AlignmentGroup
 
 _CLASS_NAME = 'HorizontalAlignment'
@@ -91,9 +90,6 @@ class _HorizontalAlignment(Draft._Wire):
         self.Type = _CLASS_NAME
         self.Object = obj
         self.errors = []
-
-        #create a new Xml object or return the existing one
-        self.xml_fpo = XmlFpo.create()
 
         self.geometry = []
         self.meta = {}
