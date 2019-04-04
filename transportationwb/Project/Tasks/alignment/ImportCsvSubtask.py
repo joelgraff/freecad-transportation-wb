@@ -37,7 +37,7 @@ from transportationwb.Project.Tasks.alignment.ImportAlignmentModel import Import
 
 from transportationwb.Project.Tasks.alignment.ImportAlignmentViewDelegate import ImportAlignmentViewDelegate as Delegate
 
-from transportationwb.corridor.alignment import HorizontalAlignment
+from Corridor.alignment import HorizontalAlignment
 
 def create(panel, filepath):
 

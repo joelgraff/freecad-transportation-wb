@@ -27,7 +27,7 @@ Importer for CSV files
 
 import csv
 
-from transportationwb.corridor.alignment import HorizontalAlignment
+from Corridor.alignment import HorizontalAlignment
 
 def create():
 
