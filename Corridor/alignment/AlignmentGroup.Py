@@ -32,7 +32,7 @@ __url__ = "https://www.freecadweb.org"
 import FreeCAD as App
 
 from transportationwb.ScriptedObjectSupport import Properties, Units
-from transportationwb.Project.ProjectObserver import ProjectObserver
+from Project.ProjectObserver import ProjectObserver
 from transportationwb.XML.AlignmentExporter import AlignmentExporter
 
 def get(grp_id=''):

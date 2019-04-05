@@ -25,7 +25,7 @@ import os
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from transportationwb.Project.Tasks.alignment.ImportAlignmentTask import ImportAlignmentTask
+from Project.Tasks.alignment.ImportAlignmentTask import ImportAlignmentTask
 
 class ImportAlignmentCmd():
     '''
