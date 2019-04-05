@@ -30,9 +30,12 @@ from PySide import QtGui, QtCore
 
 from Project.Support import DocumentProperties
 
+import Resources
+import Corridor
+
 class NewProject():
 
-    icon_path = os.path.dirname(os.path.abspath(__file__))
+    icon_path = os.path.dirname(Resources.__file__)
 
     resources = {
         'Pixmap'  : icon_path + '/icons/workbench.svg',
@@ -63,7 +66,10 @@ class NewProject():
         App.ParamGet("User parameter:BaseApp/Preferences/Units").SetInt("UserSchema", 7)
         App.ParamGet('User parameter:BaseApp/Preferences/Mod/Sketcher').SetBool('AutoRecompute', False)
         App.ParamGet('User parameter:BaseApp/Preferences/Document').SetBool('DuplicateLabels', True)
-        DocumentProperties.TemplateLibrary.Path.set_value('/home/shawty/.FreeCAD/Mod/freecad-transportation-wb/data/templates')
+
+        template_path = os.path.dirname(Corridor.__file__)
+
+        DocumentProperties.TemplateLibrary.Path.set_value(template_path + '/Templates')
 
     def _create_document(self):
 
