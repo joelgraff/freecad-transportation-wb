@@ -31,7 +31,7 @@ import FreeCADGui as Gui
 import Draft
 import numpy
 
-from transportationwb.ScriptedObjectSupport import Properties, Units, Utils, DocumentProperties
+from Project.Support import Properties, Units, Utils, DocumentProperties
 
 _CLASS_NAME = 'VerticalAlignment'
 _TYPE = 'Part::Part2DObjectPython'

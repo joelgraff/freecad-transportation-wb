@@ -33,7 +33,7 @@ import math
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport.Const import Const
+from Project.Support.Const import Const
 
     #Regular expressions for detecting stations
     #rex_station = re.compile(r'[0-9]+\+[0-9]{2}\.[0-9]{2,}')

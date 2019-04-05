@@ -33,7 +33,7 @@ from xml.dom import minidom
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Units, Utils
+from Project.Support import Units, Utils
 
 XML_VERSION = 'v1.2'
 XML_NAMESPACE = {XML_VERSION: 'http://www.landxml.org/schema/LandXML-1.2'}

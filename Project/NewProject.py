@@ -28,7 +28,7 @@ import FreeCADGui as Gui
 
 from PySide import QtGui, QtCore
 
-from transportationwb.ScriptedObjectSupport import DocumentProperties
+from Project.Support import DocumentProperties
 
 class NewProject():
 

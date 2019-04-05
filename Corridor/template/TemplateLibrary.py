@@ -42,7 +42,7 @@ import zipfile, tempfile
 import Part, Mesh
 from PySide import QtGui, QtCore
 from Corridor.template import SketchTemplate
-from transportationwb.ScriptedObjectSupport import DocumentProperties
+from Project.Support import DocumentProperties
 
 #encoding error trap
 _encoding = None

@@ -4,7 +4,7 @@
 #https://forum.freecadweb.org/viewtopic.php?t=6121
 #https://forum.freecadweb.org/viewtopic.php?t=12829
 import FreeCAD as App
-from transportationwb.ScriptedObjectSupport import Properties
+from Project.Support import Properties
 
 if App.Gui:
     import FreeCADGui as Gui

@@ -32,7 +32,7 @@ __url__ = "https://www.freecadweb.org"
 import FreeCAD as App
 import Draft
 import Part
-from transportationwb.ScriptedObjectSupport import Properties
+from Project.Support import Properties
 
 if App.Gui:
     import FreeCADGui as Gui

@@ -27,8 +27,8 @@ Useful math functions and constants
 import math
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Utils
-from transportationwb.ScriptedObjectSupport.Utils import Constants as C
+from Project.Support import Utils
+from Project.Support.Utils import Constants as C
 
 def safe_sub(lhs, rhs, return_None=False):
     '''

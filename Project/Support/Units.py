@@ -30,7 +30,7 @@ __author__ = "Joel Graff"
 __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
-from transportationwb.ScriptedObjectSupport.Const import Const
+from Project.Support.Const import Const
 
 def get_doc_units():
     '''

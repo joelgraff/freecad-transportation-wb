@@ -28,7 +28,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 import Draft
 
-from transportationwb.ScriptedObjectSupport import Properties, Units, Utils
+from Project.Support import Properties, Units, Utils
 from transportationwb.Geometry import Arc, Line, Support
 from Corridor.alignment import AlignmentGroup
 

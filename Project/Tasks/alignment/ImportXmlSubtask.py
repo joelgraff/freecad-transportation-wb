@@ -31,7 +31,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from transportationwb.XML.AlignmentImporter import AlignmentImporter
-from transportationwb.ScriptedObjectSupport import WidgetModel, Units, Utils
+from Project.Support import WidgetModel, Units, Utils
 import math
 
 def create(panel, filepath):

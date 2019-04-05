@@ -31,7 +31,7 @@ __url__ = "https://www.freecadweb.org"
 
 import FreeCAD as App
 
-from transportationwb.ScriptedObjectSupport import Properties, Units
+from Project.Support import Properties, Units
 from Project.ProjectObserver import ProjectObserver
 from transportationwb.XML.AlignmentExporter import AlignmentExporter
 

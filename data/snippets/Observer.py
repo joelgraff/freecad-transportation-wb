@@ -25,7 +25,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 import random
 
-from transportationwb.ScriptedObjectSupport import Singleton
+from Project.Support import Singleton
 
 def create(doc, callback):
     '''

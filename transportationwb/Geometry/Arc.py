@@ -30,9 +30,9 @@ import FreeCAD as App
 import Draft
 import numpy
 
-from transportationwb.ScriptedObjectSupport import Units, Utils
+from Project.Support import Units, Utils
 from transportationwb.Geometry import Support
-from transportationwb.ScriptedObjectSupport.Utils import Const, Constants as C
+from Project.Support.Utils import Const, Constants as C
 
 def _create_geo_func():
 

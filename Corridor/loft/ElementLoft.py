@@ -28,7 +28,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 import Part
 
-from transportationwb.ScriptedObjectSupport import Properties
+from Project.Support import Properties
 
 _CLASS_NAME = 'ElementLoft'
 _TYPE = 'Part::FeaturePython'

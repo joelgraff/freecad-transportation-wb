@@ -24,7 +24,7 @@
 '''
 Key maps for LandXML elements and the internal dictionary keys
 '''
-from transportationwb.ScriptedObjectSupport.Const import Const
+from Project.Support.Const import Const
 
 class KeyMaps(Const):
 
