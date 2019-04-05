@@ -29,11 +29,11 @@ import os
 
 import Project.NewProject
 import Project.Commands.ImportAlignmentCmd
-import transportationwb.corridor.alignment.GenerateVerticalAlignment
-import transportationwb.corridor.alignment.Generate3dAlignment
-import transportationwb.corridor.loft.GenerateElementLoft
-import transportationwb.corridor.template.ViewTemplateLibrary
-import transportationwb.corridor.loft.EditIntervals
+import Corridor.alignment.GenerateVerticalAlignment
+import Corridor.alignment.Generate3dAlignment
+import Corridor.loft.GenerateElementLoft
+import Corridor.template.ViewTemplateLibrary
+import Corridor.loft.EditIntervals
 import transportationwb.TestCommand
 
 global __dir__

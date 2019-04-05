@@ -27,7 +27,7 @@ import os
 import time
 import FreeCAD as App
 import FreeCADGui as Gui
-from transportationwb.corridor.template import TemplateLibrary, SketchTemplate
+from Corridor.template import TemplateLibrary, SketchTemplate
 
 class ViewTemplateLibrary():
     '''

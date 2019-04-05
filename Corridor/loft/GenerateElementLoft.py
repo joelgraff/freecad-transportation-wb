@@ -25,7 +25,7 @@ import os
 import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtGui
-from transportationwb.corridor.loft import ElementLoft, NewElementLoftDialog
+from Corridor.loft import ElementLoft, NewElementLoftDialog
 
 class GenerateElementLoft():
     '''

@@ -41,7 +41,7 @@ import FreeCADGui as Gui
 import zipfile, tempfile
 import Part, Mesh
 from PySide import QtGui, QtCore
-from transportationwb.corridor.template import SketchTemplate
+from Corridor.template import SketchTemplate
 from transportationwb.ScriptedObjectSupport import DocumentProperties
 
 #encoding error trap

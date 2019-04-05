@@ -33,7 +33,7 @@ import Draft
 import Part
 import transportationwb
 import math
-import transportationwb.corridor.qt_dialog as qtd
+import Corridor.qt_dialog as qtd
 
 OBJECT_TYPE = "Cell"
 

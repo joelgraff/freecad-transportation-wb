@@ -27,8 +27,8 @@ Main class for the Edit Interval task
 
 import sys
 from PySide import QtGui, QtCore
-from transportationwb.corridor.loft.tasks.IntervalModel import IntervalModel as Model
-from transportationwb.corridor.loft.tasks.IntervalViewDelegate import IntervalViewDelegate as Delegate
+from Corridor.loft.tasks.IntervalModel import IntervalModel as Model
+from Corridor.loft.tasks.IntervalViewDelegate import IntervalViewDelegate as Delegate
 
 class IntervalTask:
     def __init__(self, update_callback):

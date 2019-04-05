@@ -24,7 +24,7 @@
 import os
 import FreeCAD as App
 import FreeCADGui as Gui
-from transportationwb.corridor.loft.tasks import IntervalTask
+from Corridor.loft.tasks import IntervalTask
 
 class EditIntervals():
     '''

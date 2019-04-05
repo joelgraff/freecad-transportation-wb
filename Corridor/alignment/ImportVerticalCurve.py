@@ -27,7 +27,7 @@ import os
 import json
 from PySide import QtGui
 from PySide import QtCore
-from transportationwb.corridor.alignment import VerticalCurve, Metadata
+from Corridor.alignment import VerticalCurve, Metadata
 
 class ImportVerticalCurve():
 
