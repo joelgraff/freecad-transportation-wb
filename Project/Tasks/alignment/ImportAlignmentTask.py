@@ -37,11 +37,13 @@ from Corridor.alignment import AlignmentGroup, HorizontalAlignment
 from Project.Tasks.alignment import ImportXmlSubtask
 from Project.Tasks.alignment import ImportCsvSubtask
 
+import Project.Tasks.alignment as Alignment
+
 class ImportAlignmentTask:
 
     def __init__(self, update_callback):
 
-        self.path_base = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/transportationwb/Project/Tasks/alignment/'
+        self.path_base = os.path.dirname(Alignment.__file__) + '/'
         self.ui = self.path_base + 'import_alignment_task_panel.ui'
         self.form = None
         self.subtask = None
