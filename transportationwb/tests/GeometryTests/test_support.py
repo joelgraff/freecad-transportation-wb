@@ -1,6 +1,6 @@
 import sys
 
-from transportationwb.Geometry import Support
+from Geometry import Support
 import unittest
 
 class Test_Support(unittest.TestCase):

@@ -31,7 +31,7 @@ import Draft
 import numpy
 
 from Project.Support import Units, Utils
-from transportationwb.Geometry import Support
+from Geometry import Support
 from Project.Support.Utils import Const, Constants as C
 
 def _create_geo_func():

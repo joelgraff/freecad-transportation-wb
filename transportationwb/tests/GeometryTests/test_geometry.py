@@ -1,5 +1,5 @@
 import unittest
-from transportationwb.Geometry import *
+from Geometry import *
 
 def suite():
     suite = unittest.TestSuite()

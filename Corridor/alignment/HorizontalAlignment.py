@@ -29,7 +29,7 @@ import FreeCADGui as Gui
 import Draft
 
 from Project.Support import Properties, Units, Utils
-from transportationwb.Geometry import Arc, Line, Support
+from Geometry import Arc, Line, Support
 from Corridor.alignment import AlignmentGroup
 
 _CLASS_NAME = 'HorizontalAlignment'

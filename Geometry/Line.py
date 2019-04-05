@@ -25,7 +25,7 @@
 Line generation tools
 '''
 
-from transportationwb.Geometry import Support
+from Geometry import Support
 
 def get_parameters(line):
     '''
