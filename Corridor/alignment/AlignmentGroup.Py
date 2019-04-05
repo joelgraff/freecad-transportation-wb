@@ -33,7 +33,7 @@ import FreeCAD as App
 
 from Project.Support import Properties, Units
 from Project.ProjectObserver import ProjectObserver
-from transportationwb.XML.AlignmentExporter import AlignmentExporter
+from Project.XML.AlignmentExporter import AlignmentExporter
 
 def get(grp_id=''):
     '''

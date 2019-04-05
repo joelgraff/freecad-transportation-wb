@@ -30,7 +30,7 @@ from PySide import QtGui, QtCore
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from transportationwb.XML.AlignmentImporter import AlignmentImporter
+from Project.XML.AlignmentImporter import AlignmentImporter
 from Project.Support import WidgetModel, Units, Utils
 import math
 
