@@ -34,9 +34,57 @@ from xml.dom import minidom
 import FreeCAD as App
 
 from Project.Support import Units, Utils
+from Project.XML.KeyMaps import KeyMaps
 
 XML_VERSION = 'v1.2'
 XML_NAMESPACE = {XML_VERSION: 'http://www.landxml.org/schema/LandXML-1.2'}
+
+def convert_token(tag, value):
+    '''
+    Given a LandXML tag and it's value, return it
+    as the data type specified in KeyMaps
+    '''
+
+    if not tag or not value:
+        return None
+
+    _typ = None
+
+    for _k, _v in KeyMaps.XML_TYPES.items():
+
+        if tag in _v:
+            _typ = _k
+            break
+
+    if not _typ or _typ == 'string':
+        return value
+
+    if _typ == 'int':
+        return Utils.to_int(value)
+
+    if _typ == 'float':
+        return Utils.to_float(value)
+
+    if _typ == 'vector':
+        coords = Utils.to_float(value.split(' '))
+
+        if coords:
+            return App.Vector(coords)
+
+    return None
+
+def get_tag_default(tag):
+    '''
+    Return the data type and default value for a tag
+    '''
+
+    if tag in KeyMaps.XML_TYPES['float']:
+        return 0.0
+
+    if tag in KeyMaps.XML_TYPES['string']:
+        return ''
+
+    return None
 
 def write_to_file(node, target, pretty_print=True):
     '''

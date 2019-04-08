@@ -33,73 +33,12 @@ import FreeCAD as App
 
 from Project.Support import Units, Utils
 from Project.XML import LandXml
+from Project.XML.KeyMaps import KeyMaps as maps
 
 class AlignmentImporter(object):
     '''
     LandXML parsing class for alignments
     '''
-
-    #LandXML attribute tags and corresponding data types - empty type defaults to 'string'
-    #'name' is required, but is tested for explictly, so it is considered optional here
-    #duplicate keys are used to assign the same XML attribute to different Alignment attributes
-    META_TAGS = {
-        'req': {'length': ('Length', 'float', 0.0), 'staStart': ('StartStation', 'float', 0.0)},
-        'opt': {'name': ('ID', '', 'Alignment'), 'desc': ('Description', '', ''),
-        'oID': ('ObjectID', '', ''), 'state': ('Status', '', 'proposed')}
-    }
-
-    STATION_TAGS = {
-        'req': {'staAhead': ('Ahead', 'float', 0.0), 'staInternal': ('Position', 'float', 0.0)},
-        'opt': {'staBack': ('Back', 'float', 0.0), 'staIncrement': ('Direction', '', 0.0),
-                'desc': ('Description', '', '')}
-    }
-
-    GEOM_TAGS = {}
-    GEOM_TAGS['Line'] = {
-        'req': {},
-        'opt': {
-            'desc': ('Description', '', ''), 'dir': ('BearingOut', 'float', 'nan'),
-            'dir': ('BearingIn', 'float', 'nan'), 'length': ('Length', 'float', 0.0),
-            'name': ('Name', '', ''), 'staStart': ('StartStation', 'float', None),
-            'state': ('Status', '', ''), 'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
-        }
-    }
-
-    GEOM_TAGS['Spiral'] = {
-        'req': {
-            'length': ('Length', 'float', 0.0), 'radiusEnd': ('RadiusEnd', 'float', 0.0),
-            'radiusStart': ('RadiusStart', 'float', 0.0), 'rot': ('Direction', '', 0.0),
-            'spiType': ('SpiralType', '', 'clothoid')
-        },
-        'opt': {
-            'chord': ('Chord', 'float', 0.0), 'constant': ('Constant', 'float', 0.0),
-            'desc': ('Description', '', ''), 'dirEnd': ('BearingOut', 'float', ''),
-            'dirStart': ('BearingIn', 'float', 'nan'), 'external': ('External', 'float', 0.0),
-            'length': ('length', 'float', 0.0), 'midOrd': ('MiddleOrdinate', 'float', 0.0),
-            'name': ('Name', '', ''), 'radius': ('Radius', 'float', 0.0),
-            'staStart': ('StartStation', 'float', None), 'state': ('Status', '', 'proposed'),
-            'tangent': ('Tangent', 'float', 0.0), 'oID': ('ObjectID', '', ''), 
-            'note': ('Note', '', '')
-        }
-    }
-
-    LENGTH_TAGS = ['radius', 'radiusStart', 'radiusEnd',
-                   'chord', 'external', 'midOrd', 'tangent', 'length']
-
-    ANGLE_TAGS = ['delta', 'dir', 'dirStart', 'dirEnd']
-
-    GEOM_TAGS['Curve'] = {
-        'req': {'rot': ('Direction', '', 0.0)},
-        'opt': {
-            'chord': ('Chord', 'float', 0.0), 'crvType': ('CurveType', '', 'arc'),
-            'delta': ('Delta', 'float', 0.0), 'desc': ('Description', '', ''),
-            'dirEnd': ('BearingOut', 'float', 'nan'), 'dirStart': ('BearingIn', 'float', 'nan'), 'external': ('External', 'float', 0.0), 'length': ('Length', 'float', 0.0),
-            'midOrd': ('MiddleOrdinate', 'float', 0.0), 'name': ('Name', '', ''),
-            'radius': ('Radius', 'float', 0.0), 'staStart': ('StartStation', 'float', None),
-            'state': ('Status', '', 'proposed'), 'tangent': ('Tangent', 'float', 0.0),
-            'oID': ('ObjectID', '', ''), 'note': ('Note', '', '')
-        }
-    }
 
     def __init__(self):
 
@@ -123,35 +62,6 @@ class AlignmentImporter(object):
             return ''
 
         return xml_units
-
-    @staticmethod
-    def _convert_token(value, typ):
-        '''
-        Converts a string token to a float or integer value as indicated by type
-        Returns None if fails
-        value = string token
-        typ = numeric type: 'float', 'int', 'vector'
-        '''
-
-        if not value:
-            return None
-
-        if typ == 'string' or not typ:
-            return value
-
-        if typ == 'int':
-            return Utils.to_int(value)
-
-        if typ == 'float':
-            return Utils.to_float(value)
-
-        if typ == 'vector':
-            coords = Utils.to_float(value.split(' '))
-
-            if coords:
-                return App.Vector(coords)
-
-        return None
 
     @staticmethod
     def _get_alignment_name(alignment, alignment_keys):
@@ -183,11 +93,9 @@ class AlignmentImporter(object):
         result = {}
 
         #test to ensure all required tags are in the imrpoted XML data
-        missing_tags = set(
-            list(tags['req'].keys())
-        ).difference(
-            set(list(attrib.keys()))
-        )
+        missing_tags = set(tags[0]).difference(
+                            set(list(attrib.keys()))
+                        )
 
         #report error and skip the alignment if required tags are missing
         if missing_tags:
@@ -198,46 +106,47 @@ class AlignmentImporter(object):
             return None
 
         #merge the required / optional tag dictionaries and iterate the items
-        for key, _tuple in  {**tags['req'], **tags['opt']}.items():
+        for _tag in tags[0] + tags[1]:
 
-            attr_val = self._convert_token(attrib.get(key), _tuple[1])
+            attr_val = LandXml.convert_token(_tag, attrib.get(_tag))
 
             if attr_val is None:
 
-                if key in tags['req']:
+                if _tag in tags[0]:
                     self.errors.append(
                         'Missing or invalid %s attribute in alignment %s'
-                        % (_tuple[0], align_name)
+                        % (_tag, align_name)
                     )
 
             #test for angles and convert to radians
-            elif key in self.ANGLE_TAGS:
-                attr_val = Utils.to_float(attrib.get(key))
+            elif _tag in maps.XML_TAGS['angle']:
+                attr_val = Utils.to_float(attrib.get(_tag))
 
                 if attr_val:
                     attr_val = math.radians(attr_val)
 
             #test for lengths to convert to mm
-            elif key in self.LENGTH_TAGS:
-                attr_val = Utils.to_float(attrib.get(key))
+            elif _tag in maps.XML_TAGS['length']:
+                attr_val = Utils.to_float(attrib.get(_tag))
 
                 if attr_val:
                     attr_val = attr_val * Units.scale_factor()
 
-            elif key == 'rot':
+            #convert rotation from string to number
+            elif _tag == 'rot':
 
                 attr_val = 0.0
 
-                if attrib.get(key) == 'cw':
+                if attrib.get(_tag) == 'cw':
                     attr_val = 1.0
 
-                elif attrib.get(key) == 'ccw':
+                elif attrib.get(_tag) == 'ccw':
                     attr_val = -1.0
 
             if not attr_val:
-                attr_val = _tuple[2]
+                attr_val = LandXml.get_tag_default(_tag)
 
-            result[_tuple[0]] = attr_val
+            result[maps.XML_MAP[_tag]] = attr_val
 
         return result
 
@@ -247,7 +156,7 @@ class AlignmentImporter(object):
         returning it as a dictionary keyed to the alignment name
         '''
 
-        result = self._parse_data(align_name, self.META_TAGS, alignment.attrib)
+        result = self._parse_data(align_name, maps.XML_ATTRIBS['Alignment'], alignment.attrib)
 
         _start = LandXml.get_child_as_vector(alignment, 'Start')
 
@@ -265,12 +174,17 @@ class AlignmentImporter(object):
 
         equations = LandXml.get_children(alignment, 'StaEquation')
 
+        print(equations)
         result = []
 
         for equation in equations:
-            _dict = self._parse_data(align_name, self.STATION_TAGS, equation.attrib)
+
+            print(equation.attrib)
+
+            _dict = self._parse_data(align_name, maps.XML_ATTRIBS['StaEquation'], equation.attrib)
             _dict['Alignment'] = align_name
 
+            print('\n<--- dict --->\n', _dict)
             result.append(_dict)
 
         return result
@@ -281,7 +195,6 @@ class AlignmentImporter(object):
         '''
 
         result = []
-        _geom_tags = self.GEOM_TAGS[curve_type]
 
         for curve in geometry:
 
@@ -310,7 +223,7 @@ class AlignmentImporter(object):
 
             result.append({
                 **coords,
-                **self._parse_data(align_name, self.GEOM_TAGS[curve_type], curve.attrib)
+                **self._parse_data(align_name, maps.XML_ATTRIBS[curve_type], curve.attrib)
             })
 
         return result
@@ -333,7 +246,6 @@ class AlignmentImporter(object):
 
             node_tag = geo_node.tag.split('}')[1]
 
-            print(node_tag)
             if not node_tag in ['Curve', 'Spiral', 'Line']:
                 continue
 
@@ -359,7 +271,7 @@ class AlignmentImporter(object):
                       'Center': points[2], 'PI': points[3]}
 
             result.append({**coords,
-                **self._parse_data(align_name, self.GEOM_TAGS[node_tag], geo_node.attrib)
+                **self._parse_data(align_name, maps.XML_ATTRIBS[node_tag], geo_node.attrib)
                })
 
         print ('\n<---- Import result ---->\n', result)
@@ -398,7 +310,7 @@ class AlignmentImporter(object):
         #build final dictionary and return
         result = {}
         result['Project'] = {}
-        result['Project'][self.META_TAGS['opt']['name'][0]] = project_name
+        result['Project'][maps.XML_MAP['name']] = project_name
         result['Alignments'] = {}
 
         for alignment in alignments:
