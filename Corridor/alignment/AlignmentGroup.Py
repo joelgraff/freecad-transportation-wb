@@ -100,7 +100,7 @@ class _AlignmentGroup():
 
         exporter = AlignmentExporter()
 
-        template_path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/'
+        template_path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/Resources/data/'
         template_file = 'landXML-' + Units.get_doc_units()[1] + '.xml'
 
         xml_path = App.ActiveDocument.TransientDir + '/alignment.xml'
