@@ -38,59 +38,12 @@ import FreeCAD as App
 
 from Project.Support import Units
 from Project.XML import LandXml
+from Project.XML.KeyMaps import KeyMaps as maps
 
 class AlignmentExporter(object):
     '''
     LandXML exporting class for alignments
     '''
-
-    XML_META = {'name': ('ID', ''), 'desc': ('Description', '')}
-
-    XML_APPLICATION = {'version': ()}
-
-    XML_COORD_GEO = {**XML_META,
-                     **{'oID': ('ObjectID', ''), 'state': ('Status', '')}
-                    }
-
-    XML_ALIGNMENT = {**XML_COORD_GEO,
-                     **{'length': ('Length', 0.0), 'staStart': ('StartStation', 0.0)}
-    }
-
-    XML_GEO_META = {**XML_ALIGNMENT,
-                    **{'note': ('Note', '')}
-                   }
-
-    XML_LINE = {**XML_GEO_META,
-                **{'dir': ('BearingIn', 0.0)}
-               }
-
-    XML_ARC = {**XML_GEO_META,
-               **{'rot': ('Direction', 0.0), 'chord': ('Chrod', 0.0), 
-               'crvType': ('CurveType', 'arc'), 'delta': ('Delta', 0.0),
-               'dirEnd': ('BearingOut', 0.0), 'dirStart': ('BearingIn', 0.0),
-               'external': ('External', 0.0), 'midOrd': ('MiddleOrdinate', 0.0),
-               'radius': ('Radius', 0.0), 'staStart': ('StartStation', 0.0),
-               'tangent': ('Tangent', 0.0)}
-              }
-
-    XML_SPIRAL = {**XML_ARC,
-                  **{'radiusStart': ('StartRadius', 0.0), 'radiusEnd': ('EndRadius', 0.0),
-                  'spiType': ('SpiralType', 'clothoid'), 'constant': ('Constant', 0.0),
-                  'theta': ('Theta', 0.0), 'totalX': ('TotalX', 0.0), 'totalY': ('TotalY', 0.0),
-                  'tanLong': ('LongTangent', 0.0), 'tanShort': ('ShortTangent', 0.0)}
-                 }
-
-    XML_STATION = {'staAhead': ('Ahead', 0.0), 'staBack': ('Back', 0.0),
-                   'staInternal': ('InternalStation', 0.0), 'staIncrement': ('Direction', 0),
-                   'desc': ('Description', '')
-                  }
-
-    XML_LENGTH_TAGS = ['radius', 'radiusStart', 'radiusEnd',
-                   'chord', 'external', 'midOrd', 'tangent', 'length']
-
-    XML_ANGLE_TAGS = ['delta', 'dir', 'dirStart', 'dirEnd']
-
-    XML_COORDINATE_TAGS = ['Start', 'End', 'Center', 'PI']
 
     def __init__(self):
 
