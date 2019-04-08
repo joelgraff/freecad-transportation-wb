@@ -31,13 +31,17 @@ class KeyMaps(Const):
     XML_DEFAULT = {
 
     }
-    #lists of tags for different units of measurements
+    #lists of tags for different units of measurements / geometry types
     XML_TAGS = {
         'length':
             ['radius', 'radiusStart', 'radiusEnd', 'chord', 'external', 'midOrd', 'tangent',
              'length'],
         'angle':
-            ['delta', 'dir', 'dirStart', 'dirEnd']
+            ['delta', 'dir', 'dirStart', 'dirEnd'],
+
+        'coordinate':
+            ['Start', 'End', 'Center', 'PI']
+
     }
 
     #lists of tags for different Python data types.  These are the datatypes that

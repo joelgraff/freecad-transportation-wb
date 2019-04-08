@@ -54,19 +54,21 @@ class AlignmentExporter(object):
         Write the project and application data to the file
         '''
 
-        self._write_tree_data(data, LandXml.get_child(node, 'Project'), self.XML_META)
+        self._write_tree_data(data, LandXml.get_child(node, 'Project'), maps.XML_ATTRIBS['Project'])
 
         node = LandXml.get_child(node, 'Application')
 
         node.set('version', ''.join(App.Version()[0:3]))
         node.set('timeStamp', datetime.datetime.utcnow().isoformat())
 
-    def _write_tree_data(self, data, node, key_dict):
+    def _write_tree_data(self, data, node, keys):
         '''
         Write data to the tree using the passed parameters
         '''
 
-        for _k, _v in key_dict.items():
+        _key_list = keys[0] + keys[1]
+
+        for _v in _key_list:
 
             value = data.get(_v[0])
 
@@ -74,10 +76,10 @@ class AlignmentExporter(object):
             if value is None:
                 value = _v[1]
 
-            if _k in AlignmentExporter.XML_ANGLE_TAGS:
+            if _k in maps.XML_TAGS['angle']:
                 value = math.degrees(value)
 
-            elif _k in AlignmentExporter.XML_LENGTH_TAGS:
+            elif _k in maps.XML_TAGS['length']:
                 value /= Units.scale_factor()
 
             elif _k == 'rot':
@@ -99,7 +101,7 @@ class AlignmentExporter(object):
         '''
 
         for sta_eq in data:
-            self._write_tree_data(sta_eq, parent, self.XML_STATION)
+            self._write_tree_data(sta_eq, parent, maps.XML_ATTRIBS['StaEquation'])
 
     def _write_coordinates(self, data, parent):
         '''
@@ -108,7 +110,7 @@ class AlignmentExporter(object):
 
         _sf = 1.0 / Units.scale_factor()
 
-        for _key in self.XML_COORDINATE_TAGS:
+        for _key in maps.XML_TAGS['coordinate']:
 
             if not _key in data:
                 continue
@@ -130,12 +132,12 @@ class AlignmentExporter(object):
         _align_node = LandXml.add_child(parent, 'Alignment')
 
         #write the alignment attributes
-        self._write_tree_data(data['meta'], _align_node, self.XML_ALIGNMENT)
+        self._write_tree_data(data['meta'], _align_node, maps.XML_ATTRIBS['Alignment'])
 
         _coord_geo_node = LandXml.add_child(_align_node, 'CoordGeom')
 
         #write the geo coordinate attributes
-        self._write_tree_data(data['meta'], _coord_geo_node, self.XML_COORD_GEO)
+        self._write_tree_data(data['meta'], _coord_geo_node, maps.XML_ATTRIBS['CoordGeom'])
 
         #write the station equation data
         self.write_station_data(data['station'], _align_node)
@@ -148,12 +150,12 @@ class AlignmentExporter(object):
             if _geo['Type'] == 'line':
 
                 _node = LandXml.add_child(_coord_geo_node, 'Line')
-                self._write_tree_data(_geo, _node, self.XML_LINE)
+                self._write_tree_data(_geo, _node, maps.XML_ATTRIBS['Line'])
 
             elif _geo['Type'] == 'arc':
 
                 _node = LandXml.add_child(_coord_geo_node, 'Curve')
-                self._write_tree_data(_geo, _node, self.XML_ARC)
+                self._write_tree_data(_geo, _node, maps.XML_ATTRIBS['Curve'])
 
             if _node is not None:
                 self._write_coordinates(_geo, _node)
