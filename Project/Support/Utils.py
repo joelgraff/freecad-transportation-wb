@@ -58,6 +58,9 @@ def to_float(value):
 
     result = None
 
+    if value is None:
+        return None
+
     if isinstance(value, list):
         result = []
 
@@ -72,8 +75,9 @@ def to_float(value):
         except:
             pass
 
-        if math.isnan(result):
-            result = None
+        if result:
+            if math.isnan(result):
+                result = None
 
     return result
 
