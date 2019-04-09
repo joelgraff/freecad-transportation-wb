@@ -107,6 +107,7 @@ class _HorizontalAlignment(Draft._Wire):
         Properties.add(obj, 'String', 'oID', 'Object ID', '')
         Properties.add(obj, 'Length', 'Length', 'Alignment length', 0.0, is_read_only = True)
         Properties.add(obj, 'String', 'Description', 'Alignment description', '')
+        Properties.add(obj, 'Length', 'Start Station', 'Starting station of the alignment', 0.0)
 
         obj.addProperty(
             'App::PropertyEnumeration', 'Status', 'Base', 'Alignment status'
@@ -194,6 +195,9 @@ class _HorizontalAlignment(Draft._Wire):
         self.validate_coordinates()
 
         self.validate_alignment()
+
+        #call once more to catch any added geometry from validate_alignment()
+        self.validate_stationing()
 
         return True
 
@@ -507,6 +511,9 @@ class _HorizontalAlignment(Draft._Wire):
 
         if meta.get('Status'):
             obj.Status = meta['Status']
+
+        if meta.get('StartStation'):
+            obj.Start_Station = str(meta['StartStation']) + ' ft'
 
     def assign_station_data(self):
         '''
