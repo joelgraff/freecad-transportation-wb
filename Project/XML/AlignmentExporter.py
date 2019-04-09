@@ -61,28 +61,32 @@ class AlignmentExporter(object):
         node.set('version', ''.join(App.Version()[0:3]))
         node.set('timeStamp', datetime.datetime.utcnow().isoformat())
 
-    def _write_tree_data(self, data, node, keys):
+    def _write_tree_data(self, data, node, attribs):
         '''
         Write data to the tree using the passed parameters
         '''
 
-        _key_list = keys[0] + keys[1]
+        for _tag in attribs[0] + attribs[1]:
 
-        for _v in _key_list:
+            #find the xml tag for the current dictionary key
+            _key = maps.XML_MAP.get(_tag)
 
-            value = data.get(_v[0])
+            _value = None
+
+            if _key:
+                value = data.get(_key)
 
             #assign default if no value in the dictionary
             if value is None:
-                value = _v[1]
+                value = LandXml.get_tag_default(_tag)
 
-            if _k in maps.XML_TAGS['angle']:
+            if _tag in maps.XML_TAGS['angle']:
                 value = math.degrees(value)
 
-            elif _k in maps.XML_TAGS['length']:
+            elif _tag in maps.XML_TAGS['length']:
                 value /= Units.scale_factor()
 
-            elif _k == 'rot':
+            elif _tag == 'rot':
 
                 if value < 0.0:
                     value = 'ccw'
@@ -93,7 +97,7 @@ class AlignmentExporter(object):
                 else:
                     value = ''
 
-            node.set(_k, str(value))
+            node.set(_tag, str(value))
 
     def write_station_data(self, data, parent):
         '''
@@ -129,6 +133,7 @@ class AlignmentExporter(object):
         '''
         Write individual alignment to XML
         '''
+
         _align_node = LandXml.add_child(parent, 'Alignment')
 
         #write the alignment attributes
@@ -167,7 +172,9 @@ class AlignmentExporter(object):
 
         root = etree.parse(source_path).getroot()
 
+        _parent = LandXml.add_child(root, 'Alignments')
+
         for _align in data:
-            self._write_alignment_data(_align, LandXml.add_child(root, 'Alignments'))
+            self._write_alignment_data(_align, _parent)
 
         LandXml.write_to_file(root, target_path)

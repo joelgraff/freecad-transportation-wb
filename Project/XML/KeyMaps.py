@@ -51,7 +51,7 @@ class KeyMaps(Const):
         'float':
             ['chord', 'constant', 'delta', 'dir', 'dirEnd', 'dirStart', 'external',
              'length', 'midOrd', 'radius', 'radiusEnd', 'radiusStart', 'staBack',
-             'staIncrement', 'staInternal', 'staStart', 'state', 'tangent'],
+             'staIncrement', 'staInternal', 'staStart', 'tangent'],
 
         'string':
             ['crvType', 'desc', 'name', 'note', 'manufacturer', 'manufacturerURL', 'oID',
@@ -60,13 +60,14 @@ class KeyMaps(Const):
 
     #map of LandXML tags to internal Python dictionary
     XML_MAP = {'chord': 'Chord','crvType': 'CurveType','delta': 'Delta','desc': 'Description',
-               'dirEnd': 'BearingOut','dirStart': 'BearingIn','external': 'External',
-               'length': 'Length', 'midOrd': 'MiddleOrdinate','name': 'ID', 'note': 'Note',
-                'oID': 'ObjectID', 'radius': 'Radius', 'radiusStart': 'StartRadius',
-                'radiusEnd': 'EndRadius','rot': 'Direction', 'spiType': 'SpiralType',
-                'staAhead': 'Ahead', 'staBack': 'Back', 'staIncrement': 'Direction',
-                'staInternal': 'Position', 'staStart': 'StartStation', 'staEnd': 'EndStation',
-                'state': 'Status', 'tangent': 'Tangent', 'version': 'Version'}
+                  'dir': 'BearingIn', 'dirEnd': 'BearingOut','dirStart': 'BearingIn',
+                  'external': 'External', 'length': 'Length', 'midOrd': 'MiddleOrdinate',
+                  'name': 'ID', 'note': 'Note', 'oID': 'ObjectID', 'radius': 'Radius',
+                  'radiusStart': 'StartRadius', 'radiusEnd': 'EndRadius','rot': 'Direction',
+                  'spiType': 'SpiralType', 'staAhead': 'Ahead', 'staBack': 'Back',
+                  'staIncrement': 'Direction', 'staInternal': 'Position',
+                  'staStart': 'StartStation', 'staEnd': 'EndStation', 'state': 'Status',
+                  'tangent': 'Tangent', 'version': 'Version'}
 
     #attributes for each LandXML Tag.  Attribute names are divided into two lists.
     #The first list is required attributes, the second is optional
