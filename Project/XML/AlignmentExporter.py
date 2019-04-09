@@ -97,7 +97,12 @@ class AlignmentExporter(object):
                 else:
                     value = ''
 
-            node.set(_tag, str(value))
+            result = str(value)
+
+            if isinstance(value, float):
+                result = '{:.8f}'.format(value)
+
+            node.set(_tag, result)
 
     def write_station_data(self, data, parent):
         '''
