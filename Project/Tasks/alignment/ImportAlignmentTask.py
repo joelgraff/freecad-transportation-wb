@@ -20,9 +20,8 @@
 # *  USA                                                                   *
 # *                                                                        *
 # **************************************************************************
-
 '''
-DESCRIPTION
+Task to import alignments from various file formats
 '''
 
 import os
@@ -40,8 +39,10 @@ from Project.Tasks.alignment import ImportCsvSubtask
 import Project.Tasks.alignment as Alignment
 
 class ImportAlignmentTask:
-
-    def __init__(self, update_callback):
+    '''
+    Import horizontal alignments from various file formats
+    '''
+    def __init__(self):
 
         self.path_base = os.path.dirname(Alignment.__file__) + '/'
         self.ui = self.path_base + 'import_alignment_task_panel.ui'
@@ -49,7 +50,9 @@ class ImportAlignmentTask:
         self.subtask = None
 
     def accept(self):
-
+        '''
+        Accept the task parameters
+        '''
         data = self.subtask.import_model()
 
         if self.subtask.errors:
@@ -84,6 +87,9 @@ class ImportAlignmentTask:
         return True
 
     def reject(self):
+        '''
+        Reject the task
+        '''
         return True
 
     def clicked(self, index):
@@ -115,11 +121,14 @@ class ImportAlignmentTask:
         Open the file picker dialog and open the file that the user chooses
         '''
 
-        open_path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/Resources/data/alignment/'
+        open_path = App.getUserAppDataDir() + \
+                    'Mod/freecad-transportation-wb/Resources/data/alignment/'
 
         filters = self.form.tr('All files (*.*);; CSV files (*.csv);; LandXML files (*.xml)')
         selected_filter = self.form.tr('LandXML files (*.xml)')
-        file_name = QtGui.QFileDialog.getOpenFileName(self.form, 'Select File', open_path, filters, selected_filter)
+        file_name = QtGui.QFileDialog.getOpenFileName(
+            self.form, 'Select File', open_path, filters, selected_filter
+        )
 
         if not file_name[0]:
             return
@@ -141,7 +150,9 @@ class ImportAlignmentTask:
             stream.close()
 
         except OSError:
-            dialog = QtGui.QMessageBox(QtGui.QMessageBox.Critical, 'Unable to open file ', file_path)
+            dialog = QtGui.QMessageBox(
+                QtGui.QMessageBox.Critical, 'Unable to open file ', file_path
+            )
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
             dialog.exec_()
             return
@@ -171,9 +182,9 @@ class ImportAlignmentTask:
             self.subtask = ImportCsvSubtask.create(subpanel, file_path)
 
     def setup(self):
-
-        #convert the data to lists of lists
-
+        '''
+        Initiailze the task window and controls
+        '''
         _mw = self.getMainWindow()
 
         form = _mw.findChild(QtGui.QWidget, 'TaskPanel')
@@ -186,7 +197,9 @@ class ImportAlignmentTask:
         self.form = form
 
     def getMainWindow(self):
-
+        '''
+        Return reference to main window
+        '''
         top = QtGui.QApplication.topLevelWidgets()
 
         for item in top:
