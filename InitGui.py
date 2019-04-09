@@ -27,7 +27,7 @@ from importlib import reload
 import transportationwb
 import os
 
-import Project.NewProject
+import Project.Commands.NewProjectCmd
 import Project.Commands.ImportAlignmentCmd
 import Corridor.Alignment.GenerateVerticalAlignment
 import Corridor.Alignment.Generate3dAlignment
