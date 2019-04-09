@@ -25,12 +25,11 @@
 Class for managing 2D Horizontal Alignments
 '''
 import FreeCAD as App
-import FreeCADGui as Gui
 import Draft
 
 from Project.Support import Properties, Units, Utils
 from Geometry import Arc, Line, Support
-from Corridor.alignment import AlignmentGroup
+from Corridor.Alignment import AlignmentGroup
 
 _CLASS_NAME = 'HorizontalAlignment'
 _TYPE = 'Part::Part2DObjectPython'
@@ -40,7 +39,7 @@ __author__ = 'Joel Graff'
 __url__ = "https://www.freecadweb.org"
 
 
-def create(geometry, object_name='', units='English'):
+def create(geometry, object_name=''):
     '''
     Class construction method
     object_name - Optional. Name of new object.  Defaults to class name.

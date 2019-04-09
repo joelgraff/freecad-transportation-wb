@@ -32,7 +32,7 @@ from PySide import QtGui, QtCore
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from Corridor.alignment import AlignmentGroup, HorizontalAlignment
+from Corridor.Alignment import AlignmentGroup, HorizontalAlignment
 
 from Project.Tasks.alignment import ImportXmlSubtask
 from Project.Tasks.alignment import ImportCsvSubtask

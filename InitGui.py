@@ -29,8 +29,8 @@ import os
 
 import Project.NewProject
 import Project.Commands.ImportAlignmentCmd
-import Corridor.alignment.GenerateVerticalAlignment
-import Corridor.alignment.Generate3dAlignment
+import Corridor.Alignment.GenerateVerticalAlignment
+import Corridor.Alignment.Generate3dAlignment
 import Corridor.loft.GenerateElementLoft
 import Corridor.template.ViewTemplateLibrary
 import Corridor.loft.EditIntervals
