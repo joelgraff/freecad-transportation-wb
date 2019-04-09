@@ -115,7 +115,7 @@ class ImportAlignmentTask:
         Open the file picker dialog and open the file that the user chooses
         '''
 
-        open_path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/data/alignment/'
+        open_path = App.getUserAppDataDir() + 'Mod/freecad-transportation-wb/Resources/data/alignment/'
 
         filters = self.form.tr('All files (*.*);; CSV files (*.csv);; LandXML files (*.xml)')
         selected_filter = self.form.tr('LandXML files (*.xml)')
