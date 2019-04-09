@@ -180,12 +180,16 @@ def get_float_list(text, delimiter=' '):
     values = text.replace('\n', '')
     return list(filter(None, values.split(delimiter)))
 
-def get_vector_string(vector, delimiter=' '):
+def get_vector_string(vector, delimiter=' ', precision=8):
     '''
     Return a string of vector or list elements
     '''
 
-    return delimiter.join([str(_v) for _v in vector])
+    _format_str = '{:.' + str(precision) + 'f}'
+
+    result = [_format_str.format(_v) for _v in vector]
+
+    return delimiter.join(result)
 
 def build_vector(coords):
     '''
