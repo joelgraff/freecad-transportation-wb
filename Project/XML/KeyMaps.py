@@ -36,6 +36,7 @@ class KeyMaps(Const):
         'length':
             ['radius', 'radiusStart', 'radiusEnd', 'chord', 'external', 'midOrd', 'tangent',
              'length'],
+
         'angle':
             ['delta', 'dir', 'dirStart', 'dirEnd'],
 
